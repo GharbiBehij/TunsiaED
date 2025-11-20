@@ -1,0 +1,136 @@
+// src/components/Categories/Categories.jsx
+import { useRef } from 'react';
+import { Link } from 'react-router-dom';
+
+export default function Categories() {
+  const containerRef = useRef(null);
+
+  const categories = [
+    // Original Categories (Restored)
+    {
+      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuCrtvTxFJd6XPiaJnrG1kA9FYyGYU_kVQ6c6SawPojprWDMg60p6QGj09urSHGtdrUAKjw5V1ZJodCqqnFraLNKoGUXQZ058SSWAajrm7bTk5SUJoWbVEjUu3zSZm7VgXo4qiYw_muTj7-M4IuxBTMVSsGNt1HGwYcVqcW6qvudBAqavkIqXzgSyoOcukfzReYKS3IS13OMPC4oHKrZKzAwHdtrCgYazxVcprG-IVfkV43wOK7Lj3_1uKsLNYGkLgLiwL3CsHcIvg",
+      title: "Web Development",
+      desc: "Build modern websites and applications."
+    },
+    {
+      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuDGRTamqgySW9c6hOEBS99yC8fIXSbYjS4P-3rcPbPafVeA4F8r7jFII2QZ63dgmjdayxvhm70VxPsSCyr5VeUHDx3-0hq30xfdicfpe-UI3uY4gqfOMmL3nJdVr7Tdal4bXeHg7sU-8_F7k-5IkTxkmVVNVWQcz4PV0cu_G0O2OgBu9mCofQGyY1FybHdHqg1fKoJaebN1bllh__n2fO476WM7O37EucGCbT6cwiBF8zB-6lj__uQwdTWPnVDiYAHHM2NHcr7bnQ",
+      title: "Data Science",
+      desc: "Analyze and visualize data to make informed decisions."
+    },
+    {
+      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBxpua4AGbWdU0hiw8KsKrG2rYT_0Oqv63YGBp8dx2jpmEwsxzHPVAAhTIVLOcnDokEO4KDjK45fBV3J4vhlNjDbiILmvzYZ_4hxj3KprO5Qv-1_LWqloNejcKGuawW7okNJWx7kbzwu-QVbhcg2bPgETH4qs3e5gRFFjEreUVeE7gkD01RYjlHGWKhbx5tVKkpdy_Sk09m57ClwYXUIjuifQRDEEtqgTiRyXcebn0rGiIueShQWP0SzYCh5zLw5NNYbcQpFtkjWg",
+      title: "Artificial Intelligence",
+      desc: "Explore the future of technology with AI and machine learning."
+    },
+    {
+      img: "https://lh3.googleusercontent.com/aida-public/AB6AXuBNsTbOGTKQrwkPQx2l0BFLQjZLOjXFQ0pM4PY3OXCRO_DojxcsTJJ0u-I1eoOOLWUSnw2OiDba1OYTbxGQ68IWDdB_KPrQnjqsD9fBPKAiEdiXswJ7DiO_593lfC2BleSKHpOhea10GRa3PWUc041nvLXe2Cla5FS-0NlCwcBLo7zShcXgAQmYSKckakPCv8ZbfFFR8CIc1zc-sad66jvXMyHLnPyAZgnOWzvz6-3K74UplaJcyIn6p1TCQccnRR6POewJ67qPSw",
+      title: "UI/UX Design",
+      desc: "Create beautiful and user-friendly interfaces."
+    },
+    // New IT Categories (Using the same image pattern with incremented IDs)
+    {
+      img: "http://googleusercontent.com/profile/picture/4",
+      title: "Mobile Development",
+      desc: "Build native apps for iOS and Android."
+    },
+    {
+      img: "http://googleusercontent.com/profile/picture/5",
+      title: "Cybersecurity",
+      desc: "Protect systems and networks from digital attacks."
+    },
+    {
+      img: "http://googleusercontent.com/profile/picture/6",
+      title: "DevOps & Cloud",
+      desc: "Master CI/CD pipelines and cloud infrastructure."
+    },
+    {
+      img: "http://googleusercontent.com/profile/picture/7",
+      title: "Blockchain",
+      desc: "Understand decentralized applications and crypto."
+    },
+  ];
+
+  // Scroll Handler
+  const scroll = (direction) => {
+    const { current } = containerRef;
+    if (current) {
+      // Scroll amount is roughly one card width + gap (300px + 24px)
+      const scrollAmount = 324; 
+      current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  return (
+    <section className="py-16 lg:py-24 bg-white dark:bg-background-dark relative group/section">
+      <div className="container relative">
+        <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12">
+          Explore Our Course Categories
+        </h2>
+
+        {/* --- Navigation Buttons --- */}
+        
+        {/* Left Button */}
+        <button
+          onClick={() => scroll('left')}
+          className="absolute left-0 top-[60%] -translate-y-1/2 -translate-x-3 lg:-translate-x-12 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white hover:scale-110 transition-all opacity-0 group-hover/section:opacity-100 focus:opacity-100"
+          aria-label="Scroll Left"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        {/* Right Button */}
+        <button
+          onClick={() => scroll('right')}
+          className="absolute right-0 top-[60%] -translate-y-1/2 translate-x-3 lg:translate-x-12 z-10 w-12 h-12 flex items-center justify-center rounded-full bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-white hover:scale-110 transition-all opacity-0 group-hover/section:opacity-100 focus:opacity-100"
+          aria-label="Scroll Right"
+        >
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* --- Scrollable Container --- */}
+        <div
+          ref={containerRef}
+          className="flex overflow-x-auto gap-6 pb-4 scroll-smooth no-scrollbar snap-x snap-mandatory"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {categories.map((cat) => (
+            <Link
+              key={cat.title}
+              to="/courses"
+              // Layout: Mobile 85%, Tablet 50%, Desktop 25% width per card
+              className="group flex flex-col gap-4 min-w-[85%] sm:min-w-[calc(50%-12px)] lg:min-w-[calc(25%-18px)] snap-start"
+            >
+              <div
+                className="w-full bg-center bg-no-repeat aspect-video bg-cover rounded-xl overflow-hidden transition-transform group-hover:scale-105 bg-gray-100 dark:bg-gray-800"
+                style={{ backgroundImage: `url(${cat.img})` }}
+                aria-hidden="true"
+              />
+              <div className="text-center">
+                <h3 className="text-lg font-bold text-text-light dark:text-text-dark">
+                  {cat.title}
+                </h3>
+                <p className="text-sm text-text-light/70 dark:text-text-dark/70 mt-1">
+                  {cat.desc}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Hide scrollbar for Chrome/Safari/Edge */}
+      <style>{`
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+    </section>
+  );
+}
