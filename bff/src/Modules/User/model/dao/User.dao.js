@@ -1,5 +1,5 @@
 // src/modules/User/dao/User.dao.js
-import { db } from '../../../config/firebase.js';
+import { db } from '../../../../config/firebase.js';
 
 const COLLECTION = 'users';
 
