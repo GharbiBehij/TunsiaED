@@ -26,7 +26,9 @@
     "test": "react-scripts test",
     "test:watch": "react-scripts test --watch",
     "test:coverage": "react-scripts test --coverage",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "deploy": "npx firebase-tools deploy --only hosting",
+    "homepage": "."
   },
   "eslintConfig": {
     "extends": [

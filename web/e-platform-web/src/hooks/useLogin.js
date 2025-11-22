@@ -1,35 +1,23 @@
-// src/hooks/useLogin.js
+// src/hooks/useLogin.js → VERSION CORRIGÉE
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export const useLogin = () => {
   const { login } = useAuth();
-  const navigate = useNavigate();
-  const [state, setState] = useState({ status: 'idle' });
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (email,password) => {
-    setState({ status: 'loading' });
+  const submit = async (email, password) => {
+    setIsLoading(true);
+    setError(null);
     try {
-      const res = await fetch("${BFF_BASE_URL}/api/v1/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(email.password)
-      });
       await login(email, password);
-      setState({ status: 'success' });
-      setTimeout(() => navigate('/'), 100);
-    } catch (error) {
-      setState({
-        status: 'error',
-        message: error?.message || 'Login failed',
-      });
+    } catch (err) {
+      setError(err.message || 'Login failed');
+    } finally {
+      setIsLoading(false);  // OBLIGATOIRE
     }
   };
 
-  return {
-    handleLogin,
-    state,
-  };
+  return { submit, isLoading, error };
 };
-

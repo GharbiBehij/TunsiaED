@@ -1,11 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import Login from './components/Login/Login';
+import { AuthProvider,useAuth } from './context/AuthContext';
+import Login from './components/Auth/Login/Login';
 import HomePage from './components/home/HomePage/HomePage';
 import Dashboard from './components/Dashboard/StudentDashboard/StudentDashboard';
 import Courses from './components/Courses/Course'
-import Signup from './components/SignUp/Signup';
+import Signup from './components/Auth/SignUp/Signup';
 
 
 const ProtectedRoute = ({ children }) => {

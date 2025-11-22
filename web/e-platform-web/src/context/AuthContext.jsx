@@ -1,147 +1,154 @@
 // src/context/AuthContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { auth } from "../firebase"; // ← this is the CLIENT Firebase (browser only)
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword,
-  signOut 
-} from "firebase/auth"; // ← these are the only functions we need from Google
+import { auth } from "../firebase";
+import { db } from "../firebase.js";
+import { loginWithEmail, signupWithEmail } from "../lib/auth.js";
+import { onAuthStateChanged } from "firebase/auth";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { useNavigate } from 'react-router-dom';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);        // ← who is logged in right now?
-  const [token, setToken] = useState(localStorage.getItem('token')); // ← Firebase real token
-  const [isLoading, setIsLoading] = useState(false); // ← spinner while waiting
-  const [error, setError] = useState(null);      // ← show error message if login fails
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // ==================================================================
-  // LOGIN — talk DIRECTLY to Google, not our BFF anymore
-  // ==================================================================
   const login = async (email, password) => {
     setIsLoading(true);
-    setError(null);
-
     try {
-      // This line goes straight to Google → no password touches our server
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const firebaseUser = userCredential.user;
-      
-      // This is the REAL token from Google — unbreakable
-      const firebaseToken = await firebaseUser.getIdToken();
+      await loginWithEmail(email, password);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-      // Save everything exactly like before — nothing changes for the rest of the app
-      const userData = {
+  const signup = async ({ email, password }) => {
+    setIsLoading(true);
+    try {
+      await signupWithEmail(email, password);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        setIsLoading(false);
+        return;
+      }
+
+      let profile = null;
+
+      // ——— TRY BFF FIRST (if it's alive) ———
+      try {
+        const idToken = await firebaseUser.getIdToken();
+        const res = await fetch('/api/v1/user/me', {
+          headers: { Authorization: `Bearer ${idToken}` }
+        });
+
+        if (res.ok) {
+          profile = await res.json();
+        } else if (res.status === 404) {
+          // Onboard if not exists
+          await fetch('/api/v1/user/onboard', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${idToken}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+              role: 'student'
+            })
+          });
+          const retry = await fetch('/api/v1/user/me', {
+            headers: { Authorization: `Bearer ${idToken}` }
+          });
+          profile = await retry.json();
+        }
+      } catch (bffError) {
+        console.log('BFF down or unreachable → using Firestore fallback');
+      }
+
+      // ——— IF BFF FAILED → USE FIRESTORE FALLBACK ———
+      if (!profile) {
+        const userDocRef = doc(db, "User", firebaseUser.uid);
+        let snap;
+        try {
+          snap = await getDoc(userDocRef);
+        } catch (err) {
+          console.error("Firestore read failed:", err);
+        }
+
+        if (snap?.exists()) {
+          profile = snap.data();
+        } else {
+          profile = {
+            name: firebaseUser.displayName || firebaseUser.email.split('@')[0],
+            email: firebaseUser.email,
+            role: 'student',
+            createdAt: new Date(),
+            createdViaFallback: true
+          };
+          try {
+            await setDoc(userDocRef, profile);
+            console.log("User created via fallback in Firestore");
+          } catch (err) {
+            console.error("Failed to write fallback user:", err);
+          }
+        }
+      }
+
+      // ——— FINAL USER SETUP ———
+      const fullUser = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        name: firebaseUser.displayName || email.split('@')[0], // if no name, use email prefix
+        profile
       };
 
-      setUser(userData);
-      setToken(firebaseToken);
-      localStorage.setItem('token', firebaseToken);
-      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(fullUser);
+      setToken(await firebaseUser.getIdToken());
+      localStorage.setItem('user', JSON.stringify(fullUser));
+      localStorage.setItem('token', await firebaseUser.getIdToken());
 
-      // Optional: tell our BFF "hey this user just logged in, create profile if not exist"
-      // await fetch('/api/v1/users/onboard', { headers: { Authorization: `Bearer ${firebaseToken}` } });
-
-    } catch (err) {
-      const message = err?.message || 'Wrong email or password';
-      setError(message);
-      throw new Error(message); // so login form can catch it
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ==================================================================
-  // SIGNUP — same thing, direct to Google
-  // ==================================================================
-  const signup = async (formData) => {
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-      const firebaseUser = userCredential.user;
-      const firebaseToken = await firebaseUser.getIdToken();
-
-      const userData = {
-        uid: firebaseUser.uid,
-        email: formData.email,
-        name: formData.name || formData.email.split('@')[0],
-      };
-
-      setUser(userData);
-      setToken(firebaseToken);
-      localStorage.setItem('token', firebaseToken);
-      localStorage.setItem('user', JSON.stringify(userData));
-
-      // Later: tell BFF to save role, phone, etc.
-      // await fetch('/api/v1/users/profile', { ... })
-
-    } catch (err) {
-      let message = 'Signup failed';
-      if (err.code === 'auth/email-already-in-use') message = 'This email is already registered';
-      if (err.code === 'auth/weak-password') message = 'Password too weak (min 6 chars)';
-      setError(message);
-      throw new Error(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // ==================================================================
-  // LOGOUT — clear everything + tell Firebase
-  // ==================================================================
-  const logout = async () => {
-    await signOut(auth); // tell Google we’re done
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-  };
-
-  // ==================================================================
-  // Auto-login when user comes back (page refresh)
-  // ==================================================================
-  useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error('Corrupted user in localStorage', e);
+      // ——— INSTRUCTOR PENDING ALERT ———
+      const pending = JSON.parse(localStorage.getItem('pendingProfile') || '{}');
+      if (pending.role === 'instructor') {
+        alert("Thank you! Your instructor application is under review. You can explore the platform in the meantime.");
+        localStorage.removeItem('pendingProfile');
       }
-    }
-  }, []);
 
-  // ==================================================================
-  // This is what the rest of your app sees
-  // ==================================================================
-  const value = {
-    user,
-    token,
-    isLoading,
-    isAuthenticated: !!user && !!token,
-    login,
-    signup,
-    logout,
-    error,
-    setError, // optional: so forms can clear error
-  };
+      setIsLoading(false);
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+      // ——— ONLY REDIRECT FROM AUTH PAGES ———
+      if (window.location.pathname === '/login' || window.location.pathname === '/signup') {
+        navigate('/', { replace: true });
+      }
+
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  return (
+    <AuthContext.Provider value={{
+      user,
+      token,
+      isLoading,
+      isAuthenticated: !!user,
+      login,
+      signup
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used inside AuthProvider');
-  }
-  return context;
-};
+export const useAuth = () => useContext(AuthContext);
