@@ -2,11 +2,12 @@
   "name": "bff",
   "version": "1.0.0",
   "type": "module",
-  "scripts": {
-    "dev": "node --watch src/app.js",
-    "start": "node src/app.js",
-    "clean": "node -e \"try{require('fs').rmSync('dist',{recursive:true,force:true});}catch(e){}\""
-  },
+"scripts": {
+  "dev": "nodemon src/app.js",
+  "start": "node src/app.js",
+  "build": "echo 'No build needed for JS'",
+  "postinstall": "echo 'Deploy ready'"
+},
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",

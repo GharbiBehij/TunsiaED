@@ -1,4 +1,4 @@
-// src/modules/payment/dto/Payment.request.dto.ts
+// src/modules/payment/dto/Payment.request.dto.js
 import { z } from 'zod';
 
 export const CreatePaymentRequest = z.object({

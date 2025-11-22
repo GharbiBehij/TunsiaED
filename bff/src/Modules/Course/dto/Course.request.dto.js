@@ -1,4 +1,4 @@
-// src/modules/Course/dto/Course.request.dto.ts
+// src/modules/Course/dto/Course.request.dto.js
 import { z } from 'zod';
 
 export const CreateCourseRequest = z.object({

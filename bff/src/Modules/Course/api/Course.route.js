@@ -1,8 +1,6 @@
 // src/modules/Course/api/Course.route.js
 import { Router } from 'express';
 import { courseController } from './Course.controller.js';
-import { validateBody } from '../../../middlewares/validation.middleware.js';
-import { CreateCourseRequest, UpdateCourseRequest } from '../dto/Course.request.dto.js';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -11,7 +9,6 @@ const router = Router();
 router.post(
   '/',
   authenticate,
-  validateBody(CreateCourseRequest),
   courseController.createCourse
 );
 
@@ -35,7 +32,6 @@ router.get('/:courseId', courseController.getCourseById);
 router.put(
   '/:courseId',
   authenticate,
-  validateBody(UpdateCourseRequest),
   courseController.updateCourse
 );
 

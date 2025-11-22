@@ -1,4 +1,4 @@
-// src/modules/Enrollement/dto/Enrollement.request.dto.ts
+// src/modules/Enrollement/dto/Enrollement.request.dto.js
 import { z } from 'zod';
 
 export const CreateEnrollmentRequest = z.object({

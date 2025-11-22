@@ -1,33 +1,45 @@
 // src/modules/User/dao/User.dao.js
-import { auth, db } from '../../../../config/firebase.js';
-//const userRaw= userDoc.data()
-//data->DTO->waits for the creation of user through auth(firebase)
+import { db } from '../../../config/firebase.js';
+
+const COLLECTION = 'users';
+
 export class UserDao {
-  async createFirebaseUser(data, hashedPassword) {
-    const userRecord = await auth.createUser({
+  async create(uid, data) {
+    const ref = db.collection('users').doc(uid);
+    await ref.set({
+      uid,
       email: data.email,
-      password: data.password,//firebase handles the hashing
-      displayName: data.name,
-    });
-
-    const userDoc = {
-      userId: userRecord.uid,
-      email: userRecord.email || data.email,
-      name: data.name,
-      phoneNumber: data.phoneNumber,
-      role: data.role,
+      name: data.name || null,
+      phone: data.phone || null,
+      role: data.role || 'student',
+      birthDate: data.birthDate || null,
+      birthPlace: data.birthPlace || null,
+      level: data.level || null,
+      bio: data.bio || null,
       createdAt: new Date(),
-      hashedPassword,
-    };
+      updatedAt: new Date(),
+    }, { merge: true });
 
-    await db.collection('users').doc(userRecord.uid).set(userDoc);
-
-    return { ...userDoc, userId: userRecord.uid };
+    const doc = await ref.get();
+    return doc.data();
   }
 
-  async getUserDoc(uid) {
-    const doc = await db.collection('users').doc(uid).get();
+  async getByUid(uid) {
+    const doc = await db.collection(COLLECTION).doc(uid).get();//you access the collection.you put the field in the document.you put the action you want to make
     return doc.exists ? doc.data() : null;
   }
+
+  async update(uid, updates) {
+    const ref = db.collection(COLLECTION).doc(uid);
+    await ref.update({ ...updates, updatedAt: new Date() });
+    const doc = await ref.get();
+    return doc.data();
+  }
+  async delete(uid){
+     const ref = db.collection(COLLECTION).doc(uid);
+     await ref.delete();
+     return { message: 'User deleted successfully' };
+  }
 }
+
 export const userDao = new UserDao();

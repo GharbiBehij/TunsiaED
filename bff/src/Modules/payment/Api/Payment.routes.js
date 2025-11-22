@@ -1,8 +1,6 @@
 // src/modules/payment/Api/Payment.routes.js
 import { Router } from 'express';
 import { paymentController } from './Payment.controller.js';
-import { validateBody } from '../../../middlewares/validation.middleware.js';
-import { CreatePaymentRequest, UpdatePaymentRequest } from '../dto/Payment.request.dto.js';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -11,7 +9,6 @@ const router = Router();
 router.post(
   '/',
   authenticate,
-  validateBody(CreatePaymentRequest),
   paymentController.createPayment
 );
 
@@ -45,7 +42,6 @@ router.get(
 router.put(
   '/:paymentId',
   authenticate,
-  validateBody(UpdatePaymentRequest),
   paymentController.updatePayment
 );
 

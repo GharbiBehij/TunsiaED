@@ -8,8 +8,13 @@
     ],
     "rewrites": [
       {
-        "source": "**",
-        "destination": "/index.html"
+        "source": "/api/**",
+        "destination": "https://tunsiaed.onrender.com",
+        "type": 301
+      },
+      {
+        "source" : "**",
+        "destination" : "/index.html"
       }
     ]
   },

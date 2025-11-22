@@ -1,4 +1,4 @@
-// src/modules/Enrollement/index.ts
+// src/modules/Enrollement/index.js
 export * from './dto/Enrollement.request.dto';
 export * from './dto/Enrollement.response.dto';
 export * from './model/entity/Enrollement.entity';

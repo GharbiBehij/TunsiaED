@@ -1,29 +1,15 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users can read and write their own user document
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+
+    // ALLOW EVERYTHING FOR NOW (we fix security later)
+    match /{document=**} {
+      allow read, write: if true;
     }
-    
-    // Public content (courses, etc.) - read access for authenticated users
-    match /courses/{courseId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && 
-        (request.auth.token.admin == true || 
-         request.auth.token.instructor == true);
-    }
-    
-    // User enrollments - users can read/write their own enrollments
-    match /enrollments/{enrollmentId} {
-      allow read, write: if request.auth != null && 
-        request.auth.uid == resource.data.userId;
-    }
-    
-    // Admin only collections
-    match /admin/{document=**} {
-      allow read, write: if request.auth != null && 
-        request.auth.token.admin == true;
-    }
+
+    // LATER (after launch) we change to this:
+    // match /User/{uid} {
+    //   allow read, write: if request.auth != null && request.auth.uid == uid;
+    // }
   }
 }

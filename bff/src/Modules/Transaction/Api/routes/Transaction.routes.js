@@ -1,8 +1,6 @@
 // src/modules/Transaction/Api/routes/Transaction.routes.js
 import { Router } from 'express';
 import { transactionController } from '../controller/Transaction.controller.js';
-import { validateBody } from '../../../../middlewares/validation.middleware.js';
-import { CreateTransactionRequest, UpdateTransactionRequest } from '../../dto/Transaction.request.dto.js';
 import { authenticate } from '../../../../middlewares/auth.middleware.js';
 
 const router = Router();
@@ -11,7 +9,6 @@ const router = Router();
 router.post(
   '/',
   authenticate,
-  validateBody(CreateTransactionRequest),
   transactionController.createTransaction
 );
 
@@ -52,7 +49,6 @@ router.get(
 router.put(
   '/:transactionId',
   authenticate,
-  validateBody(UpdateTransactionRequest),
   transactionController.updateTransaction
 );
 
