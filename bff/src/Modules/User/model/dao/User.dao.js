@@ -1,74 +1,113 @@
 // src/modules/User/dao/User.dao.js
-import { db } from '../../../../config/firebase.js';
+import { db } from '../../../config/firebase.js';
 
 const COLLECTION = 'User';
 
 export class UserDao {
+  _getRoleFlags(data) {
+    // If boolean flags provided explicitly, use them
+    if (data.isAdmin === true || data.isInstructor === true || data.isStudent === true) {
+      return {
+        isAdmin: data.isAdmin === true,
+        isInstructor: data.isInstructor === true,
+        isStudent: data.isStudent === true,
+      };
+    }
+
+    // If string role provided, convert to boolean flags
+    if (data.role) {
+      return {
+        isAdmin: data.role === 'admin',
+        isInstructor: data.role === 'instructor',
+        isStudent: data.role === 'student',
+      };
+    }
+
+    // Default: student
+    return {
+      isAdmin: false,
+      isInstructor: false,
+      isStudent: true,
+    };
+  }
+
   async create(uid, data) {
     const ref = db.collection(COLLECTION).doc(uid);
-    await ref.set({
+    const roleFlags = this._getRoleFlags(data);
+
+    const profile = {
       uid,
       email: data.email,
       name: data.name || null,
       phone: data.phone || null,
-      // Map role string to boolean fields
-      // Default to student if no role specified
-      role: data.role || 'student',
-      isAdmin: data.role === 'admin' || data.isAdmin === true,
-      isInstructor: data.role === 'instructor' || data.isInstructor === true,
-      isStudent: data.role === 'student' || (!data.role && !data.isAdmin && !data.isInstructor) || data.isStudent === true,
+      ...roleFlags,  // ← Only boolean flags, no string role
       birthDate: data.birthDate || null,
       birthPlace: data.birthPlace || null,
       level: data.level || null,
       bio: data.bio || null,
       createdAt: new Date(),
       updatedAt: new Date(),
-    }, { merge: true });
+    };
 
+    await ref.set(profile, { merge: true });
     const doc = await ref.get();
     return doc.data();
   }
 
   async getByUid(uid) {
-    const doc = await db.collection(COLLECTION).doc(uid).get();//you access the collection.you put the field in the document.you put the action you want to make
+    const doc = await db.collection(COLLECTION).doc(uid).get();
     return doc.exists ? doc.data() : null;
   }
 
   async update(uid, updates) {
     const ref = db.collection(COLLECTION).doc(uid);
     
-    // Handle role mapping if role is provided
-    const updateData = { ...updates, updatedAt: new Date() };
-    
-    if (updates.role) {
-      updateData.isAdmin = updates.role === 'admin' || updates.isAdmin === true;
-      updateData.isInstructor = updates.role === 'instructor' || updates.isInstructor === true;
-      updateData.isStudent = updates.role === 'student' || updates.isStudent === true;
-    } else if (updates.isAdmin !== undefined || updates.isInstructor !== undefined || updates.isStudent !== undefined) {
-      // If boolean fields are provided, update role accordingly
-      if (updates.isAdmin === true) {
-        updateData.role = 'admin';
-        updateData.isInstructor = false;
-        updateData.isStudent = false;
-      } else if (updates.isInstructor === true) {
-        updateData.role = 'instructor';
-        updateData.isAdmin = false;
-        updateData.isStudent = false;
-      } else if (updates.isStudent === true) {
-        updateData.role = 'student';
-        updateData.isAdmin = false;
-        updateData.isInstructor = false;
-      }
+    // Build update data
+    const updateData = {
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    // If role-related fields provided, map them to boolean flags
+    if (updates.role || updates.isAdmin !== undefined || updates.isInstructor !== undefined || updates.isStudent !== undefined) {
+      const roleFlags = this._getRoleFlags(updates);
+      Object.assign(updateData, roleFlags);
+      delete updateData.role; // Remove string role if it exists
     }
-    
+
     await ref.update(updateData);
     const doc = await ref.get();
     return doc.data();
   }
-  async delete(uid){
-     const ref = db.collection(COLLECTION).doc(uid);
-     await ref.delete();
-     return { message: 'User deleted successfully' };
+
+  async delete(uid) {
+    const ref = db.collection(COLLECTION).doc(uid);
+    await ref.delete();
+    return { message: 'User deleted successfully' };
+  }
+
+  /**
+   * Query methods for role-based filtering
+   */
+  async getAllAdmins() {
+    const snapshot = await db.collection(COLLECTION)
+      .where('isAdmin', '==', true)
+      .get();
+    return snapshot.docs.map(doc => doc.data());
+  }
+
+  async getAllInstructors() {
+    const snapshot = await db.collection(COLLECTION)
+      .where('isInstructor', '==', true)
+      .get();
+    return snapshot.docs.map(doc => doc.data());
+  }
+
+  async getAllStudents() {
+    const snapshot = await db.collection(COLLECTION)
+      .where('isStudent', '==', true)
+      .get();
+    return snapshot.docs.map(doc => doc.data());
   }
 }
 

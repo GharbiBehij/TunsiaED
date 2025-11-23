@@ -8,10 +8,6 @@
     ],
     "rewrites": [
       {
-        "source": "/api/**",
-        "destination": "https://tunsiaed.onrender.com/**"
-      },
-      {
         "source" : "**",
         "destination" : "/index.html"
       }

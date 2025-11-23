@@ -1,36 +1,47 @@
-// src/app.js
-import './config/firebase.js';
+// app.js or server.js
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
-import morgan from 'morgan';
-import { authenticate } from './middlewares/auth.middleware.js';
-import { userRoutes } from './Modules/User/api/Routes/User.routes.js';
-import { errorHandler } from './middlewares/error.middleware.js';
+import { userRoutes } from './src/modules/User/api/routes/user.routes.js';
+import { router as courseRouter } from './src/modules/Course/api/Course.route.js';
+import { router as paymentRouter } from './src/modules/payment/Api/Payment.routes.js';
+import { router as enrollmentRouter } from './src/modules/Enrollement/Api/Routes/Enrollement.routes.js';
+import { router as transactionRouter } from './src/modules/Transaction/Api/routes/Transaction.routes.js';
 
 const app = express();
-const PORT = process.env.PORT ?? 3003;
-const HOST = '0.0.0.0';
 
-// Middleware setup
-app.use(helmet());
-app.use(cors({ origin: true }));
-app.use(morgan('combined'));
+// 1. Middleware FIRST
+app.use(cors({
+  origin: ['https://tunsiaed.web.app', 'https://tunsiaed.firebaseapp.com', 'http://localhost:3000', 'http://localhost:3001'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']}));
 app.use(express.json());
 
-// Health check endpoint (before auth)
-app.get('/health', (req, res) => res.json({ status: 'OK', time: new Date() }));
-
-// API routes
-app.use('/api/v1', authenticate);
-app.use('/api/v1/user', userRoutes);
-
-// Error handler (must be last)
-app.use(errorHandler);
-
-// Start server
-app.listen(PORT, HOST, () => {
-  console.log(`BFF server running on port ${PORT}`);
+// 2. Health check
+app.get('/', (req, res) => {
+  res.json({ 
+    status: 'alive', 
+    message: 'TunisiaED BFF is running',
+    timestamp: new Date().toISOString() 
+  });
 });
+
+// 3. API Routes BEFORE 404 handler
+app.use('/api/v1/user', userRoutes);
+app.use('/api/v1/course', courseRouter);
+app.use('/api/v1/payment', paymentRouter);
+app.use('/api/v1/enrollment', enrollmentRouter);
+app.use('/api/v1/transaction', transactionRouter);
+
+// 4. 404 handler LAST
+app.use('*', (req, res) => {
+  res.status(404).json({ 
+    error: 'Route not found',
+    path: req.originalUrl 
+  });
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 export default app;

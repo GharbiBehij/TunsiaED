@@ -10,22 +10,43 @@ router.post('/onboard', authenticate, async (req, res) => {
   const { name, phone, role } = req.body;
 
   try {
+    // Convert string role to boolean flags
     const profile = await userRepository.onboard(uid, {
       email,
       name,
       phone,
-      role,
+      isAdmin: role === 'admin',      // ← Add these
+      isInstructor: role === 'instructor',
+      isStudent: role === 'student' || !role,  // Default to student
     });
     res.json({ message: 'Welcome to TunisiaED!', profile });
   } catch (err) {
+    console.error('Onboarding error:', err);
     res.status(500).json({ error: 'Failed to create profile' });
   }
 });
 
 router.get('/me', authenticate, async (req, res) => {
-  const user = await userRepository.findByUid(req.user.uid);
-  if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json(user);
+  const { uid } = req.user;  // from token
+
+  const userDoc = await db.collection('User').doc(uid).get();
+  if (!userDoc.exists) {
+    return res.status(404).json({ error: 'Profile not found' });
+  }
+
+  const profile = userDoc.data();
+
+  res.json({
+    uid,
+    email: req.user.email,
+    profile: {
+      name: profile.name,
+      isAdmin: profile.isAdmin || false,
+      isInstructor: profile.isInstructor || false,
+      isStudent: profile.isStudent !== false,
+      // add phone, birthDate, etc.
+    }
+  });
 });
 
 router.patch('/me', authenticate, async (req, res) => {

@@ -30,20 +30,8 @@ if (!admin.apps.length) {
       });
       console.log('Firebase Admin initialized from environment variables');
     } 
-    // Fallback to serviceAccountKey.json (for local development)
-    else {
-      try {
-        const serviceAccountPath = join(__dirname, '../../serviceAccountKey.json');
-        const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
-        admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount),
-        });
-        console.log('Firebase Admin initialized from serviceAccountKey.json');
-      } catch (fileError) {
-        throw new Error('Missing Firebase credentials. Set environment variables or provide serviceAccountKey.json');
-      }
-    }
-  } catch (error) {
+    // Fallback to serviceAccountKey.json (for local development
+    } catch (error) {
     console.error('Firebase initialization failed:', error);
     process.exit(1);
   }
@@ -52,4 +40,3 @@ if (!admin.apps.length) {
 // Export services
 export const auth = admin.auth();
 export const db = admin.firestore();  
-export default admin;
