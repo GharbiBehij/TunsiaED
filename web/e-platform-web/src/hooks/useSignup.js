@@ -18,6 +18,5 @@ export const useSignup = () => {
       setIsLoading(false);
     }
   };
-
   return { submit, isLoading, error };
 };

@@ -1,13 +1,16 @@
-import { useSignup } from '../../../../hooks/useSignup';
-const { submit, isLoading, error } = useSignup();
+// src/components/Auth/StudentForm.jsx
+import { useSignup } from '../../hooks/useSignup';
 
-const onSubmit = async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  const data = Object.fromEntries(formData);
+export default function StudentForm() {
+  const { submit, isLoading, error } = useSignup();
 
-  await submit(data.email, data.password);  // CORRECT
-};
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData);
+
+    await submit(data.email, data.password);
+  };
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
@@ -90,10 +93,11 @@ const onSubmit = async (e) => {
       </button>
 
       {/* Error Message */}
-      {isError && (
+      {error && (
         <p className="text-red-500 dark:text-red-400 text-sm text-center font-medium">
-          {error || 'Something went wrong. Please try again.'}
+          {error}
         </p>
       )}
     </form>
   );
+}

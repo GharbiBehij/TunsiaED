@@ -1,8 +1,8 @@
-// src/components/auth/Signup/Signup.jsx
+// src/pages/Signup.jsx
 import { useState } from 'react';
 import { Link} from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext';
-import  GoogleLoginButton  from '../GoogleLoginButton';
+import { useAuth } from '../context/AuthContext';
+import GoogleLoginButton from '../components/Auth/GoogleLoginButton';
 
 export default function Signup() {
   const [role, setRole] = useState('student');

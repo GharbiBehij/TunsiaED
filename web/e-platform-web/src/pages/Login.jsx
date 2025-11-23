@@ -1,8 +1,8 @@
-// src/components/Login/Login.jsx
+// src/pages/Login.jsx
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useLogin } from '../../../hooks/useLogin';
-import  GoogleLoginButton  from '../GoogleLoginButton';
+import { useLogin } from '../hooks/useLogin';
+import GoogleLoginButton from '../components/Auth/GoogleLoginButton';
 
 const Login = () => {
   const [email, setEmail] = useState('');

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider,useAuth } from './context/AuthContext';
-import Login from './components/Auth/Login/Login';
-import HomePage from './components/home/HomePage/HomePage';
+import Login from './pages/Login';
+import HomePage from './pages/HomePage';
 import Dashboard from './components/Dashboard/StudentDashboard/StudentDashboard';
-import Courses from './components/Courses/Course'
-import Signup from './components/Auth/SignUp/Signup';
+import Courses from './components/Courses/Course';
+import Signup from './pages/Signup';
 
 
 const ProtectedRoute = ({ children }) => {
@@ -26,14 +26,7 @@ function App() {
           <Route path="/Courses" element={<Courses />} />
           <Route path="/login" element={<Login />} />
           <Route path="/Signup" element={<Signup/>}/>
-          <Route
-            path="/StudentDashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="/dashboard" element={<Dashboard />} />
         </Routes>
     </AuthProvider>
   );

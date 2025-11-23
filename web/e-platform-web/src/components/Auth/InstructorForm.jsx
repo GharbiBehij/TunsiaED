@@ -1,14 +1,14 @@
-// src/components/auth/Signup/forms/InstructorForm.jsx
-import { useSignup } from '../../../../hooks/useSignup';
+// src/components/Auth/InstructorForm.jsx
+import { useSignup } from '../../hooks/useSignup';
 
 export default function InstructorForm() {
-  const { handleSignup, isLoading, isError, error } = useSignup();
+  const { submit, isLoading, error } = useSignup();
 
-  const onSubmit = (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-    handleSignup(data);
+    await submit(data.email, data.password);
   };
 
   return (
@@ -111,9 +111,9 @@ export default function InstructorForm() {
       </button>
 
       {/* Error Message */}
-      {isError && (
+      {error && (
         <p className="text-red-500 dark:text-red-400 text-sm text-center font-medium">
-          {error || 'Failed to submit. Please try again.'}
+          {error}
         </p>
       )}
     </form>

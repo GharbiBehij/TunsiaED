@@ -18,6 +18,5 @@ export const useLogin = () => {
       setIsLoading(false);  // OBLIGATOIRE
     }
   };
-
   return { submit, isLoading, error };
 };

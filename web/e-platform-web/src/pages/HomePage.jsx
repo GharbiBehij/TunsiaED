@@ -1,0 +1,27 @@
+// src/components/home/HomePage.jsx
+
+import Header from '../components/home/Header/Header'
+import HeroSection from '../components/home/HeroSection/HeroSection'
+import Features from '../components/home/Features/Features'
+import Categories from '../components/home/Categories/Categories'
+import FeaturedCourses from '../components/home/FeaturedCourses/FeaturedCourses'
+import Testimonials from '../components/home/Testimonials/Testimonials'
+import Pricing from '../components/home/Pricing/Pricing'
+import Footer from '../components/home/Footer/Footer'
+
+export default function Homepage() {
+  return (
+    <div className="flex flex-col min-h-screen bg-background-light dark:bg-background-dark text-text-light dark:text-text-dark font-display">
+      <Header />
+      <main className="flex-1">
+        <HeroSection />
+        <Features />
+        <Categories />
+        <FeaturedCourses />
+        <Testimonials />
+        <Pricing />
+      </main>
+      <Footer />
+    </div>
+  )
+}
