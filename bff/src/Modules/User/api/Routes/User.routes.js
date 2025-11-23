@@ -2,7 +2,7 @@
 import express from 'express';
 import { authenticate } from '../../../../middlewares/auth.middleware.js';
 import { db } from '../../../../config/firebase.js';
-import { userRepository } from '../../../repository/User.repository.js';
+import { userRepository } from '../../repository/User.repository.js';
 
 const router = express.Router();
 
