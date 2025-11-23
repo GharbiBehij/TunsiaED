@@ -28,26 +28,16 @@ router.post('/onboard', authenticate, async (req, res) => {
 });
 
 router.get('/me', authenticate, async (req, res) => {
-  const { uid } = req.user;  // from token
-
-  const userDoc = await db.collection('User').doc(uid).get();
-  if (!userDoc.exists) {
-    return res.status(404).json({ error: 'Profile not found' });
-  }
-
-  const profile = userDoc.data();
-
-  res.json({
-    uid,
-    email: req.user.email,
-    profile: {
-      name: profile.name,
-      isAdmin: profile.isAdmin || false,
-      isInstructor: profile.isInstructor || false,
-      isStudent: profile.isStudent !== false,
-      // add phone, birthDate, etc.
+  try {
+    const profile = await userRepository.findByUid(req.user.uid);
+    if (!profile) {
+      return res.status(404).json({ error: 'Profile not found' });
     }
-  });
+    res.json(profile);
+  } catch (err) {
+    console.error('Get profile error:', err);
+    res.status(500).json({ error: 'Failed to fetch profile' });
+  }
 });
 
 router.patch('/me', authenticate, async (req, res) => {

@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import { userRoutes } from './src/Modules/User/api/Routes/User.routes.js';
 import { router as courseRouter } from './src/Modules/Course/api/Course.route.js';
 import { router as paymentRouter } from './src/Modules/payment/Api/Payment.routes.js';
@@ -47,6 +48,9 @@ app.options('*', cors({
 // 3 Parse JSON
 app.use(express.json());
 
+// 3.5 Request logging
+app.use(morgan('combined'));
+
 // 4️ Health check
 app.get('/', (req, res) => {
   res.json({ 
@@ -63,7 +67,16 @@ app.use('/api/v1/payment', paymentRouter);
 app.use('/api/v1/enrollment', enrollmentRouter);
 app.use('/api/v1/transaction', transactionRouter);
 
-// 6️ 404 handler
+// 6️ Global error handler
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal server error',
+    status: err.status || 500
+  });
+});
+
+// 7️ 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ 
     error: 'Route not found',
@@ -71,7 +84,7 @@ app.use('*', (req, res) => {
   });
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 export default app;

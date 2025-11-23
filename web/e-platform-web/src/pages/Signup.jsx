@@ -1,8 +1,8 @@
 // src/pages/Signup.jsx
 import { useState } from 'react';
-import { Link} from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import GoogleLoginButton from '../components/Auth/GoogleLoginButton';
+import GoogleLoginButton from '../components/auth/GoogleLoginButton';
 
 export default function Signup() {
   const [role, setRole] = useState('student');
@@ -13,7 +13,6 @@ export default function Signup() {
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
 
-    // Save role + extra data temporarily
     const extraData = {
       name: data.name,
       phone: data.phone,
@@ -23,13 +22,12 @@ export default function Signup() {
       cv: role === 'instructor' ? formData.get('cv') : null,
     };
 
-    localStorage.setItem('pendingProfile', JSON.stringify(extraData));
+    localStorage.setItem("pendingProfile", JSON.stringify(extraData));
 
     try {
       await signup({ email: data.email, password: data.password });
-      // onAuthStateChanged will handle the rest
     } catch (err) {
-      // error already shown by useAuth
+      console.error("Signup failed:", err);
     }
   };
 
@@ -52,50 +50,63 @@ export default function Signup() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Role Toggle */}
+          {/* ROLE SWITCH */}
           <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg p-1 flex">
-            <div className={`absolute top-1 left-1 h-10 w-1/2 bg-primary rounded-md transition-transform ${role === 'instructor' ? 'translate-x-full' : ''}`} />
-            <button type="button" onClick={() => setRole('student')} className={`relative z-10 flex-1 py-2.5 text-sm font-semibold rounded-md transition ${role === 'student' ? 'text-white' : 'text-gray-600'}`}>
+            <div
+              className={`absolute top-1 left-1 h-10 w-1/2 bg-primary rounded-md transition-transform ${
+                role === "instructor" ? "translate-x-full" : ""
+              }`}
+            />
+            <button
+              type="button"
+              onClick={() => setRole("student")}
+              className={`relative z-10 flex-1 py-2.5 text-sm font-semibold ${
+                role === "student" ? "text-white" : "text-gray-600"
+              }`}
+            >
               Student
             </button>
-            <button type="button" onClick={() => setRole('instructor')} className={`relative z-10 flex-1 py-2.5 text-sm font-semibold rounded-md transition ${role === 'instructor' ? 'text-white' : 'text-gray-600'}`}>
+            <button
+              type="button"
+              onClick={() => setRole("instructor")}
+              className={`relative z-10 flex-1 py-2.5 text-sm font-semibold ${
+                role === "instructor" ? "text-white" : "text-gray-600"
+              }`}
+            >
               Instructor
             </button>
           </div>
 
-          {/* Shared Fields */}
-          <input name="name" type="text" placeholder="Full Name" required className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
-          <input name="email" type="email" placeholder="Email Address" required className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
-          <input name="password" type="password" placeholder="Password (6+ characters)" required minLength="6" className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
-          <input name="phone" type="tel" placeholder="Phone Number" required className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
-          <input name="birthPlace" type="text" placeholder="Place of Birth" required className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
-          <input name="birthDate" type="date" required className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition" />
+          <input name="name" required placeholder="Full Name" className="input" />
+          <input name="email" type="email" required placeholder="Email Address" className="input" />
+          <input name="password" type="password" required placeholder="Password" className="input" />
+          <input name="phone" required placeholder="Phone Number" className="input" />
+          <input name="birthPlace" required placeholder="Place of Birth" className="input" />
+          <input name="birthDate" type="date" required className="input" />
 
-          {/* CV for Instructor */}
           {role === 'instructor' && (
             <div>
-              <label className="block text-sm font-medium mb-2">Upload Your CV (PDF/DOC)</label>
-              <input name="cv" type="file" accept=".pdf,.doc,.docx" required className="w-full px-4 py-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-primary file:text-white" />
+              <label className="block text-sm font-medium mb-2">Upload CV</label>
+              <input name="cv" type="file" accept=".pdf,.doc,.docx" required className="input" />
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-12 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 disabled:opacity-70 transition"
-          >
-            {isLoading ? 'Creating Account...' : role === 'student' ? 'Sign Up as Student' : 'Apply as Instructor'}
+          <button disabled={isLoading} className="btn-primary w-full">
+            {isLoading
+              ? "Creating Account..."
+              : role === "student"
+              ? "Sign Up as Student"
+              : "Apply as Instructor"}
           </button>
         </form>
 
         <div className="my-8 text-center text-sm text-gray-500">OR</div>
+
         <GoogleLoginButton />
 
         <p className="mt-8 text-center text-sm text-gray-500">
-          Already have an account?{' '}
-          <Link to="/login" className="font-bold text-primary hover:underline">
-            Login
-          </Link>
+          Already have an account?{" "}
+          <Link to="/login" className="font-bold text-primary">Login</Link>
         </p>
       </div>
     </div>
