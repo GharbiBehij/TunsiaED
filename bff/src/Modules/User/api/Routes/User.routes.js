@@ -1,4 +1,4 @@
-// src/modules/User/api/routes/user.routes.js
+// src/modules/User/api/routes/User.routes.js
 import express from 'express';
 import { authenticate } from '../../../../middlewares/auth.middleware.js';
 import { userRepository } from '../../repository/User.repository.js';
