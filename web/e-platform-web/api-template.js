@@ -1,32 +1,18 @@
-server.method(endpoint,function)
- async function endpointname(req,res){
-    try {
-        1)validate input
-        2)perform main ActivityIcon(firebase,Database,etc)
-        3)return  response to front end in a json way
-    } catch (error){
-        send back error(status erros codes)
-    }
- }
-// this is basically the template for every api endpoint you want to do.
+// 1. USER BROWSER
+const result = await fetch('RENDER_URL/api/v1/RESOURCE', {
+  method: 'POST/GET/PATCH/DELETE',
+  headers: { Authorization: `Bearer ${token}` },
+  body: JSON.stringify(data)
+});
 
-app.method('/api/example', async (req, res) => {
-    try {
-      const { field1, field2 } = req.body;
-  
-      // 1️⃣ Validate input
-      if (!field1 || !field2) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-  
-      // 2️⃣ Perform action
-      const result = await doSomethingWith(field1, field2);
-  
-      // 3️⃣ Return success
-      return res.status(200).json({ success: true, data: result });
-    } catch (error) {
-      // 4️⃣ Handle error
-      return res.status(500).json({ success: false, message: error.message });
-    }
-  });
-  
+// 2. RENDER SERVICE
+router.post('/RESOURCE', authenticate, async (req, res) => {
+  // Verify user
+  // Do business logic
+  // Talk to Firestore
+  await db.collection('COLLECTION').doc(id).set(data);
+  res.json({ success: true });
+});
+
+// 3. GOOGLE SERVERS
+// Firestore saves/retrieves data
