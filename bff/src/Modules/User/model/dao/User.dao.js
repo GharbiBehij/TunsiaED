@@ -1,17 +1,22 @@
 // src/modules/User/dao/User.dao.js
 import { db } from '../../../../config/firebase.js';
 
-const COLLECTION = 'users';
+const COLLECTION = 'User';
 
 export class UserDao {
   async create(uid, data) {
-    const ref = db.collection('users').doc(uid);
+    const ref = db.collection(COLLECTION).doc(uid);
     await ref.set({
       uid,
       email: data.email,
       name: data.name || null,
       phone: data.phone || null,
+      // Map role string to boolean fields
+      // Default to student if no role specified
       role: data.role || 'student',
+      isAdmin: data.role === 'admin' || data.isAdmin === true,
+      isInstructor: data.role === 'instructor' || data.isInstructor === true,
+      isStudent: data.role === 'student' || (!data.role && !data.isAdmin && !data.isInstructor) || data.isStudent === true,
       birthDate: data.birthDate || null,
       birthPlace: data.birthPlace || null,
       level: data.level || null,
@@ -31,7 +36,32 @@ export class UserDao {
 
   async update(uid, updates) {
     const ref = db.collection(COLLECTION).doc(uid);
-    await ref.update({ ...updates, updatedAt: new Date() });
+    
+    // Handle role mapping if role is provided
+    const updateData = { ...updates, updatedAt: new Date() };
+    
+    if (updates.role) {
+      updateData.isAdmin = updates.role === 'admin' || updates.isAdmin === true;
+      updateData.isInstructor = updates.role === 'instructor' || updates.isInstructor === true;
+      updateData.isStudent = updates.role === 'student' || updates.isStudent === true;
+    } else if (updates.isAdmin !== undefined || updates.isInstructor !== undefined || updates.isStudent !== undefined) {
+      // If boolean fields are provided, update role accordingly
+      if (updates.isAdmin === true) {
+        updateData.role = 'admin';
+        updateData.isInstructor = false;
+        updateData.isStudent = false;
+      } else if (updates.isInstructor === true) {
+        updateData.role = 'instructor';
+        updateData.isAdmin = false;
+        updateData.isStudent = false;
+      } else if (updates.isStudent === true) {
+        updateData.role = 'student';
+        updateData.isAdmin = false;
+        updateData.isInstructor = false;
+      }
+    }
+    
+    await ref.update(updateData);
     const doc = await ref.get();
     return doc.data();
   }

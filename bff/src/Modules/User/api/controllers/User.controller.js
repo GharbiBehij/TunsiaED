@@ -47,4 +47,4 @@ export const getMyProfile = async (req, res) => {
   const profile = await userRepository.findByUid(req.user.uid);
   if (!profile) return res.status(404).json({ error: 'Profile not found' });
   res.json(profile);
-};
+}; 

@@ -1,12 +1,20 @@
 // src/config/firebase.js
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
 dotenv.config();
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Initialize only once
 if (!admin.apps.length) {
   try {
+    // Try environment variables first (for Render/production)
     if (
       process.env.FIREBASE_PROJECT_ID &&
       process.env.FIREBASE_CLIENT_EMAIL &&
@@ -20,9 +28,20 @@ if (!admin.apps.length) {
           privateKey,
         }),
       });
-      console.log('Firebase Admin initialized from .env');
-    } else {
-      throw new Error('Missing Firebase credentials in .env');
+      console.log('Firebase Admin initialized from environment variables');
+    } 
+    // Fallback to serviceAccountKey.json (for local development)
+    else {
+      try {
+        const serviceAccountPath = join(__dirname, '../../serviceAccountKey.json');
+        const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf8'));
+        admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount),
+        });
+        console.log('Firebase Admin initialized from serviceAccountKey.json');
+      } catch (fileError) {
+        throw new Error('Missing Firebase credentials. Set environment variables or provide serviceAccountKey.json');
+      }
     }
   } catch (error) {
     console.error('Firebase initialization failed:', error);

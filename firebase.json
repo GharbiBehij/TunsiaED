@@ -9,8 +9,7 @@
     "rewrites": [
       {
         "source": "/api/**",
-        "destination": "https://tunsiaed.onrender.com",
-        "type": 301
+        "destination": "https://tunsiaed.onrender.com/**"
       },
       {
         "source" : "**",

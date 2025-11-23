@@ -11,11 +11,11 @@ export const authenticate = async (req, res, next) => {
 // verfication happens with the verifyIdtoken by firebase 
     const token = authHeader.split('Bearer ')[1];
     const decodedToken = await auth.verifyIdToken(token);
-//through the decoding , we will check the id,email,role 
+//through the decoding , we will check the id,email
+    // Note: role is stored in Firestore profile, not in Firebase token
     req.user = {
       uid: decodedToken.uid,
-      email: decodedToken.email,
-      role: decodedToken.role || 'student'
+      email: decodedToken.email
     };
 
     next();//you can pass (succes)
