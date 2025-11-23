@@ -31,6 +31,11 @@ app.use(cors({
   allowedHeaders: ['Content-Type','Authorization']
 }));
 
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
+  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  next();
+});
 // 2 Handle preflight OPTIONS requests for all routes
 app.options('*', cors({
   origin: allowedOrigins,
