@@ -29,10 +29,18 @@ if (!admin.apps.length) {
         }),
       });
       console.log('Firebase Admin initialized from environment variables');
-    } 
-    // Fallback to serviceAccountKey.json (for local development
-    } catch (error) {
+    } else {
+      // Fallback to serviceAccountKey.json (for local development)
+      const serviceAccountPath = join(__dirname, '../../../firebase-credentials.json');
+      const serviceAccount = JSON.parse(readFileSync(serviceAccountPath, 'utf-8'));
+      admin.initializeApp({
+        credential: admin.credential.cert(serviceAccount),
+      });
+      console.log('Firebase Admin initialized from serviceAccountKey.json');
+    }
+  } catch (error) {
     console.error('Firebase initialization failed:', error);
+    console.error('Make sure to set FIREBASE_* environment variables or add firebase-credentials.json');
     process.exit(1);
   }
 }

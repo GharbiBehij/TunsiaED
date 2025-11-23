@@ -3,26 +3,54 @@ import { auth } from '../config/firebase.js';
 export const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    //check data ,if the header does not have a bearer->Unauthorized access
+    
+    // Check if authorization header exists
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ error: 'Unauthorized - No token provided' });
+      console.warn('Auth failed: No Bearer token provided');
+      return res.status(401).json({ 
+        error: 'Unauthorized - No token provided',
+        details: 'Authorization header must be in format: Bearer <token>'
+      });
     }
-//else if there a bearer header assigned, we can proceed to verify in the token assigned
-// verfication happens with the verifyIdtoken by firebase 
+
+    // Extract token
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await auth.verifyIdToken(token);
-//through the decoding , we will check the id,email
-    // Note: role is stored in Firestore profile, not in Firebase token
+    
+    if (!token || token.trim() === '') {
+      console.warn('Auth failed: Empty token');
+      return res.status(401).json({ error: 'Unauthorized - Empty token' });
+    }
+
+    // Verify token with Firebase
+    let decodedToken;
+    try {
+      decodedToken = await auth.verifyIdToken(token);
+    } catch (verifyError) {
+      console.error('Firebase token verification failed:', verifyError.message);
+      return res.status(401).json({ 
+        error: 'Unauthorized - Invalid token',
+        details: verifyError.message
+      });
+    }
+
+    // Token verified successfully
     req.user = {
       uid: decodedToken.uid,
-      email: decodedToken.email
+      email: decodedToken.email,
+      iat: decodedToken.iat,
+      exp: decodedToken.exp
     };
 
-    next();//you can pass (succes)
+    console.log(`Auth successful for user: ${decodedToken.email}`);
+    next();
+    
   } catch (error) {
-    return res.status(401).json({ error: 'Unauthorized - Invalid token' });
+    console.error('Authentication middleware error:', error);
+    return res.status(401).json({ 
+      error: 'Unauthorized - Authentication failed',
+      details: error.message
+    });
   }
-//in case of any error , return a 401 error of Unauthorization 
 };
 
 export const requireRole = (...roles) => {

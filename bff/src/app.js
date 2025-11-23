@@ -1,7 +1,7 @@
 // app.js or server.js
 import express from 'express';
 import cors from 'cors';
-import { userRoutes } from '../src/Modules/User/api/Routes/User.routes';
+import { userRoutes } from '../src/Modules/User/api/Routes/User.routes.js';
 import { router as courseRouter } from './src/modules/Course/api/Course.route.js';
 import { router as paymentRouter } from './src/modules/payment/Api/Payment.routes.js';
 import { router as enrollmentRouter } from './src/modules/Enrollement/Api/Routes/Enrollement.routes.js';
