@@ -1,11 +1,11 @@
 // app.js or server.js
 import express from 'express';
 import cors from 'cors';
-import { userRoutes } from '../src/Modules/User/api/Routes/User.routes.js';
-import { router as courseRouter } from './src/modules/Course/api/Course.route.js';
-import { router as paymentRouter } from './src/modules/payment/Api/Payment.routes.js';
-import { router as enrollmentRouter } from './src/modules/Enrollement/Api/Routes/Enrollement.routes.js';
-import { router as transactionRouter } from './src/modules/Transaction/Api/routes/Transaction.routes.js';
+import { userRoutes } from './src/Modules/User/api/Routes/User.routes.js';
+import { router as courseRouter } from './src/Modules/Course/api/Course.route.js';
+import { router as paymentRouter } from './src/Modules/payment/Api/Payment.routes.js';
+import { router as enrollmentRouter } from './src/Modules/Enrollement/Api/Routes/Enrollement.routes.js';
+import { router as transactionRouter } from './src/Modules/Transaction/Api/routes/Transaction.routes.js';
 
 const app = express();
 
