@@ -1,7 +1,7 @@
-// src/modules/payment/Api/Payment.routes.js
+// bff/src/Modules/payment/Api/Payment.routes.js
 import { Router } from 'express';
-import { paymentController } from './Payment.controller.js';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
+import { paymentController } from './Payment.controller.js';
 
 const router = Router();
 

@@ -1,4 +1,4 @@
-// src/modules/Course/api/Course.controller.js
+// bff/src/Modules/Course/api/Course.controller.js
 import { courseService } from '../service/Course.service.js';
 import { userRepository } from '../../User/repository/User.repository.js';
 

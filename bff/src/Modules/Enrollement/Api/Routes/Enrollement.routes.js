@@ -1,7 +1,7 @@
-// src/modules/Enrollement/Api/Enrollement.routes.js
+// bff/src/Modules/Enrollement/Api/Routes/Enrollement.routes.js
 import { Router } from 'express';
-import { enrollmentController } from '../Controller/Enrollement.controller.js';
 import { authenticate } from '../../../../middlewares/auth.middleware.js';
+import { enrollmentController } from '../Controller/Enrollement.controller.js';
 
 const router = Router();
 

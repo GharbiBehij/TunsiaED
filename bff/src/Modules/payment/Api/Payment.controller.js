@@ -1,4 +1,4 @@
-// src/modules/payment/Api/Payment.controller.js
+// bff/src/Modules/payment/Api/Payment.controller.js
 import { paymentService } from '../service/Payment.service.js';
 
 export class PaymentController {

@@ -1,7 +1,7 @@
-// src/modules/Transaction/Api/routes/Transaction.routes.js
+// bff/src/Modules/Transaction/Api/routes/Transaction.routes.js
 import { Router } from 'express';
-import { transactionController } from '../controller/Transaction.controller.js';
 import { authenticate } from '../../../../middlewares/auth.middleware.js';
+import { transactionController } from '../controller/Transaction.controller.js';
 
 const router = Router();
 

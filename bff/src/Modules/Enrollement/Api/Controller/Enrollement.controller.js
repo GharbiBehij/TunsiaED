@@ -1,4 +1,4 @@
-// src/modules/Enrollement/Api/Enrollement.controller.js
+// bff/src/Modules/Enrollement/Api/Controller/Enrollement.controller.js
 import { enrollmentService } from '../../service/Enrollement.service.js';
 
 export class EnrollmentController {

@@ -1,7 +1,7 @@
-// src/modules/Course/api/Course.route.js
+// bff/src/Modules/Course/api/Course.route.js
 import { Router } from 'express';
-import { courseController } from './Course.controller.js';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
+import { courseController } from './Course.controller.js';
 
 const router = Router();
 

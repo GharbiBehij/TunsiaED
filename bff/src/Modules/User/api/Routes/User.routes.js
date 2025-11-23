@@ -1,8 +1,8 @@
-// src/modules/User/api/routes/User.routes.js
+// bff/src/Modules/User/api/Routes/User.routes.js
 import express from 'express';
 import { authenticate } from '../../../../middlewares/auth.middleware.js';
-import { userRepository } from '../../../repository/User.repository.js';
 import { db } from '../../../../config/firebase.js';
+import { userRepository } from '../../../repository/User.repository.js';
 
 const router = express.Router();
 
