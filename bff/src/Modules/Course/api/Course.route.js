@@ -6,11 +6,7 @@ import { courseController } from './Course.controller.js';
 const router = Router();
 
 // Create course - requires authentication (instructor only)
-router.post(
-  '/',
-  authenticate,
-  courseController.createCourse
-);
+router.post('/',authenticate,courseController.createCourse);
 
 // Get all courses - public endpoint
 router.get('/', courseController.getAllCourses);
@@ -19,27 +15,16 @@ router.get('/', courseController.getAllCourses);
 router.get('/category/:category', courseController.getCoursesByCategory);
 
 // Get instructor's courses - requires authentication
-router.get(
-  '/instructor/my-courses',
-  authenticate,
-  courseController.getCoursesByInstructor
-);
+router.get('/instructor/my-courses',authenticate,courseController.getCoursesByInstructor);
 
 // Get course by ID - public endpoint
 router.get('/:courseId', courseController.getCourseById);
 
 // Update course - requires authentication (instructor only, own courses)
-router.put(
-  '/:courseId',
-  authenticate,
-  courseController.updateCourse
-);
+router.put('/:courseId',authenticate,courseController.updateCourse);
 
 // Delete course - requires authentication (instructor only, own courses)
-router.delete(
-  '/:courseId',
-  authenticate,
-  courseController.deleteCourse
+router.delete('/:courseId',authenticate,courseController.deleteCourse
 );
 
 export { router };

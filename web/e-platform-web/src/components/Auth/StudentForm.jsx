@@ -8,7 +8,6 @@ export default function StudentForm() {
     e.preventDefault();
     const formData = new FormData(e.target);
     const data = Object.fromEntries(formData);
-
     await submit(data.email, data.password);
   };
 

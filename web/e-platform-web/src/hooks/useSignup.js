@@ -1,22 +1,22 @@
 // src/hooks/useSignup.js
-import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 
-export const useSignup = () => { 
+export const useSignup = () => {
   const { signup } = useAuth();
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const submit = async (email, password) => {  // ← paramètres corrects
-    setIsLoading(true);
-    setError(null);
-    try {
-      await signup({ email, password });  // ← direct, propre
-    } catch (err) {
-      setError(err.message || 'Signup failed');
-    } finally {
-      setIsLoading(false);
-    }
+  const mutation = useMutation({
+    mutationFn: ({ email, password }) => signup({ email, password }),
+    onError: (error) => {
+      console.error('Signup failed:', error);
+    },
+  });
+
+  return {
+    submit: mutation.mutate,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+    error: mutation.error,
+    isSuccess: mutation.isSuccess,
   };
-  return { submit, isLoading, error };
 };

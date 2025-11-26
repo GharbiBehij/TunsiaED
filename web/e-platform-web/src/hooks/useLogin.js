@@ -1,22 +1,22 @@
-// src/hooks/useLogin.js → VERSION CORRIGÉE
-import { useState } from 'react';
+// src/hooks/useLogin.js
+import { useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 
 export const useLogin = () => {
   const { login } = useAuth();
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
 
-  const submit = async (email, password) => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      await login(email, password);
-    } catch (err) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setIsLoading(false);  // OBLIGATOIRE
-    }
+  const mutation = useMutation({
+    mutationFn: ({ email, password }) => login(email, password),
+    onError: (error) => {
+      console.error('Login failed:', error);
+    },
+  });
+
+  return {
+    submit: mutation.mutate,
+    isLoading: mutation.isPending,
+    isError: mutation.isError,
+    error: mutation.error,
+    isSuccess: mutation.isSuccess,
   };
-  return { submit, isLoading, error };
 };

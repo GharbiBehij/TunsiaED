@@ -2,10 +2,11 @@
 import { transactionRepository } from '../repository/Transaction.repository.js';
 import { TransactionMapper } from '../mapper/Transaction.mapper.js';
 import { paymentRepository } from '../../payment/repository/Payment.repository.js';
+import { canCreateTransaction, canUpdateTransaction } from './TransactionPermission.js';
 
 export class TransactionService {
   async createTransaction(
-    userId,
+    user,
     data
   ) {
     // Validate payment exists
@@ -15,7 +16,7 @@ export class TransactionService {
     }
 
     // Validate payment belongs to user
-    if (payment.userId !== userId) {
+    if (!canCreateTransaction(user, payment)) {
       throw new Error('Unauthorized: Payment does not belong to user');
     }
 
@@ -23,7 +24,7 @@ export class TransactionService {
     const courseId = payment.courseId;
 
     const transaction = await transactionRepository.createTransaction(
-      userId,
+      user.uid,
       courseId,
       data
     );
@@ -43,8 +44,13 @@ export class TransactionService {
 
   async updateTransaction(
     transactionId,
+    user,
     data,
   ){
+    if (!canUpdateTransaction(user)) {
+      throw new Error('Unauthorized');
+    }
+
     const updatedTransaction = await transactionRepository.updateTransaction(
       transactionId,
       data

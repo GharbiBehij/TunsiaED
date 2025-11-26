@@ -1,8 +1,8 @@
-const BFF_BASE_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
+const API_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
 
 class EnrollmentService {
   static async enroll(enrollmentData, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/enrollment/enroll`, {
+    const res = await fetch(`${API_URL}/api/v1/enrollment/enroll`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ class EnrollmentService {
   }
 
   static async getUserEnrollments(token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/enrollment/my-enrollments`, {
+    const res = await fetch(`${API_URL}/api/v1/enrollment/my-enrollments`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -25,7 +25,7 @@ class EnrollmentService {
   }
 
   static async getEnrollmentById(enrollmentId, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/enrollment/${enrollmentId}`, {
+    const res = await fetch(`${API_URL}/api/v1/enrollment/${enrollmentId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },

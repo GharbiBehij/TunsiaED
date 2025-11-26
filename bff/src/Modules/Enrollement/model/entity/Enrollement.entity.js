@@ -1,4 +1,4 @@
-// src/modules/Enrollement/model/Enrollement.entity.js
+// Domain entity representing an enrollment record.
 export class Enrollment {
   constructor(
     enrollmentId,
@@ -7,14 +7,19 @@ export class Enrollment {
     enrollmentDate,
     status,
     paymentId,
-    transactionId
+    transactionId,
+    extra = {}
   ) {
     this.enrollmentId = enrollmentId;
     this.userId = userId;
     this.courseId = courseId;
     this.enrollmentDate = enrollmentDate;
     this.status = status;
-    this.paymentId = paymentId;
-    this.transactionId = transactionId;
+    this.paymentId = paymentId ?? null;
+    this.transactionId = transactionId ?? null;
+
+    Object.assign(this, extra);
   }
 }
+
+

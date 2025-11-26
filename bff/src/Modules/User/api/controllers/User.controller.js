@@ -1,50 +1,60 @@
-// src/modules/User/api/controllers/User.controller.js
+import * as userService from '../services/User.service.js';
+import { OnboardSchema } from '../Validators/User.schema.js';
 import { userRepository } from '../../repository/User.repository.js';
-import { z } from 'zod';
-
-// This schema is the SINGLE SOURCE OF TRUTH for what users can send
-const OnboardSchema = z.object({
-  name: z.string().min(2).optional(),
-  phone: z.string().regex(/^[\d\+\-\s\(\)]+$/).optional(),
-  role: z.enum(['student', 'instructor']).default('student'),
-  
-  // ADD ALL YOUR EXTRA FIELDS HERE — forever
-  birthDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),        // "1998-05-20"
-  birthPlace: z.string().min(2).optional(),
-  level: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
-  bio: z.string().max(500).optional(),
-  // add linkedin, github, photoURL, etc. later → just add here
-});
 
 export const onboardUser = async (req, res) => {
-  const { uid, email } = req.user; // ← 100% trusted from Firebase token
-
   const parsed = OnboardSchema.safeParse(req.body);
-
   if (!parsed.success) {
-    return res.status(400).json({
-      error: 'Invalid data',
-      details: parsed.error.format(),
-    });
+    return res.status(400).json({ error: "Invalid data", details: parsed.error.format() });
   }
 
   try {
-    const profile = await userRepository.onboard(uid, {
-      email,
-      ...parsed.data,
-    });
-
-    return res.json({
-      message: 'Welcome to TunisiaED!',
-      profile,
-    });
+    const profile = await userService.onboardUser(req.user, parsed.data);
+    return res.json({ message: "Welcome!", profile });
   } catch (err) {
-    return res.status(500).json({ error: 'Failed to save profile' });
+    return res.status(500).json({ error: err.message });
   }
 };
 
 export const getMyProfile = async (req, res) => {
-  const profile = await userRepository.findByUid(req.user.uid);
-  if (!profile) return res.status(404).json({ error: 'Profile not found' });
-  res.json(profile);
-}; 
+  try {
+    const profile = await userService.getMyProfile(req.user.uid);
+    if (!profile) return res.status(404).json({ error: "Profile not found" });
+    res.json(profile);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const updateProfile = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    
+    const updated = await userService.updateProfile(userId, user, req.body);
+    if (!updated) {
+      return res.status(404).json({ error: "Update failed" });
+    }
+    res.json({ message: "Profile updated successfully", profile: updated });
+  } catch (err) {
+    if (err.message === 'Unauthorized' || err.message.includes('Unauthorized')) {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteProfile = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    
+    await userService.deleteProfile(userId, user);
+    res.json({ message: "Profile deleted successfully" });
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};

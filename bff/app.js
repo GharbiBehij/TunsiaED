@@ -6,6 +6,10 @@ import { router as courseRouter } from './src/Modules/Course/api/Course.route.js
 import { router as paymentRouter } from './src/Modules/payment/Api/Payment.routes.js';
 import { router as enrollmentRouter } from './src/Modules/Enrollement/Api/Routes/Enrollement.routes.js';
 import { router as transactionRouter } from './src/Modules/Transaction/Api/routes/Transaction.routes.js';
+import { router as chapterRouter } from './src/Modules/Chapter/Api/Chapter.routes.js';
+import { router as lessonRouter } from './src/Modules/Lesson/Api/Lesson.routes.js';
+import { router as quizRouter } from './src/Modules/Quiz/Api/Quiz.routes.js';
+import { router as certificateRouter } from './src/Modules/Certificate/Api/Certificate.routes.js';
 
 const app = express();
 
@@ -66,6 +70,10 @@ app.use('/api/v1/course', courseRouter);
 app.use('/api/v1/payment', paymentRouter);
 app.use('/api/v1/enrollment', enrollmentRouter);
 app.use('/api/v1/transaction', transactionRouter);
+app.use('/api/v1/chapter', chapterRouter);
+app.use('/api/v1/lesson', lessonRouter);
+app.use('/api/v1/quiz', quizRouter);
+app.use('/api/v1/certificate', certificateRouter);
 
 // 6️ Global error handler
 app.use((err, req, res, next) => {

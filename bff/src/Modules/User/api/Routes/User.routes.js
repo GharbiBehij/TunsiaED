@@ -1,53 +1,12 @@
-// bff/src/Modules/User/api/Routes/User.routes.js
 import express from 'express';
 import { authenticate } from '../../../../middlewares/auth.middleware.js';
-import { db } from '../../../../config/firebase.js';
-import { userRepository } from '../../repository/User.repository.js';
+import * as userController from '../controllers/User.controller.js';
 
 const router = express.Router();
 
-router.post('/onboard', authenticate, async (req, res) => {
-  const { uid, email } = req.user;
-  const { name, phone, role } = req.body;
-
-  try {
-    // Convert string role to boolean flags
-    const profile = await userRepository.onboard(uid, {
-      email,
-      name,
-      phone,
-      isAdmin: role === 'admin',      // ← Add these
-      isInstructor: role === 'instructor',
-      isStudent: role === 'student' || !role,  // Default to student
-    });
-    res.json({ message: 'Welcome to TunisiaED!', profile });
-  } catch (err) {
-    console.error('Onboarding error:', err);
-    res.status(500).json({ error: 'Failed to create profile' });
-  }
-});
-
-router.get('/me', authenticate, async (req, res) => {
-  try {
-    const profile = await userRepository.findByUid(req.user.uid);
-    if (!profile) {
-      return res.status(404).json({ error: 'Profile not found' });
-    }
-    res.json(profile);
-  } catch (err) {
-    console.error('Get profile error:', err);
-    res.status(500).json({ error: 'Failed to fetch profile' });
-  }
-});
-
-router.patch('/me', authenticate, async (req, res) => {
-  const updated = await userRepository.updateProfile(req.user.uid, req.body);
-  res.json(updated);
-});
-
-router.delete('/me', authenticate, async (req, res) => {
-  const deleted = await userRepository.deleteProfile(req.user.uid);
-  res.json(deleted);
-});
+router.post('/onboard', authenticate, userController.onboardUser);
+router.get('/me', authenticate, userController.getMyProfile);
+router.patch('/me', authenticate, userController.updateProfile);
+router.delete('/me', authenticate, userController.deleteProfile);
 
 export { router as userRoutes };

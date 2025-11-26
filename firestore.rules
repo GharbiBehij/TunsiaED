@@ -1,15 +1,31 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // ALLOW EVERYTHING FOR NOW (we fix security later)
-    match /{document=**} {
-      allow read, write: if true;
+    // User profiles: users can only read/write their own
+    match /User/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow write: if request.auth != null && request.auth.uid == uid;
     }
-
-    // LATER (after launch) we change to this:
-    // match /User/{uid} {
-    //   allow read, write: if request.auth != null && request.auth.uid == uid;
-    // }
+    
+    // Courses: Everyone can read, only instructors/admins can write
+    match /Course/{courseId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+        (get(/databases/$(database)/documents/User/$(request.auth.uid)).data.isInstructor == true ||
+         get(/databases/$(database)/documents/User/$(request.auth.uid)).data.isAdmin == true);
+      allow update, delete: if request.auth != null &&
+        (resource.data.instructorId == request.auth.uid ||
+         get(/databases/$(database)/documents/User/$(request.auth.uid)).data.isAdmin == true);
+    }
+    
+    // Enrollments: Students can read their own, instructors can read their courses
+    match /Enrollment/{enrollmentId} {
+      allow read: if request.auth != null && (
+        resource.data.studentId == request.auth.uid ||
+        get(/databases/$(database)/documents/Course/$(resource.data.courseId)).data.instructorId == request.auth.uid ||
+        get(/databases/$(database)/documents/User/$(request.auth.uid)).data.isAdmin == true
+      );
+      allow create: if request.auth != null && request.resource.data.studentId == request.auth.uid;
+    }
   }
 }

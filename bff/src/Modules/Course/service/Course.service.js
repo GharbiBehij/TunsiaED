@@ -1,83 +1,61 @@
 // src/modules/Course/service/Course.service.js
 import { courseRepository } from '../repository/Course.repository.js';
-import { CourseMapper } from '../mapper/Course.mapper.js';
+import { canCreateCourse, canUpdateCourse, canDeleteCourse } from './CoursePermission.js';
+
 
 export class CourseService {
-  async createCourse(instructorId, instructorName, data) {
-    // Validate that instructor exists (could add user validation here)
-    if (!instructorId || !instructorName) {
-      throw new Error('Instructor information is required');
-    }
 
-    const course = await courseRepository.createCourse(
+  async createCourse(instructorId, instructorName, user, data) {
+    if (!instructorId || !instructorName)
+      throw new Error("Instructor information is required");
+
+    if (!canCreateCourse(user))
+      throw new Error("Unauthorized");
+
+    return await courseRepository.createCourse(
       instructorId,
       instructorName,
       data
     );
-
-    return CourseMapper.toResponse(course, 'Course created successfully');
   }
 
-  async getCourseById(courseId) {
+  async getMyCourse(courseId) {
+    return await courseRepository.findByCourseId(courseId);
+  }
+
+  async updateMyCourse(courseId, user, data) {
     const course = await courseRepository.findByCourseId(courseId);
-    if (!course) return null;
+    if (!course) throw new Error("Course not found");
 
-    return CourseMapper.toResponse(course, 'Course retrieved successfully');
+    if (!canUpdateCourse(user, course))
+      throw new Error("Unauthorized");
+
+    return await courseRepository.updateCourse(courseId, data);
   }
 
-  async updateCourse(courseId, instructorId, data) {
-    // Check if course exists and belongs to instructor
-    const existingCourse = await courseRepository.findByCourseId(courseId);
-    if (!existingCourse) {
-      throw new Error('Course not found');
-    }
+  async deleteMycourse(courseId, user) {
+    const course = await courseRepository.findByCourseId(courseId);
+    if (!course) throw new Error("Course not found");
 
-    if (existingCourse.instructorId !== instructorId) {
-      throw new Error('Unauthorized: You can only update your own courses');
-    }
+    if (!canDeleteCourse(user, course))
+      throw new Error("Unauthorized");
 
-    const updatedCourse = await courseRepository.updateCourse(courseId, data);
-    if (!updatedCourse) return null;
-
-    return CourseMapper.toResponse(updatedCourse, 'Course updated successfully');
-  }
-
-  async deleteCourse(courseId, instructorId) {
-    // Check if course exists and belongs to instructor
-    const existingCourse = await courseRepository.findByCourseId(courseId);
-    if (!existingCourse) {
-      throw new Error('Course not found');
-    }
-
-    if (existingCourse.instructorId !== instructorId) {
-      throw new Error('Unauthorized: You can only delete your own courses');
-    }
-
-    const deleted = await courseRepository.deleteCourse(courseId);
-    if (!deleted) {
-      throw new Error('Failed to delete course');
-    }
+    return await courseRepository.deleteCourse(courseId);
   }
 
   async getCoursesByInstructor(instructorId) {
     const courses = await courseRepository.findCoursesByInstructor(instructorId);
-    return courses.map((course) =>
-      CourseMapper.toResponse(course, 'Courses retrieved successfully')
-    );
+    return courses;
   }
 
   async getAllCourses() {
     const courses = await courseRepository.findAllCourses();
-    return courses.map((course) =>
-      CourseMapper.toResponse(course, 'Courses retrieved successfully')
-    );
+    return courses;
   }
 
   async getCoursesByCategory(category) {
     const courses = await courseRepository.findCoursesByCategory(category);
-    return courses.map((course) =>
-      CourseMapper.toResponse(course, 'Courses retrieved successfully')
-    );
+    return courses
   }
 }
 

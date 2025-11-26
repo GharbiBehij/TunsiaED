@@ -19,7 +19,7 @@ export class CourseDao {
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('courses').add(courseDoc);
+    const docRef = await db.collection('Courses').add(courseDoc);
     
     return {
       courseId: docRef.id,
@@ -28,7 +28,7 @@ export class CourseDao {
   }
 
   async getCourseById(courseId) {
-    const doc = await db.collection('courses').doc(courseId).get();
+    const doc = await db.collection('Courses').doc(courseId).get();
     return doc.exists ? doc.data() : null;
   }
 
@@ -45,19 +45,19 @@ export class CourseDao {
     if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail || null;
     if (data.duration !== undefined) updateData.duration = data.duration;
 
-    await db.collection('courses').doc(courseId).update(updateData);
+    await db.collection('Courses').doc(courseId).update(updateData);
     
-    const updatedDoc = await db.collection('courses').doc(courseId).get();
+    const updatedDoc = await db.collection('Courses').doc(courseId).get();
     return updatedDoc.exists ? updatedDoc.data() : null;
   }
 
   async deleteCourse(courseId) {
-    await db.collection('courses').doc(courseId).delete();
+    await db.collection('Courses').doc(courseId).delete();
   }
 
   async getCoursesByInstructor(instructorId) {
     const snapshot = await db
-      .collection('courses')
+      .collection('Courses')
       .where('instructorId', '==', instructorId)
       .get();
     
@@ -68,7 +68,7 @@ export class CourseDao {
   }
 
   async getAllCourses() {
-    const snapshot = await db.collection('courses').get();
+    const snapshot = await db.collection('Courses').get();
     
     return snapshot.docs.map(doc => ({
       courseId: doc.id,
@@ -78,7 +78,7 @@ export class CourseDao {
 
   async getCoursesByCategory(category) {
     const snapshot = await db
-      .collection('courses')
+      .collection('Courses')
       .where('category', '==', category)
       .get();
     

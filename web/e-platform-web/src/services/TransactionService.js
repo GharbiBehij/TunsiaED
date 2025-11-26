@@ -1,8 +1,8 @@
-const BFF_BASE_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
+const API_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
 
 class TransactionService {
   static async createTransaction(transactionData, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/transaction`, {
+    const res = await fetch(`${API_URL}/api/v1/transaction`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ class TransactionService {
   }
 
   static async getUserTransactions(token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/transaction/my-transactions`, {
+    const res = await fetch(`${API_URL}/api/v1/transaction/my-transactions`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -25,7 +25,7 @@ class TransactionService {
   }
 
   static async getTransactionById(transactionId, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/transaction/${transactionId}`, {
+    const res = await fetch(`${API_URL}/api/v1/transaction/${transactionId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -35,7 +35,7 @@ class TransactionService {
   }
 
   static async getTransactionsByPayment(paymentId, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/transaction/payment/${paymentId}`, {
+    const res = await fetch(`${API_URL}/api/v1/transaction/payment/${paymentId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -45,19 +45,19 @@ class TransactionService {
   }
 
   static async getCourseTransactions(courseId) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/transaction/course/${courseId}`);
+    const res = await fetch(`${API_URL}/api/v1/transaction/course/${courseId}`);
     if (!res.ok) throw new Error('Failed to fetch course transactions');
     return res.json();
   }
 
   static async getTransactionsByStatus(status) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/transaction/status/${status}`);
+    const res = await fetch(`${API_URL}/api/v1/transaction/status/${status}`);
     if (!res.ok) throw new Error('Failed to fetch transactions by status');
     return res.json();
   }
 
   static async updateTransaction(transactionId, transactionData, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/transaction/${transactionId}`, {
+    const res = await fetch(`${API_URL}/api/v1/transaction/${transactionId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

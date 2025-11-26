@@ -1,5 +1,6 @@
 // bff/src/Modules/Transaction/Api/controller/Transaction.controller.js
 import { transactionService } from '../../service/Transaction.service.js';
+import { userRepository } from '../../../User/repository/User.repository.js';
 
 export class TransactionController {
   async createTransaction(req ,res) {
@@ -9,10 +10,14 @@ export class TransactionController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
+      const user = await userRepository.findByUid(userId);
       const data = req.body;
-      const result = await transactionService.createTransaction(userId, data);
+      const result = await transactionService.createTransaction(user, data);
       res.status(201).json(result);
     } catch (error) {
+      if (error.message === 'Unauthorized: Payment does not belong to user') {
+        return res.status(403).json({ error: error.message });
+      }
       res.status(400).json({ error: error.message });
     }
   }
@@ -35,9 +40,15 @@ export class TransactionController {
   async updateTransaction(req, res) {
     try {
       const { transactionId } = req.params;
+      const userId = req.user?.uid;
+      if (!userId) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
+
+      const user = await userRepository.findByUid(userId);
       const data= req.body;
       
-      const result = await transactionService.updateTransaction(transactionId, data);
+      const result = await transactionService.updateTransaction(transactionId, user, data);
       
       if (!result) {
         return res.status(404).json({ error: 'Transaction not found' });
@@ -45,6 +56,9 @@ export class TransactionController {
 
       res.status(200).json(result);
     } catch (error) {
+      if (error.message === 'Unauthorized') {
+        return res.status(403).json({ error: error.message });
+      }
       res.status(400).json({ error: error.message });
     }
   }

@@ -1,4 +1,4 @@
-// src/modules/Course/model/entity/Course.entity.js
+// Domain entity representing a course record coming from Firestore.
 export class Course {
   constructor(
     courseId,
@@ -10,11 +10,12 @@ export class Course {
     level,
     price,
     thumbnail,
-    duration = 0,
-    enrolledCount = 0,
-    rating = 0,
-    createdAt = new Date(),
-    updatedAt = new Date()
+    duration,
+    enrolledCount,
+    rating,
+    createdAt,
+    updatedAt,
+    extra = {}
   ) {
     this.courseId = courseId;
     this.title = title;
@@ -24,11 +25,16 @@ export class Course {
     this.category = category;
     this.level = level;
     this.price = price;
-    this.thumbnail = thumbnail;
-    this.duration = duration;
-    this.enrolledCount = enrolledCount;
-    this.rating = rating;
+    this.thumbnail = thumbnail ?? null;
+    this.duration = duration ?? null;
+    this.enrolledCount = enrolledCount ?? 0;
+    this.rating = rating ?? 0;
     this.createdAt = createdAt;
     this.updatedAt = updatedAt;
+
+    // Allow additional fields (e.g., published flag) without breaking callers.
+    Object.assign(this, extra);
   }
 }
+
+

@@ -18,7 +18,8 @@ export class EnrollmentRepository {
       new Date(raw.enrollmentDate),
       raw.status,
       raw.paymentId || undefined,
-      raw.transactionId || undefined
+      raw.transactionId || undefined,
+      raw
     );
   }
 
@@ -34,7 +35,8 @@ export class EnrollmentRepository {
         new Date(doc.enrollmentDate),
         doc.status,
         doc.paymentId,
-        doc.transactionId
+        doc.transactionId,
+        doc
       );
     } catch {
       return null;
@@ -53,14 +55,27 @@ export class EnrollmentRepository {
             new Date(doc.enrollmentDate),
             doc.status,
             doc.paymentId || undefined,
-            doc.transactionId || undefined
+            doc.transactionId || undefined,
+            doc
           )
       );
     } catch {
       return [];
     }
   }
-
+  async getCourseEnrollments(courseId) {
+    try {
+      const docs = await enrollmentDao.getCourseEnrollments(courseId);
+      return docs.map(doc => ({
+        enrollmentId: doc.enrollmentId,
+        userId: doc.userId,
+        enrolledAt: doc.enrolledAt,
+        progress: doc.progress
+      }));
+    } catch {
+      return [];
+    }
+  }
   async checkUserEnrollment(userId, courseId) {
     try {
       return await enrollmentDao.checkUserEnrollment(userId, courseId);

@@ -12,7 +12,7 @@ export class EnrollmentDao {
       transactionId: transactionId || null,
     };
 
-    const docRef = await db.collection('enrollments').add(enrollmentDoc);
+    const docRef = await db.collection('Enrollments').add(enrollmentDoc);
     
     return {
       enrollmentId: docRef.id,
@@ -21,13 +21,13 @@ export class EnrollmentDao {
   }
 
   async getEnrollmentById(enrollmentId) {
-    const doc = await db.collection('enrollments').doc(enrollmentId).get();
+    const doc = await db.collection('Enrollments').doc(enrollmentId).get();
     return doc.exists ? doc.data() : null;
   }
 
   async getUserEnrollments(userId) {
     const snapshot = await db
-      .collection('enrollments')
+      .collection('Enrollments')
       .where('userId', '==', userId)
       .get();
     
@@ -39,7 +39,7 @@ export class EnrollmentDao {
 
   async getCourseEnrollments(courseId) {
     const snapshot = await db
-      .collection('enrollments')
+      .collection('Enrollments')
       .where('courseId', '==', courseId)
       .get();
     
@@ -51,7 +51,7 @@ export class EnrollmentDao {
 
   async checkUserEnrollment(userId, courseId) {
     const snapshot = await db
-      .collection('enrollments')
+      .collection('Enrollments')
       .where('userId', '==', userId)
       .where('courseId', '==', courseId)
       .where('status', '==', 'active')

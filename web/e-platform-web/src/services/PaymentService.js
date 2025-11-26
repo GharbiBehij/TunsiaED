@@ -1,8 +1,8 @@
-const BFF_BASE_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
+const API_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
 
 class PaymentService {
   static async createPayment(paymentData, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/payment`, {
+    const res = await fetch(`${API_URL}/api/v1/payment`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ class PaymentService {
   }
 
   static async getUserPayments(token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/payment/my-payments`, {
+    const res = await fetch(`${API_URL}/api/v1/payment/my-payments`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -25,7 +25,7 @@ class PaymentService {
   }
 
   static async getPaymentById(paymentId, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/payment/${paymentId}`, {
+    const res = await fetch(`${API_URL}/api/v1/payment/${paymentId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
@@ -35,19 +35,19 @@ class PaymentService {
   }
 
   static async getCoursePayments(courseId) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/payment/course/${courseId}`);
+    const res = await fetch(`${API_URL}/api/v1/payment/course/${courseId}`);
     if (!res.ok) throw new Error('Failed to fetch course payments');
     return res.json();
   }
 
   static async getPaymentsByStatus(status) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/payment/status/${status}`);
+    const res = await fetch(`${API_URL}/api/v1/payment/status/${status}`);
     if (!res.ok) throw new Error('Failed to fetch payments by status');
     return res.json();
   }
 
   static async updatePayment(paymentId, paymentData, token) {
-    const res = await fetch(`${BFF_BASE_URL}/api/v1/payment/${paymentId}`, {
+    const res = await fetch(`${API_URL}/api/v1/payment/${paymentId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

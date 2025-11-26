@@ -1,43 +1,71 @@
-// src/modules/Enrollement/service/Enrollement.service.js
-import { enrollmentRepository } from '../Repository/Enrollement.repository.js';
-import { EnrollmentMapper } from '../mapper/Enrollement.mapper.js';
+// src/modules/Enrollment/service/Enrollment.service.js
+import { userRepository } from '../../User/repository/User.repository.js';
+import { courseRepository } from '../../Course/repository/Course.repository.js'; // ← ADD THIS
+import { enrollmentRepository } from '../repository/Enrollment.repository.js';
+import { canViewCourseStudents } from './EnrollmentPermission.js';
 
 export class EnrollmentService {
   async enroll(userId, data) {
-    // Check if user is already enrolled in this course
+    // 1. Check if user is already enrolled
     const alreadyEnrolled = await enrollmentRepository.checkUserEnrollment(
       userId,
       data.courseId
     );
-
     if (alreadyEnrolled) {
-      throw new Error('User is already enrolled in this course');
+      throw new Error('You are already enrolled in this course');
     }
 
-    // TODO: Validate course exists (will be added when Course module is ready)
-    // TODO: Handle payment based on paymentType (individual vs subscription)
-    // TODO: Create payment and transaction records
+    // 2. Validate that the course actually exists and is published
+    const course = await courseRepository.findByCourseId(data.courseId);
+    if (!course) {
+      throw new Error('Course not found');
+    }
+    if (course.isPublished === false) {
+      throw new Error('This course is not available yet');
+    }
+    if (course.price > 0 && !data.paymentId) {
+      throw new Error('Payment required for this course');
+    }
 
-    // For now, create enrollment without payment (will be linked later)
-    const enrollment = await enrollmentRepository.createEnrollment(userId, data);
+    // 3. TODO: Validate payment exists (when Paymee is ready)
+    // if (course.price > 0) {
+    //   const payment = await paymentRepository.findById(data.paymentId);
+    //   if (!payment || payment.status !== 'completed') throw new Error('Invalid payment');
+    // }
 
-    return EnrollmentMapper.toResponse(enrollment, 'Enrollment successful');
+    // 4. Create enrollment
+    const enrollment = await enrollmentRepository.createEnrollment(userId, {
+      courseId: data.courseId,
+      courseTitle: course.title,
+      instructorId: course.instructorId,
+      pricePaid: course.price,
+      enrolledAt: new Date(),
+      progress: 0,
+      completed: false
+    });
+
+    return enrollment;
   }
 
   async getUserEnrollments(userId) {
-    const enrollments = await enrollmentRepository.findUserEnrollments(userId);
-    return enrollments.map((enrollment) =>
-      EnrollmentMapper.toResponse(enrollment, 'Enrollment retrieved')
-    );
+    return await enrollmentRepository.findUserEnrollments(userId);
   }
 
   async getEnrollmentById(enrollmentId) {
-    const enrollment = await enrollmentRepository.findByEnrollmentId(enrollmentId);
-    if (!enrollment) return null;
-
-    return EnrollmentMapper.toResponse(enrollment, 'Enrollment retrieved');
+    return await enrollmentRepository.findByEnrollmentId(enrollmentId);
+  }
+  async getStudentsForCourse(courseId, user) {
+    const course = await courseRepository.findByCourseId(courseId);
+    if (!course) {
+      throw new Error("Course not found");
+    }
+    
+    if (!canViewCourseStudents(user, course)) {
+      throw new Error("Unauthorized");
+    }
+    
+    return await enrollmentRepository.getCourseEnrollments(courseId);
   }
 }
 
 export const enrollmentService = new EnrollmentService();
-

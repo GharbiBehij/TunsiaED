@@ -20,7 +20,8 @@ export class CourseRepository {
       raw.enrolledCount || 0,
       raw.rating || 0,
       new Date(raw.createdAt),
-      new Date(raw.updatedAt)
+      new Date(raw.updatedAt),
+      raw
     );
   }
 
@@ -43,7 +44,8 @@ export class CourseRepository {
         doc.enrolledCount || 0,
         doc.rating || 0,
         new Date(doc.createdAt),
-        new Date(doc.updatedAt)
+        new Date(doc.updatedAt),
+        doc
       );
     } catch {
       return null;
@@ -69,7 +71,8 @@ export class CourseRepository {
         doc.enrolledCount || 0,
         doc.rating || 0,
         new Date(doc.createdAt),
-        new Date(doc.updatedAt)
+        new Date(doc.updatedAt),
+        doc
       );
     } catch {
       return null;
@@ -103,7 +106,8 @@ export class CourseRepository {
           doc.enrolledCount || 0,
           doc.rating || 0,
           new Date(doc.createdAt),
-          new Date(doc.updatedAt)
+          new Date(doc.updatedAt),
+          doc
         )
       );
     } catch {
@@ -129,7 +133,8 @@ export class CourseRepository {
           doc.enrolledCount || 0,
           doc.rating || 0,
           new Date(doc.createdAt),
-          new Date(doc.updatedAt)
+          new Date(doc.updatedAt),
+          doc
         )
       );
     } catch {
@@ -155,7 +160,8 @@ export class CourseRepository {
           doc.enrolledCount || 0,
           doc.rating || 0,
           new Date(doc.createdAt),
-          new Date(doc.updatedAt)
+          new Date(doc.updatedAt),
+          doc
         )
       );
     } catch {

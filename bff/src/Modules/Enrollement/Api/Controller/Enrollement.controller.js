@@ -1,5 +1,6 @@
 // bff/src/Modules/Enrollement/Api/Controller/Enrollement.controller.js
 import { enrollmentService } from '../../service/Enrollement.service.js';
+import { userRepository } from '../../../User/repository/User.repository.js';
 
 export class EnrollmentController {
   async enroll(req, res) {
@@ -45,6 +46,18 @@ export class EnrollmentController {
       res.status(400).json({ error: error.message || 'Failed to fetch enrollment' });
     }
   }
+   async  getStudentsForCourse  (req, res)  {
+    try {
+      const { courseId } = req.params;
+      const userId = req.user.uid;
+      const user = await userRepository.findByUid(userId);
+  
+      const students = await enrollmentService.getStudentsForCourse(courseId, user);
+      res.json(students);
+    } catch (err) {
+      res.status(403).json({ error: err.message });
+    }
+  };
 }
 
 export const enrollmentController = new EnrollmentController();

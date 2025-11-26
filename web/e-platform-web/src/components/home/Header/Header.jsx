@@ -1,60 +1,105 @@
 // src/components/Header/Header.jsx
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../../../context/AuthContext';
+import UserDropdown from './UserDropdown';
 
 export default function Header() {
-  return (
-    <header className="sticky top-0 z-50 bg-background-light dark:bg-background-dark/80 backdrop-blur-sm border-b border-neutral-light/10 dark:border-neutral-dark/10">
-      <div className="container mx-auto px-4 lg:px-10">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo + Name */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="text-primary">
-              <svg className="size-8" fill="currentColor" viewBox="0 0 48 48">
-                <path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" />
-              </svg>
+  const { isAuthenticated, isLoading } = useAuth();
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    }
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isDropdownOpen]);
+
+  // Don't render anything while checking auth state
+  if (isLoading) {
+    return (
+      <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg animate-pulse" />
+              <span className="text-xl font-bold">TunisiaED</span>
             </div>
-            <span className="text-2xl font-bold text-primary">TunisiaED</span>
+            <div className="w-20 h-8 bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
+      </header>
+    );
+  }
+
+  return (
+    <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold text-lg"></span>
+            </div>
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              TunisiaED
+            </span>
           </Link>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8">
-            {['Courses', 'Roadmaps', 'Resources', 'Instructors', 'Community Forums', 'Subscriptions'].map((item) => (
-              <a
-                key={item}
-                href="#"
-                className="text-sm font-medium text-text-light dark:text-text-dark hover:text-primary transition"
+          {/* Navigation */}
+          <nav className="hidden md:flex items-center gap-6">
+            <Link 
+              to="/courses" 
+              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+            >
+              Courses
+            </Link>
+            {isAuthenticated && (
+              <Link 
+                to="/my-learning" 
+                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
               >
-                {item}
-              </a>
-            ))}
+                My Learning
+              </Link>
+            )}
           </nav>
 
-          {/* Actions */}
-          <div className="flex items-center gap-3">
-            {/* Sign Up Button - Blue */}
-            <Link
-              to="/signup"
-              className="hidden sm:flex items-center justify-center h-10 px-4 rounded-lg bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition shadow-sm"
-            >
-              Sign Up
-            </Link>
-            
-            {/* Login Button - Blue (Same style as Sign Up) */}
-            <Link
-              to="/login"
-              className="hidden sm:flex items-center justify-center h-10 px-4 rounded-lg bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition shadow-sm"
-            >
-              Login
-            </Link>
-
-            <div
-              className="size-10 rounded-full bg-cover ring-2 ring-primary/20"
-              style={{
-                backgroundImage:
-                  "url('https://lh3.googleusercontent.com/aida-public/AB6AXuB3LJoYx8Gg5EUsSpZQvHuwtf6CCRIQYsCTOGNrQmrBGF9u-apv4HJLMJglJfRXLL_o_rr-hFrzF4z5d17wwZIx8oNiAG7tp0wn0YMoCI8we3RqClZw7QFC50JA2fBvp3aFV5lhPzLX7SLQU1fEgKUaEKUZB2x8r4mOb1a8gpoms3-G3Tz2LChpnh2yVPOhQhKefA8O__TShe9nzOKuM0QhfjJKExsqWb11KeDgDTdgNzTkU2Ja2f36wqSBzpBecuj-GLwU8shfkg')",
-              }}
-              aria-hidden="true"
-            />
+          {/* Right Side: Conditional Rendering */}
+          <div className="flex items-center gap-4">
+            {isAuthenticated ? (
+              // ✅ LOGGED IN: Show UserDropdown
+              <div ref={dropdownRef}>
+                <UserDropdown
+                  isOpen={isDropdownOpen}
+                  onToggle={() => setIsDropdownOpen(!isDropdownOpen)}
+                  onClose={() => setIsDropdownOpen(false)}
+                />
+              </div>
+            ) : (
+              // ❌ NOT LOGGED IN: Show Login/Signup buttons
+              <>
+                <Link
+                  to="/login"
+                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/signup"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

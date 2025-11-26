@@ -4,6 +4,14 @@ import { db } from '../../../../config/firebase.js';
 const COLLECTION = 'User';
 
 export class UserDao {
+  /**
+   * Converts role data (string role or boolean flags) to boolean flags.
+   * NOTE: Permission checks for role updates must be handled in the service layer.
+   * This method only handles data transformation, not authorization.
+   * 
+   * @param {Object} data - Data containing role information (role string or boolean flags)
+   * @returns {Object} Object with isAdmin, isInstructor, isStudent boolean flags
+   */
   _getRoleFlags(data) {
     // If boolean flags provided explicitly, use them
     if (data.isAdmin === true || data.isInstructor === true || data.isStudent === true) {
@@ -69,6 +77,7 @@ export class UserDao {
     };
 
     // If role-related fields provided, map them to boolean flags
+    // NOTE: Permission checks for role updates should be done in the service layer before calling this method
     if (updates.role || updates.isAdmin !== undefined || updates.isInstructor !== undefined || updates.isStudent !== undefined) {
       const roleFlags = this._getRoleFlags(updates);
       Object.assign(updateData, roleFlags);
