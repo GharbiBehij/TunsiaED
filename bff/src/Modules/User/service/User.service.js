@@ -30,7 +30,7 @@ export const getMyProfile = async (uid) => {
 
 export const updateProfile = async (targetUserId, user, updates) => {
   // Check if user can update this profile
-  if (!canUpdateProfile(user, targetUserId)) {
+  if (!UserPermission.update(user, targetUserId)) {
     throw new Error('Unauthorized');
   }
 
@@ -47,7 +47,7 @@ export const updateProfile = async (targetUserId, user, updates) => {
     }
 
     // Check if user can update roles
-    if (!canUpdateRole(user, targetUser, updates.role)) {
+    if (!UserPermission.update(user, targetUser, updates.role)) {
       throw new Error('Unauthorized: Only admins can change roles');
     }
   }
@@ -57,7 +57,7 @@ export const updateProfile = async (targetUserId, user, updates) => {
 
 export const deleteProfile = async (targetUserId, user) => {
   // Check if user can delete this profile
-  if (!canDeleteProfile(user, targetUserId)) {
+  if (!UserPermission.delete(user, targetUserId)) {
     throw new Error('Unauthorized');
   }
 

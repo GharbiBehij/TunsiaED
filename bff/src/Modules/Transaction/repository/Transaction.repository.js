@@ -1,178 +1,34 @@
 // src/modules/Transaction/repository/Transaction.repository.js
 import { transactionDao } from '../model/dao/Transaction.dao.js';
-import { Transaction } from '../model/entity/Transaction.entity.js';
 
 export class TransactionRepository {
-  async createTransaction(userId, courseId, data) {
-    const raw = await transactionDao.createTransaction(userId, courseId, data);
-
-    return new Transaction(
-      raw.transactionId,
-      raw.paymentId,
-      raw.userId,
-      raw.courseId,
-      raw.transactionType,
-      raw.amount,
-      raw.currency,
-      raw.status,
-      raw.paymentGateway || undefined,
-      raw.gatewayTransactionId || undefined,
-      raw.description || undefined,
-      new Date(raw.createdAt),
-      new Date(raw.updatedAt)
-    );
+  async createTransaction(data) {
+    return await transactionDao.createTransaction(data);
   }
 
   async findByTransactionId(transactionId) {
-    try {
-      const doc = await transactionDao.getTransactionById(transactionId);
-      if (!doc) return null;
-
-      return new Transaction(
-        transactionId,
-        doc.paymentId,
-        doc.userId,
-        doc.courseId,
-        doc.transactionType,
-        doc.amount,
-        doc.currency,
-        doc.status,
-        doc.paymentGateway || undefined,
-        doc.gatewayTransactionId || undefined,
-        doc.description || undefined,
-        new Date(doc.createdAt),
-        new Date(doc.updatedAt)
-      );
-    } catch {
-      return null;
-    }
+    return await transactionDao.getTransactionById(transactionId);
   }
 
   async updateTransaction(transactionId, data) {
-    try {
-      const doc = await transactionDao.updateTransaction(transactionId, data);
-      if (!doc) return null;
-
-      return new Transaction(
-        transactionId,
-        doc.paymentId,
-        doc.userId,
-        doc.courseId,
-        doc.transactionType,
-        doc.amount,
-        doc.currency,
-        doc.status,
-        doc.paymentGateway || undefined,
-        doc.gatewayTransactionId || undefined,
-        doc.description || undefined,
-        new Date(doc.createdAt),
-        new Date(doc.updatedAt)
-      );
-    } catch {
-      return null;
-    }
+    return await transactionDao.updateTransaction(transactionId, data);
   }
 
   async findTransactionsByPayment(paymentId) {
-    try {
-      const docs = await transactionDao.getTransactionsByPayment(paymentId);
-      return docs.map((doc) =>
-        new Transaction(
-          doc.transactionId,
-          doc.paymentId,
-          doc.userId,
-          doc.courseId,
-          doc.transactionType,
-          doc.amount,
-          doc.currency,
-          doc.status,
-          doc.paymentGateway || undefined,
-          doc.gatewayTransactionId || undefined,
-          doc.description || undefined,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt)
-        )
-      );
-    } catch {
-      return [];
-    }
+    return await transactionDao.getTransactionsByPayment(paymentId);
   }
 
   async findTransactionsByUser(userId) {
-    try {
-      const docs = await transactionDao.getTransactionsByUser(userId);
-      return docs.map((doc) =>
-        new Transaction(
-          doc.transactionId,
-          doc.paymentId,
-          doc.userId,
-          doc.courseId,
-          doc.transactionType,
-          doc.amount,
-          doc.currency,
-          doc.status,
-          doc.paymentGateway || undefined,
-          doc.gatewayTransactionId || undefined,
-          doc.description || undefined,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt)
-        )
-      );
-    } catch {
-      return [];
-    }
+    return await transactionDao.getTransactionsByUser(userId);
   }
 
   async findTransactionsByCourse(courseId) {
-    try {
-      const docs = await transactionDao.getTransactionsByCourse(courseId);
-      return docs.map((doc) =>
-        new Transaction(
-          doc.transactionId,
-          doc.paymentId,
-          doc.userId,
-          doc.courseId,
-          doc.transactionType,
-          doc.amount,
-          doc.currency,
-          doc.status,
-          doc.paymentGateway || undefined,
-          doc.gatewayTransactionId || undefined,
-          doc.description || undefined,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt)
-        )
-      );
-    } catch {
-      return [];
-    }
+    return await transactionDao.getTransactionsByCourse(courseId);
   }
 
   async findTransactionsByStatus(status) {
-    try {
-      const docs = await transactionDao.getTransactionsByStatus(status);
-      return docs.map((doc) =>
-        new Transaction(
-          doc.transactionId,
-          doc.paymentId,
-          doc.userId,
-          doc.courseId,
-          doc.transactionType,
-          doc.amount,
-          doc.currency,
-          doc.status,
-          doc.paymentGateway || undefined,
-          doc.gatewayTransactionId || undefined,
-          doc.description || undefined,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt)
-        )
-      );
-    } catch {
-      return [];
-    }
+    return await transactionDao.getTransactionsByStatus(status);
   }
 }
 
 export const transactionRepository = new TransactionRepository();
-

@@ -2,15 +2,16 @@
 import { db } from '../../../../config/firebase.js';
 
 export class PaymentDao {
-  async createPayment(userId, data) {
+  async createPayment(data) {
     const paymentDoc = {
-      userId,
+      userId: data.userId,
       courseId: data.courseId,
+      courseTitle: data.courseTitle,
       amount: data.amount,
-      currency: data.currency || 'USD',
-      paymentType: data.paymentType,
+      currency: data.currency || 'TND',
+      paymentType: data.paymentType || 'course_purchase',
       subscriptionType: data.subscriptionType || null,
-      paymentMethod: data.paymentMethod,
+      paymentMethod: data.paymentMethod || null,
       status: 'pending',
       transactionId: null,
       createdAt: new Date(),
@@ -27,59 +28,42 @@ export class PaymentDao {
 
   async getPaymentById(paymentId) {
     const doc = await db.collection('payments').doc(paymentId).get();
-    return doc.exists ? doc.data() : null;
+    if (!doc.exists) return null;
+    return { paymentId: doc.id, ...doc.data() };
   }
 
-  async updatePayment(paymentId, data, transactionId) {
-    const updateData = {
-      updatedAt: new Date(),
-    };
-
-    if (data.status !== undefined) updateData.status = data.status;
-    if (transactionId !== undefined) updateData.transactionId = transactionId || null;
-
-    await db.collection('payments').doc(paymentId).update(updateData);
+  async updatePayment(paymentId, updateData) {
+    const finalUpdate = { ...updateData, updatedAt: new Date() };
+    await db.collection('payments').doc(paymentId).update(finalUpdate);
     
-    const updatedDoc = await db.collection('payments').doc(paymentId).get();
-    return updatedDoc.exists ? updatedDoc.data() : null;
+    const doc = await db.collection('payments').doc(paymentId).get();
+    return doc.exists ? { paymentId: doc.id, ...doc.data() } : null;
   }
 
   async getPaymentsByUser(userId) {
-    const snapshot = await db
-      .collection('payments')
+    const snapshot = await db.collection('payments')
       .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
       .get();
     
-    return snapshot.docs.map(doc => ({
-      paymentId: doc.id,
-      ...doc.data(),
-    }));
+    return snapshot.docs.map(doc => ({ paymentId: doc.id, ...doc.data() }));
   }
 
   async getPaymentsByCourse(courseId) {
-    const snapshot = await db
-      .collection('payments')
+    const snapshot = await db.collection('payments')
       .where('courseId', '==', courseId)
       .get();
     
-    return snapshot.docs.map(doc => ({
-      paymentId: doc.id,
-      ...doc.data(),
-    }));
+    return snapshot.docs.map(doc => ({ paymentId: doc.id, ...doc.data() }));
   }
 
   async getPaymentsByStatus(status) {
-    const snapshot = await db
-      .collection('payments')
+    const snapshot = await db.collection('payments')
       .where('status', '==', status)
       .get();
     
-    return snapshot.docs.map(doc => ({
-      paymentId: doc.id,
-      ...doc.data(),
-    }));
+    return snapshot.docs.map(doc => ({ paymentId: doc.id, ...doc.data() }));
   }
 }
 
 export const paymentDao = new PaymentDao();
-

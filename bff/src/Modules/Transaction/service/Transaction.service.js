@@ -1,100 +1,74 @@
 // src/modules/Transaction/service/Transaction.service.js
 import { transactionRepository } from '../repository/Transaction.repository.js';
-import { TransactionMapper } from '../mapper/Transaction.mapper.js';
 import { paymentRepository } from '../../payment/repository/Payment.repository.js';
-import { canCreateTransaction, canUpdateTransaction } from './TransactionPermission.js';
+import { TransactionPermission } from './TransactionPermission.js';
 
 export class TransactionService {
-  async createTransaction(
-    user,
-    data
-  ) {
-    // Validate payment exists
+  async createTransaction(user, data) {
     const payment = await paymentRepository.findByPaymentId(data.paymentId);
-    if (!payment) {
-      throw new Error('Payment not found');
-    }
+    if (!payment) throw new Error('Payment not found');
 
-    // Validate payment belongs to user
-    if (!canCreateTransaction(user, payment)) {
-      throw new Error('Unauthorized: Payment does not belong to user');
-    }
-
-    // Get courseId from payment
-    const courseId = payment.courseId;
-
-    const transaction = await transactionRepository.createTransaction(
-      user.uid,
-      courseId,
-      data
-    );
-
-    // Update payment with transaction ID
-    await paymentRepository.updatePayment(data.paymentId, { status: 'completed' }, transaction.transactionId);
-
-    return TransactionMapper.toResponse(transaction, 'Transaction created successfully');
-  }
-
-  async getTransactionById(transactionId){
-    const transaction = await transactionRepository.findByTransactionId(transactionId);
-    if (!transaction) return null;
-
-    return TransactionMapper.toResponse(transaction, 'Transaction retrieved successfully');
-  }
-
-  async updateTransaction(
-    transactionId,
-    user,
-    data,
-  ){
-    if (!canUpdateTransaction(user)) {
+    if (!TransactionPermission.create(user, payment)) {
       throw new Error('Unauthorized');
     }
 
-    const updatedTransaction = await transactionRepository.updateTransaction(
-      transactionId,
-      data
-    );
-    if (!updatedTransaction) return null;
+    const transaction = await transactionRepository.createTransaction({
+      paymentId: data.paymentId,
+      userId: user.uid,
+      courseId: payment.courseId,
+      transactionType: data.transactionType || 'course_purchase',
+      amount: payment.amount,
+      currency: payment.currency || 'TND',
+      status: 'pending',
+      paymentGateway: data.paymentGateway || null,
+      gatewayTransactionId: data.gatewayTransactionId || null,
+      description: data.description || null,
+    });
 
-    // If transaction status changed to completed, update payment status
-    if (data.status === 'completed') {
-      await paymentRepository.updatePayment(updatedTransaction.paymentId, { status: 'completed' }, transactionId);
-    } else if (data.status === 'failed') {
-      await paymentRepository.updatePayment(updatedTransaction.paymentId, { status: 'failed' });
+    await paymentRepository.updatePayment(data.paymentId, {
+      status: 'completed',
+      transactionId: transaction.transactionId,
+    });
+
+    return transaction;
+  }
+
+  async getTransactionById(transactionId) {
+    return await transactionRepository.findByTransactionId(transactionId);
+  }
+
+  async updateTransaction(transactionId, user, data) {
+    if (!TransactionPermission.update(user)) {
+      throw new Error('Unauthorized');
     }
 
-    return TransactionMapper.toResponse(updatedTransaction, 'Transaction updated successfully');
+    const updated = await transactionRepository.updateTransaction(transactionId, data);
+
+    if (data.status) {
+      await paymentRepository.updatePayment(updated.paymentId, {
+        status: data.status,
+        transactionId,
+      });
+    }
+
+    return updated;
   }
 
-  async getTransactionsByPayment(paymentId){
-    const transactions = await transactionRepository.findTransactionsByPayment(paymentId);
-    return transactions.map((transaction) =>
-      TransactionMapper.toResponse(transaction, 'Transactions retrieved successfully')
-    );
+  async getTransactionsByPayment(paymentId) {
+    return await transactionRepository.findTransactionsByPayment(paymentId);
   }
 
-  async getUserTransactions(userId){
-    const transactions = await transactionRepository.findTransactionsByUser(userId);
-    return transactions.map((transaction) =>
-      TransactionMapper.toResponse(transaction, 'Transactions retrieved successfully')
-    );
+  async getUserTransactions(userId) {
+    return await transactionRepository.findTransactionsByUser(userId);
   }
 
-  async getCourseTransactions(courseId){
-    const transactions = await transactionRepository.findTransactionsByCourse(courseId);
-    return transactions.map((transaction) =>
-      TransactionMapper.toResponse(transaction, 'Transactions retrieved successfully')
-    );
+  async getCourseTransactions(courseId) {
+    return await transactionRepository.findTransactionsByCourse(courseId);
   }
 
   async getTransactionsByStatus(status) {
-    const transactions = await transactionRepository.findTransactionsByStatus(status);
-    return transactions.map((transaction) =>
-      TransactionMapper.toResponse(transaction, 'Transactions retrieved successfully')
-    );
+    return await transactionRepository.findTransactionsByStatus(status);
   }
 }
 
 export const transactionService = new TransactionService();
-

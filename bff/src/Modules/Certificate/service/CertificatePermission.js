@@ -3,21 +3,10 @@
  */
 import { isAdmin, isAdminOrResourceOwner } from '../../../utils/SharedPermission.js';
 
-export function canIssueCertificate(user) {
-  // Any enrolled user can issue a certificate (enrollment check is done in service)
-  return true;
-}
-
-export function canUpdateCertificate(user) {
-  return isAdmin(user);
-}
-
-export function canRevokeCertificate(user) {
-  return isAdmin(user);
-}
-
-export function canViewCertificate(user, certificate) {
-  // Users can view their own certificates, admins can view all
-  return isAdminOrResourceOwner(user, certificate);
-}
+export const CertificatePermission = {
+  create: user => true, // Any enrolled user can create/issue
+  update: user => isAdmin(user),
+  delete: user => isAdmin(user),
+  read: (user, certificate) => isAdminOrResourceOwner(user, certificate)
+};
 

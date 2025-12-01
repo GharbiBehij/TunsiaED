@@ -1,13 +1,12 @@
 // src/pages/Courses.jsx
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useCourses } from '../hooks/useCourses';
-import CourseList from '../components/Course/CourseList';
-import CourseFilters from '../components/Course/CourseFilters';
-import Header from '../components/Header/Header';
+import { useAllCourses } from '../hooks/Course/useAllCourses';
+import CourseList from '../components/Courses/CourseList';
+import CourseFilters from '../components/Courses/CourseFilters';
+import DashboardHeader from '../components/Headers/DashboardHeader';
 
 export default function Courses() {
-  const { isAuthenticated } = useAuth();
   const [filters, setFilters] = useState({
     category: 'all',
     level: 'all',
@@ -16,7 +15,7 @@ export default function Courses() {
   });
 
   // THIS IS THE ONLY CHANGE — use React Query hook
-  const { data: courses = [], isLoading } = useCourses();
+  const { data: courses = [], isLoading } = useAllCourses();
 
   // Filter logic (client-side)
   const filteredCourses = courses.filter(course => {
@@ -30,7 +29,7 @@ export default function Courses() {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
-      <Header />
+      <DashboardHeader />
 
       <div className="flex">
         {/* Sidebar Filters */}

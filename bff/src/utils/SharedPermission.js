@@ -11,7 +11,12 @@
 export function isAdmin(user) {
   return user?.isAdmin === true;
 }
-
+export function isInstructor(user) {
+  return user?.isInstructor === true;
+}
+export function isStudent(user) {
+  return user?.isStudent === true;
+}
 /**
  * Check if user owns a course (is the instructor of the course)
  * @param {Object} user - User object

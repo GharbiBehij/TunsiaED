@@ -1,6 +1,6 @@
 // src/modules/Course/service/Course.service.js
 import { courseRepository } from '../repository/Course.repository.js';
-import { canCreateCourse, canUpdateCourse, canDeleteCourse } from './CoursePermission.js';
+import { CoursePermission } from './CoursePermission.js';
 
 
 export class CourseService {
@@ -9,7 +9,7 @@ export class CourseService {
     if (!instructorId || !instructorName)
       throw new Error("Instructor information is required");
 
-    if (!canCreateCourse(user))
+    if (!CoursePermission.create(user))
       throw new Error("Unauthorized");
 
     return await courseRepository.createCourse(
@@ -27,7 +27,7 @@ export class CourseService {
     const course = await courseRepository.findByCourseId(courseId);
     if (!course) throw new Error("Course not found");
 
-    if (!canUpdateCourse(user, course))
+    if (!CoursePermission.update(user, course))
       throw new Error("Unauthorized");
 
     return await courseRepository.updateCourse(courseId, data);
@@ -37,7 +37,7 @@ export class CourseService {
     const course = await courseRepository.findByCourseId(courseId);
     if (!course) throw new Error("Course not found");
 
-    if (!canDeleteCourse(user, course))
+    if (!CoursePermission.delete(user, course))
       throw new Error("Unauthorized");
 
     return await courseRepository.deleteCourse(courseId);

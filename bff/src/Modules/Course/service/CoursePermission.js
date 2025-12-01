@@ -1,17 +1,16 @@
 /**
  * Permission checks for Course operations
  */
-import { isAdmin, isAdminOrCourseOwner } from '../../../utils/SharedPermission.js';
+import { isAdmin, isAdminOrCourseOwner, isInstructor } from '../../../utils/SharedPermission.js';
 
-export function canCreateCourse(user) {
-  return user?.isInstructor === true || isAdmin(user);
-}
-
-export function canUpdateCourse(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
-
-export function canDeleteCourse(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
+export const CoursePermission = {
+  create: (user) => 
+    isAdmin(user) || isInstructor(user),
+  update: (user,course) => 
+    isAdminOrCourseOwner(user,course),
+  delete:(user,course) => 
+    isAdminOrCourseOwner(user,course),
+  read:() => 
+    true ,
+ }
 

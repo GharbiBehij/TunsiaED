@@ -1,5 +1,5 @@
 // src/components/Auth/InstructorForm.jsx
-import { useSignup } from '../../hooks/useSignup';
+import { useSignup } from '../../hooks/Auth/useSignup';
 
 export default function InstructorForm() {
   const { submit, isLoading, error } = useSignup();

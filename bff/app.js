@@ -10,6 +10,10 @@ import { router as chapterRouter } from './src/Modules/Chapter/Api/Chapter.route
 import { router as lessonRouter } from './src/Modules/Lesson/Api/Lesson.routes.js';
 import { router as quizRouter } from './src/Modules/Quiz/Api/Quiz.routes.js';
 import { router as certificateRouter } from './src/Modules/Certificate/Api/Certificate.routes.js';
+import { router as adminRouter } from './src/Modules/Admin/api/Admin.routes.js';
+import { router as instructorRouter } from './src/Modules/Instructor/api/Instructor.routes.js';
+import { router as studentRouter } from './src/Modules/Student/api/Student.routes.js';
+import { router as notificationRouter } from './src/Modules/Notification/api/Notification.routes.js';
 
 const app = express();
 
@@ -74,7 +78,10 @@ app.use('/api/v1/chapter', chapterRouter);
 app.use('/api/v1/lesson', lessonRouter);
 app.use('/api/v1/quiz', quizRouter);
 app.use('/api/v1/certificate', certificateRouter);
-
+app.use('/api/v1/admin', adminRouter);
+app.use('/api/v1/instructor', instructorRouter);
+app.use('/api/v1/student', studentRouter);
+app.use('/api/v1/notification', notificationRouter);
 // 6️ Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);

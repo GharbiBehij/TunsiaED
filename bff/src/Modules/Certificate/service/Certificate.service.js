@@ -2,20 +2,19 @@
 import { certificateRepository } from '../repository/Certificate.repository.js';
 import { courseRepository } from '../../Course/repository/Course.repository.js';
 import { enrollmentRepository } from '../../Enrollement/Repository/Enrollement.repository.js';
-import { canUpdateCertificate, canRevokeCertificate } from './CertificatePermission.js';
+import { CertificatePermission } from './CertificatePermission.js';
 
 export class CertificateService {
   async issueCertificate(userId, courseId, data = {}) {
     const course = await courseRepository.findByCourseId(courseId);
     if (!course) throw new Error('Course not found');
-
     // Basic check: user must be enrolled in the course
     const enrollments = await enrollmentRepository.findUserEnrollments(userId);
     const isEnrolled = enrollments.some(e => e.courseId === courseId);
     if (!isEnrolled) {
       throw new Error('User is not enrolled in this course');
     }
-
+    // Permission is handled in controller/middleware for user
     return certificateRepository.createCertificate(userId, courseId, data);
   }
 
@@ -36,20 +35,19 @@ export class CertificateService {
   }
 
   async updateCertificate(certificateId, user, updates) {
-    if (!canUpdateCertificate(user)) {
+    if (!CertificatePermission.update(user)) {
       throw new Error('Unauthorized');
     }
     return certificateRepository.updateCertificate(certificateId, updates);
   }
 
   async revokeCertificate(certificateId, user) {
-    if (!canRevokeCertificate(user)) {
+    if (!CertificatePermission.delete(user)) {
       throw new Error('Unauthorized');
     }
     return certificateRepository.deleteCertificate(certificateId);
   }
 }
-
 export const certificateService = new CertificateService();
 
 

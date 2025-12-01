@@ -3,15 +3,10 @@
  */
 import { isAdminOrCourseOwner } from '../../../utils/SharedPermission.js';
 
-export function canCreateQuiz(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
-
-export function canUpdateQuiz(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
-
-export function canDeleteQuiz(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
+export const QuizPermission = {
+  create: (user, course) => isAdminOrCourseOwner(user, course),
+  update: (user, course) => isAdminOrCourseOwner(user, course),
+  delete: (user, course) => isAdminOrCourseOwner(user, course),
+  read: () => true
+};
 

@@ -35,10 +35,11 @@ export const authenticate = async (req, res, next) => {
 
     // Token verified successfully
     req.user = {
-      uid: decodedToken.uid,
-      email: decodedToken.email,
-      iat: decodedToken.iat,
-      exp: decodedToken.exp
+      uid: decoded.uid,
+      email: decoded.email,
+      isAdmin: decoded.isAdmin || false,
+      isInstructor: decoded.isInstructor || false,
+      isStudent: decoded.isStudent || false,
     };
 
     console.log(`Auth successful for user: ${decodedToken.email}`);
@@ -51,16 +52,4 @@ export const authenticate = async (req, res, next) => {
       details: error.message
     });
   }
-};
-
-export const requireRole = (...roles) => {
-  return (req, res, next) => {
-    if (!req.user) {
-      return res.status(401).json({ error: 'Unauthorized' });
-    }
-    if (!roles.includes(req.user.role || '')) {
-      return res.status(403).json({ error: 'Forbidden - Insufficient permissions' });
-    }
-    next();
-  };
 };

@@ -3,15 +3,10 @@
  */
 import { isAdminOrCourseOwner } from '../../../utils/SharedPermission.js';
 
-export function canCreateLesson(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
-
-export function canUpdateLesson(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
-
-export function canDeleteLesson(user, course) {
-  return isAdminOrCourseOwner(user, course);
-}
+export const LessonPermission = {
+  create: (user, course) => isAdminOrCourseOwner(user, course),
+  update: (user, course) => isAdminOrCourseOwner(user, course),
+  delete: (user, course) => isAdminOrCourseOwner(user, course),
+  read: () => true
+};
 

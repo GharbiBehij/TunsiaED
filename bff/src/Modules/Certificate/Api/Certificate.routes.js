@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
+import { requireRole } from '../../../middlewares/Role.middleware.js';
 import { certificateController } from './Certificate.controller.js';
 
 const router = Router();
@@ -18,8 +19,8 @@ router.get('/course/:courseId', certificateController.getCourseCertificates);
 
 // Admin-style aggregate endpoints.
 router.get('/', certificateController.getAllCertificates);
-router.put('/:certificateId', authenticate, certificateController.updateCertificate);
-router.delete('/:certificateId', authenticate, certificateController.revokeCertificate);
+router.put('/:certificateId', authenticate, requireRole('admin'), certificateController.updateCertificate);
+router.delete('/:certificateId', authenticate, requireRole('admin'), certificateController.revokeCertificate);
 
 export { router };
 

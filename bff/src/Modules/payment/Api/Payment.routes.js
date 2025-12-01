@@ -1,49 +1,18 @@
 // bff/src/Modules/payment/Api/Payment.routes.js
 import { Router } from 'express';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
+import { requireRole } from '../../../middlewares/Role.middleware.js';
 import { paymentController } from './Payment.controller.js';
 
 const router = Router();
 
-// Create payment - requires authentication
-router.post(
-  '/',
-  authenticate,
-  paymentController.createPayment
-);
-
-// Get user's payments - requires authentication
-router.get(
-  '/my-payments',
-  authenticate,
-  paymentController.getUserPayments
-);
-
-// Get payments by course - public endpoint (could be restricted)
-router.get(
-  '/course/:courseId',
-  paymentController.getCoursePayments
-);
-
-// Get payments by status - could be admin only
-router.get(
-  '/status/:status',
-  paymentController.getPaymentsByStatus
-);
-
-// Get payment by ID - requires authentication
-router.get(
-  '/:paymentId',
-  authenticate,
-  paymentController.getPaymentById
-);
-
-// Update payment - requires authentication (typically for status updates)
-router.put(
-  '/:paymentId',
-  authenticate,
-  paymentController.updatePayment
-);
+router.post('/', authenticate, paymentController.createPayment);
+router.get('/my-payments', authenticate, paymentController.getUserPayments);
+router.get('/course/:courseId', paymentController.getCoursePayments);
+router.get('/status/:status', paymentController.getPaymentsByStatus);
+router.get('/:paymentId', authenticate, paymentController.getPaymentById);
+router.put('/:paymentId', authenticate, requireRole('admin'), paymentController.updatePayment);
+// If you support delete: router.delete('/:paymentId', authenticate, requireRole('admin'), paymentController.deletePayment);
 
 export { router };
 

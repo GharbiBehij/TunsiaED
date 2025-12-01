@@ -1,31 +1,20 @@
 // bff/src/Modules/Course/api/Course.route.js
 import { Router } from 'express';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
+import { requireRole } from '../../../middlewares/Role.middleware.js';
 import { courseController } from './Course.controller.js';
 
 const router = Router();
 
-// Create course - requires authentication (instructor only)
-router.post('/',authenticate,courseController.createCourse);
+router.post('/', authenticate, requireRole('admin', 'instructor'), courseController.createCourse);
 
-// Get all courses - public endpoint
 router.get('/', courseController.getAllCourses);
-
-// Get courses by category - public endpoint
 router.get('/category/:category', courseController.getCoursesByCategory);
-
-// Get instructor's courses - requires authentication
-router.get('/instructor/my-courses',authenticate,courseController.getCoursesByInstructor);
-
-// Get course by ID - public endpoint
+router.get('/instructor/my-courses', authenticate, courseController.getCoursesByInstructor);
 router.get('/:courseId', courseController.getCourseById);
 
-// Update course - requires authentication (instructor only, own courses)
-router.put('/:courseId',authenticate,courseController.updateCourse);
-
-// Delete course - requires authentication (instructor only, own courses)
-router.delete('/:courseId',authenticate,courseController.deleteCourse
-);
+router.put('/:courseId', authenticate, requireRole('admin', 'instructor'), courseController.updateCourse);
+router.delete('/:courseId', authenticate, requireRole('admin', 'instructor'), courseController.deleteCourse);
 
 export { router };
 
