@@ -14,6 +14,7 @@ export function useAdminDashboard() {
       activePromotions,
       subscriptionPlans,
       subscriptionStats,
+      updatedPlan,
     ] = await Promise.all([
       AdminService.getStats(token),
       AdminService.getRevenueData(token),
@@ -34,6 +35,7 @@ export function useAdminDashboard() {
       activePromotions,
       subscriptionPlans,
       subscriptionStats,
+      updatedPlan,
     };
   });
 }

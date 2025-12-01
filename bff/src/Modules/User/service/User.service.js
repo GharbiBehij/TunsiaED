@@ -1,5 +1,5 @@
 import { userRepository } from '../../repository/User.repository.js';
-import { canUpdateProfile, canDeleteProfile, canUpdateRole } from './UserPermission.js';
+import {UserPermission } from './UserPermission.js';
 
 const ADMIN_EMAIL = "admin@tunisiaed.com";
 

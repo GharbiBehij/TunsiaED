@@ -1,15 +1,7 @@
 // src/components/Subscription/SubscriptionPlans.jsx
-import { useMutation } from '@tanstack/react-query';
-import AdminService from '../../../services/AdminService';
-import { useQueryClient } from '@tanstack/react-query';
 
 export default function SubscriptionPlans({ data: plans = [], isLoading }) {
-  const queryClient = useQueryClient();
 
-  const updatePlan = useMutation({
-    mutationFn: AdminService.updateSubscriptionPlan,
-    onSuccess: () => queryClient.invalidateQueries(['subscription-plans']),
-  });
 
   if (isLoading) return <div className="text-center py-10">Loading plans...</div>;
 
@@ -29,7 +21,7 @@ export default function SubscriptionPlans({ data: plans = [], isLoading }) {
             ))}
           </ul>
           <button 
-            onClick={() => updatePlan.mutate({ id: plan.id, ...plans })}
+            onClick={() => updatePlan.mutate({ id: plan.id, ...updatePlan })}
             className="w-full mt-6 rounded-lg text-primary border border-primary h-10 text-sm font-medium hover:bg-primary/5"
           >
             Edit Plan

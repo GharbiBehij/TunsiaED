@@ -36,6 +36,10 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 .firebaserc
+firebase.json
+firebase.indexes.json
+firestore.rules
+storage.rules
 
 # Flutter
 mobile/**/flutter_*.sh
@@ -47,8 +51,7 @@ mobile/**/.packages
 mobile/**/build/
 mobile/**/*.g.dart
 
-# Docker
-docker-compose.override.yml
+
 
 # OS
 Thumbs.db
@@ -59,4 +62,3 @@ Desktop.ini
 *serviceAccountKey*.json
 *firebase-adminsdk*.json
 
-jwt.ts
