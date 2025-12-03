@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useAllCourses } from '../hooks/Course/useAllCourses';
 import CourseList from '../components/Courses/CourseList';
 import CourseFilters from '../components/Courses/CourseFilters';
-import DashboardHeader from '../components/Headers/DashboardHeader';
+import Header from '../components/home/Header';
 
 export default function Courses() {
   const [filters, setFilters] = useState({
@@ -29,7 +29,7 @@ export default function Courses() {
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark">
-      <DashboardHeader />
+      <Header />
 
       <div className="flex">
         {/* Sidebar Filters */}

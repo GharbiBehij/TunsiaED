@@ -2,7 +2,7 @@
 import { db } from '../../../../config/firebase.js';
 
 export class AdminDao {
-  // Get total revenue from completed transactions
+  // Get total revenue from completed transactions in Firestore
   async getTotalRevenue() {
     const snapshot = await db.collection('Transactions')
       .where('status', '==', 'completed')
@@ -17,7 +17,7 @@ export class AdminDao {
     return total;
   }
 
-  // Get new users count (last 30 days)
+  // Get count of new users in last 30 days from Firestore
   async getNewUsersCount() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -29,7 +29,7 @@ export class AdminDao {
     return snapshot.size;
   }
 
-  // Get active courses count
+  // Get count of active/published courses from Firestore
   async getActiveCoursesCount() {
     const snapshot = await db.collection('Courses')
       .where('isPublished', '==', true)
@@ -38,7 +38,7 @@ export class AdminDao {
     return snapshot.size;
   }
 
-  // Get active subscriptions count
+  // Get count of active subscriptions from Firestore
   async getActiveSubscriptionsCount() {
     const snapshot = await db.collection('Payments')
       .where('paymentType', '==', 'subscription')
@@ -48,7 +48,7 @@ export class AdminDao {
     return snapshot.size;
   }
 
-  // Get monthly revenue data
+  // Get monthly revenue data (last 6 months) from Firestore
   async getMonthlyRevenue() {
     const sixMonthsAgo = new Date();
     sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
@@ -76,7 +76,7 @@ export class AdminDao {
     })).sort((a, b) => a.month.localeCompare(b.month));
   }
 
-  // Get recent activity (enrollments and certificates)
+  // Get recent activity (enrollments and certificates) from Firestore
   async getRecentActivity(limit = 10) {
     const activities = [];
     
@@ -143,7 +143,7 @@ export class AdminDao {
       .map(({ timestamp, ...rest }) => rest);
   }
 
-  // Get course performance data
+  // Get course performance data with enrollment stats from Firestore
   async getCoursePerformance() {
     const coursesSnapshot = await db.collection('Courses').get();
     const enrollmentsSnapshot = await db.collection('Enrollments').get();
@@ -175,7 +175,7 @@ export class AdminDao {
     }).sort((a, b) => b.students - a.students);
   }
 
-  // Get user engagement metrics
+  // Get user engagement metrics (active users) from Firestore
   async getUserEngagement() {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -222,6 +222,92 @@ export class AdminDao {
     if (diffHours < 24) return `${diffHours} hours ago`;
     if (diffDays < 7) return `${diffDays} days ago`;
     return date.toLocaleDateString();
+  }
+
+  // Get active promotions from Firestore
+  async getActivePromotions() {
+    const now = new Date();
+    const snapshot = await db.collection('Promotions')
+      .where('isActive', '==', true)
+      .where('endDate', '>=', now)
+      .get();
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  }
+
+  // Create new promotion in Firestore
+  async createPromotion(promotionData) {
+    const promotionRef = await db.collection('Promotions').add({
+      ...promotionData,
+      isActive: promotionData.isActive !== undefined ? promotionData.isActive : true,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    });
+    
+    const doc = await promotionRef.get();
+    return {
+      id: doc.id,
+      ...doc.data()
+    };
+  }
+
+  // Get subscription plans from Firestore
+  async getSubscriptionPlans() {
+    const snapshot = await db.collection('SubscriptionPlans').get();
+    
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  }
+
+  // Get subscription statistics from Firestore
+  async getSubscriptionStats() {
+    const paymentsSnapshot = await db.collection('Payments')
+      .where('paymentType', '==', 'subscription')
+      .get();
+    
+    let activeSubscriptions = 0;
+    let totalRevenue = 0;
+    const planCounts = {};
+    
+    paymentsSnapshot.docs.forEach(doc => {
+      const payment = doc.data();
+      if (payment.status === 'completed') {
+        activeSubscriptions++;
+        totalRevenue += payment.amount || 0;
+        
+        const planId = payment.planId || 'unknown';
+        planCounts[planId] = (planCounts[planId] || 0) + 1;
+      }
+    });
+    
+    return {
+      totalSubscriptions: activeSubscriptions,
+      totalRevenue,
+      planDistribution: planCounts
+    };
+  }
+
+  // Update subscription plan in Firestore
+  async updateSubscriptionPlan(planId, updateData) {
+    await db.collection('SubscriptionPlans').doc(planId).update({
+      ...updateData,
+      updatedAt: new Date()
+    });
+    
+    const doc = await db.collection('SubscriptionPlans').doc(planId).get();
+    if (!doc.exists) {
+      throw new Error('Subscription plan not found');
+    }
+    
+    return {
+      id: doc.id,
+      ...doc.data()
+    };
   }
 }
 

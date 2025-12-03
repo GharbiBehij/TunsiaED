@@ -1,7 +1,22 @@
 // src/modules/Course/model/dao/Course.dao.js
+// DAO returns raw Firestore data - mapping happens in Service layer
 import { db } from '../../../../config/firebase.js';
 
+const COLLECTION = 'Courses';
+
 export class CourseDao {
+  get collection() {
+    return db.collection(COLLECTION);
+  }
+
+  _docToRaw(doc) {
+    return doc.exists ? { courseId: doc.id, ...doc.data() } : null;
+  }
+
+  _snapshotToRaw(snapshot) {
+    return snapshot.docs.map(doc => ({ courseId: doc.id, ...doc.data() }));
+  }
+
   async createCourse(instructorId, instructorName, data) {
     const courseDoc = {
       title: data.title,
@@ -19,23 +34,17 @@ export class CourseDao {
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('Courses').add(courseDoc);
-    
-    return {
-      courseId: docRef.id,
-      ...courseDoc,
-    };
+    const docRef = await this.collection.add(courseDoc);
+    return { courseId: docRef.id, ...courseDoc };
   }
 
   async getCourseById(courseId) {
-    const doc = await db.collection('Courses').doc(courseId).get();
-    return doc.exists ? doc.data() : null;
+    const doc = await this.collection.doc(courseId).get();
+    return this._docToRaw(doc);
   }
 
   async updateCourse(courseId, data) {
-    const updateData = {
-      updatedAt: new Date(),
-    };
+    const updateData = { updatedAt: new Date() };
 
     if (data.title !== undefined) updateData.title = data.title;
     if (data.description !== undefined) updateData.description = data.description;
@@ -45,49 +54,32 @@ export class CourseDao {
     if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail || null;
     if (data.duration !== undefined) updateData.duration = data.duration;
 
-    await db.collection('Courses').doc(courseId).update(updateData);
-    
-    const updatedDoc = await db.collection('Courses').doc(courseId).get();
-    return updatedDoc.exists ? updatedDoc.data() : null;
+    await this.collection.doc(courseId).update(updateData);
+    return this.getCourseById(courseId);
   }
 
   async deleteCourse(courseId) {
-    await db.collection('Courses').doc(courseId).delete();
+    await this.collection.doc(courseId).delete();
   }
 
   async getCoursesByInstructor(instructorId) {
-    const snapshot = await db
-      .collection('Courses')
+    const snapshot = await this.collection
       .where('instructorId', '==', instructorId)
       .get();
-    
-    return snapshot.docs.map(doc => ({
-      courseId: doc.id,
-      ...doc.data(),
-    }));
+    return this._snapshotToRaw(snapshot);
   }
 
   async getAllCourses() {
-    const snapshot = await db.collection('Courses').get();
-    
-    return snapshot.docs.map(doc => ({
-      courseId: doc.id,
-      ...doc.data(),
-    }));
+    const snapshot = await this.collection.get();
+    return this._snapshotToRaw(snapshot);
   }
 
   async getCoursesByCategory(category) {
-    const snapshot = await db
-      .collection('Courses')
+    const snapshot = await this.collection
       .where('category', '==', category)
       .get();
-    
-    return snapshot.docs.map(doc => ({
-      courseId: doc.id,
-      ...doc.data(),
-    }));
+    return this._snapshotToRaw(snapshot);
   }
 }
 
 export const courseDao = new CourseDao();
-

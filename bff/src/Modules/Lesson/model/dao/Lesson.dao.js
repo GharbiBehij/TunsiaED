@@ -1,7 +1,22 @@
-// Firestore DAO for lessons.
+// src/modules/Lesson/model/dao/Lesson.dao.js
+// DAO returns raw Firestore data - mapping happens in Service layer
 import { db } from '../../../../config/firebase.js';
 
+const COLLECTION = 'Lessons';
+
 export class LessonDao {
+  get collection() {
+    return db.collection(COLLECTION);
+  }
+
+  _docToRaw(doc) {
+    return doc.exists ? { lessonId: doc.id, ...doc.data() } : null;
+  }
+
+  _snapshotToRaw(snapshot) {
+    return snapshot.docs.map(doc => ({ lessonId: doc.id, ...doc.data() }));
+  }
+
   async createLesson(courseId, chapterId, data) {
     const docData = {
       courseId,
@@ -14,73 +29,50 @@ export class LessonDao {
       updatedAt: new Date(),
     };
 
-    const ref = await db.collection('Lessons').add(docData);
-    return {
-      lessonId: ref.id,
-      ...docData,
-    };
+    const ref = await this.collection.add(docData);
+    return { lessonId: ref.id, ...docData };
   }
 
   async getLessonById(lessonId) {
-    const snap = await db.collection('Lessons').doc(lessonId).get();
-    return snap.exists ? snap.data() : null;
+    const doc = await this.collection.doc(lessonId).get();
+    return this._docToRaw(doc);
   }
 
   async updateLesson(lessonId, data) {
-    const update = {
-      updatedAt: new Date(),
-    };
-
+    const update = { updatedAt: new Date() };
     if (data.title !== undefined) update.title = data.title;
     if (data.order !== undefined) update.order = data.order;
-    if (data.durationMinutes !== undefined)
-      update.durationMinutes = data.durationMinutes;
+    if (data.durationMinutes !== undefined) update.durationMinutes = data.durationMinutes;
     if (data.isPublished !== undefined) update.isPublished = data.isPublished;
 
-    await db.collection('Lessons').doc(lessonId).update(update);
-    const snap = await db.collection('Lessons').doc(lessonId).get();
-    return snap.exists ? snap.data() : null;
+    await this.collection.doc(lessonId).update(update);
+    return this.getLessonById(lessonId);
   }
 
   async deleteLesson(lessonId) {
-    await db.collection('Lessons').doc(lessonId).delete();
+    await this.collection.doc(lessonId).delete();
   }
 
   async getLessonsByChapter(chapterId) {
-    const snapshot = await db
-      .collection('Lessons')
+    const snapshot = await this.collection
       .where('chapterId', '==', chapterId)
       .orderBy('order', 'asc')
       .get();
-
-    return snapshot.docs.map(doc => ({
-      lessonId: doc.id,
-      ...doc.data(),
-    }));
+    return this._snapshotToRaw(snapshot);
   }
 
   async getLessonsByCourse(courseId) {
-    const snapshot = await db
-      .collection('Lessons')
+    const snapshot = await this.collection
       .where('courseId', '==', courseId)
       .orderBy('order', 'asc')
       .get();
-
-    return snapshot.docs.map(doc => ({
-      lessonId: doc.id,
-      ...doc.data(),
-    }));
+    return this._snapshotToRaw(snapshot);
   }
 
   async getAllLessons() {
-    const snapshot = await db.collection('Lessons').get();
-    return snapshot.docs.map(doc => ({
-      lessonId: doc.id,
-      ...doc.data(),
-    }));
+    const snapshot = await this.collection.get();
+    return this._snapshotToRaw(snapshot);
   }
 }
 
 export const lessonDao = new LessonDao();
-
-

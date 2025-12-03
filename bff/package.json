@@ -2,12 +2,12 @@
   "name": "bff",
   "version": "1.0.0",
   "type": "module",
-"scripts": {
-  "dev": "nodemon app.js",
-  "start": "node app.js",
-  "build": "echo 'No build needed for JS'",
-  "postinstall": "echo 'Deploy ready'"
-},
+  "scripts": {
+    "dev": "nodemon app.js",
+    "start": "node app.js",
+    "build": "echo 'No build needed for JS'",
+    "postinstall": "echo 'Deploy ready'"
+  },
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
@@ -17,7 +17,10 @@
     "helmet": "^7.0.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
+    "nodemailer": "^7.0.11",
     "zod": "^3.22.4"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "nodemon": "^3.1.11"
+  }
 }

@@ -1,11 +1,26 @@
-// src/components/Header/Header.jsx
-import { useState, useEffect, useRef } from 'react';
+// Header.jsx 
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import UserDropdown from './UserDropdown';
 
-export default function Header() {
-  const { isAuthenticated, isLoading } = useAuth();
+// Logo Component
+const Logo = () => (
+  <div className="flex items-center gap-2">
+    <div className="text-primary">
+      <svg className="size-7" fill="currentColor" viewBox="0 0 48 48">
+        <path d="M8.57829 8.57829C5.52816 11.6284 3.451 15.5145 2.60947 19.7452C1.76794 23.9758 2.19984 28.361 3.85056 32.3462C5.50128 36.3314 8.29667 39.7376 11.8832 42.134C15.4698 44.5305 19.6865 45.8096 24 45.8096C28.3135 45.8096 32.5302 44.5305 36.1168 42.134C39.7033 39.7375 42.4987 36.3314 44.1494 32.3462C45.8002 28.361 46.2321 23.9758 45.3905 19.7452C44.549 15.5145 42.4718 11.6284 39.4217 8.57829L24 24L8.57829 8.57829Z" />
+      </svg>
+    </div>
+    <h2 className="text-lg font-bold text-slate-900 dark:text-white">TunisiaED</h2>
+  </div>
+);
+
+
+// This component combines the logic of the main Header and the DashboardHeader
+// using a 'type' prop to switch between layouts.
+export default function Header({ type = 'main' }) {
+  const { isAuthenticated, isLoading, isAdmin, isInstructor } = useAuth();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -16,66 +31,95 @@ export default function Header() {
         setIsDropdownOpen(false);
       }
     }
-
     if (isDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
     }
   }, [isDropdownOpen]);
 
-  // Don't render anything while checking auth state
+  // Role-based dashboard title
+  const getDashboardTitle = () => {
+    if (isAdmin) return "Admin Dashboard";
+    if (isInstructor) return "Instructor Dashboard";
+    return "My Learning Dashboard";
+  };
+
+  // Loading skeleton
   if (isLoading) {
     return (
-      <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg animate-pulse" />
-              <span className="text-xl font-bold">TunisiaED</span>
+      <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-background-light/80 dark:border-slate-800/80 dark:bg-background-dark/80 backdrop-blur-sm">
+        <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-8">
+            <div className="w-24 h-6 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+            <div className="hidden md:flex gap-8">
+              <div className="w-16 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+              <div className="w-16 h-4 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
             </div>
-            <div className="w-20 h-8 bg-gray-200 rounded animate-pulse" />
           </div>
+          <div className="w-20 h-8 bg-slate-200 dark:bg-slate-700 rounded-lg animate-pulse" />
         </div>
       </header>
     );
   }
 
   return (
-    <header className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 hover:opacity-80 transition">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg"></span>
-            </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              TunisiaED
-            </span>
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/80 bg-background-light/80 dark:border-slate-800/80 dark:bg-background-dark/80 backdrop-blur-sm">
+      <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Left side: Logo + Nav / Title */}
+        <div className="flex items-center gap-8">
+          {/* Logo is always present */}
+          <Link to="/">
+            <Logo />
           </Link>
 
-          {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-6">
-            <Link 
-              to="/courses" 
-              className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
-            >
-              Courses
-            </Link>
-            {isAuthenticated && (
-              <Link 
-                to="/my-learning" 
-                className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition"
+          {/* Main Nav (for homepage) */}
+          {type === 'main' && (
+            <nav className="hidden items-center gap-8 md:flex">
+              <Link
+                to="/"
+                className="text-sm font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary"
               >
-                My Learning
+                Home
               </Link>
-            )}
-          </nav>
+              <Link
+                to="/courses"
+                className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary"
+              >
+                Courses
+              </Link>
+              <Link
+                to="/subscription"
+                className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary"
+              >
+                Subscription
+              </Link>
+            </nav>
+          )}
 
-          {/* Right Side: Conditional Rendering */}
-          <div className="flex items-center gap-4">
-            {isAuthenticated ? (
-              // ✅ LOGGED IN: Show UserDropdown
+          {/* Dashboard title (for dashboard) */}
+          {type === 'dashboard' && (
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
+              {getDashboardTitle()}
+            </h2>
+          )}
+        </div>
+
+        {/* Right side: Auth actions / User menu */}
+        <div className="flex items-center gap-4">
+          {/* New Course Button (Instructor only, Dashboard only) */}
+          {type === 'dashboard' && isInstructor && (
+            <Link 
+              to="/instructor/new-course"
+              className="flex min-w-[84px] cursor-pointer items-center justify-center overflow-hidden rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold leading-normal tracking-wide hover:bg-primary/90 transition"
+            >
+              <span className="material-symbols-outlined text-lg">add_circle</span>
+              <span className="truncate">New Course</span>
+            </Link>
+          )}
+
+          {isAuthenticated ? (
+            <>
+              {/* User dropdown */}
               <div ref={dropdownRef}>
                 <UserDropdown
                   isOpen={isDropdownOpen}
@@ -83,24 +127,26 @@ export default function Header() {
                   onClose={() => setIsDropdownOpen(false)}
                 />
               </div>
-            ) : (
-              // ❌ NOT LOGGED IN: Show Login/Signup buttons
-              <>
+            </>
+          ) : (
+            // Not logged in (Main only)
+            type === 'main' && (
+              <div className="flex items-center gap-3">
                 <Link
                   to="/login"
-                  className="text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition font-medium"
+                  className="flex min-w-[84px] items-center justify-center rounded-lg h-9 px-4 bg-transparent text-sm font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800"
                 >
                   Login
                 </Link>
                 <Link
                   to="/signup"
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium"
+                  className="flex min-w-[84px] items-center justify-center rounded-lg h-9 px-4 bg-primary text-white text-sm font-bold hover:bg-primary/90"
                 >
                   Sign Up
                 </Link>
-              </>
-            )}
-          </div>
+              </div>
+            )
+          )}
         </div>
       </div>
     </header>

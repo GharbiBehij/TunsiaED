@@ -195,11 +195,34 @@ export class InstructorDao {
     const students = await this.getInstructorStudents(instructorId);
     const revenue = await this.getInstructorRevenue(instructorId);
     
-    return {
-      totalCourses: courses.length,
-      totalStudents: students.length,
-      totalRevenue: revenue.total || 0,
-    };
+    // Return array format expected by StatsCard component
+    return [
+      {
+        label: 'Total Courses',
+        value: courses.length,
+        icon: 'school',
+        color: 'blue',
+        trend: null,
+        trendDirection: null
+      },
+      {
+        label: 'Total Students',
+        value: students.length,
+        icon: 'group',
+        color: 'green',
+        trend: null,
+        trendDirection: null
+      },
+      {
+        label: 'Total Revenue',
+        value: revenue.total || 0,
+        icon: 'payments',
+        color: 'amber',
+        trend: null,
+        trendDirection: null,
+        isCurrency: true
+      }
+    ];
   }
 
   async getInstructorRevenueTrends(instructorId) {
@@ -230,6 +253,7 @@ export class InstructorDao {
   async getInstructorActivity(instructorId, limit = 10) {
     const courses = await this.getInstructorCourses(instructorId);
     const courseIds = courses.map(c => c.courseId || c.id);
+    const coursesMap = new Map(courses.map(c => [c.courseId || c.id, c]));
     
     const activities = [];
     
@@ -241,18 +265,102 @@ export class InstructorDao {
         .limit(limit)
         .get();
       
-      enrollments.docs.forEach(doc => {
+      for (const doc of enrollments.docs) {
         const enrollment = doc.data();
+        const course = coursesMap.get(enrollment.courseId);
+        
+        // Fetch student name
+        let studentName = 'Unknown Student';
+        try {
+          const userDoc = await db.collection('User').doc(enrollment.userId).get();
+          if (userDoc.exists) {
+            studentName = userDoc.data().displayName || userDoc.data().name || 'Unknown Student';
+          }
+        } catch (err) {
+          console.error('Error fetching student:', err);
+        }
+        
+        const timestamp = enrollment.enrolledAt?.toDate ? enrollment.enrolledAt.toDate() : new Date(enrollment.enrolledAt);
+        
         activities.push({
           id: doc.id,
           type: 'enrollment',
-          message: `New student enrolled`,
-          timestamp: enrollment.enrolledAt?.toDate() || new Date(),
+          icon: 'person_add',
+          color: 'green',
+          user: studentName,
+          action: 'enrolled in',
+          target: course?.title || 'Unknown Course',
+          time: this._formatRelativeTime(timestamp),
+          timestamp: timestamp,
         });
-      });
+      }
     }
     
     return activities.slice(0, limit).sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  // Helper method to format relative time
+  _formatRelativeTime(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 60) return `${diffMins} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
+    return date.toLocaleDateString();
+  }
+
+  /**
+   * Get student progress in a specific course (for instructor)
+   * @param {string} instructorId - The instructor ID
+   * @param {string} courseId - The course ID
+   */
+  async getStudentProgressForCourse(instructorId, courseId) {
+    // Verify the course belongs to this instructor
+    const courseDoc = await db.collection('Courses').doc(courseId).get();
+    if (!courseDoc.exists || courseDoc.data().instructorId !== instructorId) {
+      throw new Error('Unauthorized: Course does not belong to this instructor');
+    }
+
+    // Get all enrollments for this course with progress
+    const enrollmentsSnapshot = await db.collection('Enrollments')
+      .where('courseId', '==', courseId)
+      .where('status', '==', 'active')
+      .get();
+
+    const enrollmentsWithStudents = await Promise.all(
+      enrollmentsSnapshot.docs.map(async (doc) => {
+        const enrollment = doc.data();
+        
+        // Fetch student data
+        let studentData = null;
+        try {
+          const studentDoc = await db.collection('User').doc(enrollment.userId).get();
+          if (studentDoc.exists) {
+            studentData = studentDoc.data();
+          }
+        } catch (error) {
+          console.error('Error fetching student data:', error);
+        }
+
+        return {
+          enrollmentId: doc.id,
+          userId: enrollment.userId,
+          studentName: studentData?.displayName || 'Unknown Student',
+          studentEmail: studentData?.email || '',
+          progress: enrollment.progress || 0,
+          completedLessons: enrollment.completedLessons || [],
+          completed: enrollment.completed || false,
+          enrolledAt: enrollment.enrollmentDate || enrollment.enrolledAt,
+          updatedAt: enrollment.updatedAt,
+        };
+      })
+    );
+
+    return enrollmentsWithStudents;
   }
 }
 

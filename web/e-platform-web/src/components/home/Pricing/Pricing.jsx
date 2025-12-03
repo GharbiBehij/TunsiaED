@@ -53,8 +53,9 @@ export default function Pricing() {
                 <li className="flex items-center"><span className="material-symbols-outlined text-green-500 mr-2 text-lg">check_circle</span>Course completion certificates</li>
               </ul>
 
+              {/* MODIFIED: Changed to="/subscription" to align with header logic */}
               <Link
-                to="/pricing"
+                to="/subscription"
                 className="w-full mt-8 flex items-center justify-center rounded-lg h-12 px-6 bg-primary text-white text-base font-bold hover:bg-primary/90 transition-colors"
               >
                 Upgrade to Pro

@@ -1,43 +1,20 @@
 // src/modules/Enrollement/repository/Enrollement.repository.js
 import { enrollmentDao } from '../model/dao/Enrollement.dao.js';
-import { Enrollment } from '../model/entity/Enrollement.entity.js';
 
 export class EnrollmentRepository {
   async createEnrollment(userId, data, paymentId, transactionId) {
-    const raw = await enrollmentDao.createEnrollment(
+    return await enrollmentDao.createEnrollment(
       userId,
       data,
       paymentId,
       transactionId
-    );
-
-    return new Enrollment(
-      raw.enrollmentId,
-      raw.userId,
-      raw.courseId,
-      new Date(raw.enrollmentDate),
-      raw.status,
-      raw.paymentId || undefined,
-      raw.transactionId || undefined,
-      raw
     );
   }
 
   async findByEnrollmentId(enrollmentId) {
     try {
       const doc = await enrollmentDao.getEnrollmentById(enrollmentId);
-      if (!doc) return null;
-
-      return new Enrollment(
-        enrollmentId,
-        doc.userId,
-        doc.courseId,
-        new Date(doc.enrollmentDate),
-        doc.status,
-        doc.paymentId,
-        doc.transactionId,
-        doc
-      );
+      return doc || null;
     } catch {
       return null;
     }
@@ -46,19 +23,7 @@ export class EnrollmentRepository {
   async findUserEnrollments(userId) {
     try {
       const docs = await enrollmentDao.getUserEnrollments(userId);
-      return docs.map(
-        (doc) =>
-          new Enrollment(
-            doc.enrollmentId,
-            doc.userId,
-            doc.courseId,
-            new Date(doc.enrollmentDate),
-            doc.status,
-            doc.paymentId || undefined,
-            doc.transactionId || undefined,
-            doc
-          )
-      );
+      return docs;
     } catch {
       return [];
     }
@@ -81,6 +46,43 @@ export class EnrollmentRepository {
       return await enrollmentDao.checkUserEnrollment(userId, courseId);
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Update enrollment progress
+   * @param {string} enrollmentId - The enrollment ID
+   * @param {Object} progressData - Progress data
+   */
+  async updateEnrollmentProgress(enrollmentId, progressData) {
+    try {
+      return await enrollmentDao.updateEnrollmentProgress(enrollmentId, progressData);
+    } catch (error) {
+      throw new Error('Failed to update enrollment progress: ' + error.message);
+    }
+  }
+
+  /**
+   * Get enrollment with detailed progress
+   * @param {string} enrollmentId - The enrollment ID
+   */
+  async getEnrollmentWithProgress(enrollmentId) {
+    try {
+      return await enrollmentDao.getEnrollmentWithProgress(enrollmentId);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get all enrollments for a course with progress (for instructors)
+   * @param {string} courseId - The course ID
+   */
+  async getCourseEnrollmentsWithProgress(courseId) {
+    try {
+      return await enrollmentDao.getCourseEnrollmentsWithProgress(courseId);
+    } catch {
+      return [];
     }
   }
 }

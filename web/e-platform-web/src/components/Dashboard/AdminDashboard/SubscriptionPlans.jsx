@@ -21,8 +21,9 @@ export default function SubscriptionPlans({ data: plans = [], isLoading }) {
             ))}
           </ul>
           <button 
-            onClick={() => updatePlan.mutate({ id: plan.id, ...updatePlan })}
+            onClick={() => console.log('Edit plan:', plan.id)}
             className="w-full mt-6 rounded-lg text-primary border border-primary h-10 text-sm font-medium hover:bg-primary/5"
+            title="Edit functionality coming soon"
           >
             Edit Plan
           </button>

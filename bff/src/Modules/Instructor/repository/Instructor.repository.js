@@ -29,6 +29,15 @@ export class InstructorRepository {
   async getInstructorActivity(instructorId, limit) {
     return await instructorDao.getInstructorActivity(instructorId, limit);
   }
+
+  /**
+   * Get student progress for a course (instructor view)
+   * @param {string} instructorId - The instructor ID
+   * @param {string} courseId - The course ID
+   */
+  async getStudentProgressForCourse(instructorId, courseId) {
+    return await instructorDao.getStudentProgressForCourse(instructorId, courseId);
+  }
 }
 
 export const instructorRepository = new InstructorRepository();

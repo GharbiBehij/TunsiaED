@@ -35,11 +35,11 @@ export const authenticate = async (req, res, next) => {
 
     // Token verified successfully
     req.user = {
-      uid: decoded.uid,
-      email: decoded.email,
-      isAdmin: decoded.isAdmin || false,
-      isInstructor: decoded.isInstructor || false,
-      isStudent: decoded.isStudent || false,
+      uid: decodedToken.uid,
+      email: decodedToken.email,
+      isAdmin: decodedToken.isAdmin || false,
+      isInstructor: decodedToken.isInstructor || false,
+      isStudent: decodedToken.isStudent || false,
     };
 
     console.log(`Auth successful for user: ${decodedToken.email}`);

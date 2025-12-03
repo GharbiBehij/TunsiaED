@@ -1,57 +1,33 @@
 // Repository for Certificate domain logic.
 import { certificateDao } from '../model/dao/Certificate.dao.js';
-import { Certificate } from '../model/entity/Certificate.entity.js';
 
 export class CertificateRepository {
+  // Create certificate via DAO
   async createCertificate(userId, courseId, data) {
-    const raw = await certificateDao.createCertificate(userId, courseId, data);
-    return new Certificate(
-      raw.certificateId,
-      raw.userId,
-      raw.courseId,
-      new Date(raw.issuedAt),
-      raw.grade,
-      raw.metadata,
-      raw
-    );
+    return await certificateDao.createCertificate(userId, courseId, data);
   }
 
+  // Find a certificate by ID via DAO
   async findByCertificateId(certificateId) {
     try {
       const doc = await certificateDao.getCertificateById(certificateId);
-      if (!doc) return null;
-      return new Certificate(
-        certificateId,
-        doc.userId,
-        doc.courseId,
-        new Date(doc.issuedAt),
-        doc.grade,
-        doc.metadata,
-        doc
-      );
+      return doc || null;
     } catch {
       return null;
     }
   }
 
+  // Update certificate via DAO
   async updateCertificate(certificateId, data) {
     try {
       const doc = await certificateDao.updateCertificate(certificateId, data);
-      if (!doc) return null;
-      return new Certificate(
-        certificateId,
-        doc.userId,
-        doc.courseId,
-        new Date(doc.issuedAt),
-        doc.grade,
-        doc.metadata,
-        doc
-      );
+      return doc || null;
     } catch {
       return null;
     }
   }
 
+  // Delete certificate via DAO
   async deleteCertificate(certificateId) {
     try {
       await certificateDao.deleteCertificate(certificateId);
@@ -61,58 +37,31 @@ export class CertificateRepository {
     }
   }
 
+  // Find all certificates by user via DAO
   async findCertificatesByUser(userId) {
     try {
       const docs = await certificateDao.getCertificatesByUser(userId);
-      return docs.map(doc =>
-        new Certificate(
-          doc.certificateId,
-          doc.userId,
-          doc.courseId,
-          new Date(doc.issuedAt),
-          doc.grade,
-          doc.metadata,
-          doc
-        )
-      );
+      return docs;
     } catch {
       return [];
     }
   }
 
+  // Find all certificates by course via DAO
   async findCertificatesByCourse(courseId) {
     try {
       const docs = await certificateDao.getCertificatesByCourse(courseId);
-      return docs.map(doc =>
-        new Certificate(
-          doc.certificateId,
-          doc.userId,
-          doc.courseId,
-          new Date(doc.issuedAt),
-          doc.grade,
-          doc.metadata,
-          doc
-        )
-      );
+      return docs
     } catch {
       return [];
     }
   }
 
+  // Find all certificates via DAO
   async findAllCertificates() {
     try {
       const docs = await certificateDao.getAllCertificates();
-      return docs.map(doc =>
-        new Certificate(
-          doc.certificateId,
-          doc.userId,
-          doc.courseId,
-          new Date(doc.issuedAt),
-          doc.grade,
-          doc.metadata,
-          doc
-        )
-      );
+      return docs
     } catch {
       return [];
     }

@@ -1,65 +1,123 @@
-import { userRepository } from '../../repository/User.repository.js';
-import {UserPermission } from './UserPermission.js';
+// bff/src/Modules/User/service/User.service.js
+import { userRepository } from '../repository/User.repository.js';
+import { UserPermission } from './UserPermission.js';
+import { UserRoleService } from './UserRoleService.js';
+import { UserMapper } from '../mapper/User.mapper.js';
 
-const ADMIN_EMAIL = "admin@tunisiaed.com";
-
-export const onboardUser = async (user, parsedData) => {
-  const { uid, email } = user;
-
-  // ADMIN LOGIC
-  const isAdmin = email === ADMIN_EMAIL;// compare the admin email with the firebase email and if they are the same 
-  // you pass it to the repo.
-
-  // Role flags (student/instructor) are mapped to booleans
-  const roleFlags = {
-    isInstructor: parsedData.role === 'instructor',
-    isStudent: parsedData.role === 'student' || !parsedData.role,
-  };
-
-  return userRepository.onboard(uid, {
-    email,
-    isAdmin,
-    ...roleFlags,//boolean for the roles 
-    ...parsedData
-  });
-};
-
-export const getMyProfile = async (uid) => {
-  return userRepository.findByUid(uid); // No need to pass isAdmin
-};
-
-export const updateProfile = async (targetUserId, user, updates) => {
-  // Check if user can update this profile
-  if (!UserPermission.update(user, targetUserId)) {
-    throw new Error('Unauthorized');
+export class UserService {
+  // Helper: Map raw data to model
+  _toModel(raw) {
+    return raw ? UserMapper.toModel(raw) : null;
   }
 
-  // If role-related fields are being updated, check permissions
-  const hasRoleUpdate = updates.role || 
-                        updates.isAdmin !== undefined || 
-                        updates.isInstructor !== undefined || 
-                        updates.isStudent !== undefined;
+  _toModels(rawList) {
+    return rawList.map(raw => UserMapper.toModel(raw)).filter(Boolean);
+  }
 
-  if (hasRoleUpdate) {
-    const targetUser = await userRepository.findByUid(targetUserId);
-    if (!targetUser) {
-      throw new Error('User not found');
+  _toEntity(uid, model) {
+    return UserMapper.toEntity(uid, model);
+  }
+
+  _toEntityUpdate(model) {
+    return UserMapper.toEntityUpdate(model);
+  }
+
+  // Create new user profile with role assignment (public - during registration)
+  async onboardUser(user, parsedData) {
+    const { uid, email } = user;
+
+    UserMapper.validateCreate({ email, ...parsedData });
+
+    // Set Firebase Custom Claims (this makes roles appear in the JWT token)
+    const roleFlags = await UserRoleService.setRolesOnOnboard(
+      uid,
+      email,
+      parsedData.role
+    );
+
+    // Store in Firestore (for queries and backward compatibility)
+    const raw = await userRepository.onboard(uid, {
+      email,
+      ...roleFlags,
+      ...parsedData,
+    });
+    return this._toModel(raw);
+  }
+
+  // Get user profile by UID (admin/self only)
+  async getProfile(uid) {
+    const raw = await userRepository.findByUid(uid);
+    return this._toModel(raw);
+  }
+
+  // Update user profile (admin/self only, role changes admin only)
+  async updateProfile(targetUserId, actor, updates) {
+    if (!UserPermission.update(actor, targetUserId)) {
+      throw new Error('Unauthorized');
     }
 
-    // Check if user can update roles
-    if (!UserPermission.update(user, targetUser, updates.role)) {
-      throw new Error('Unauthorized: Only admins can change roles');
+    // Check if updating role fields
+    const containsRoleChanges =
+      updates.role ||
+      updates.isAdmin !== undefined ||
+      updates.isInstructor !== undefined ||
+      updates.isStudent !== undefined;
+
+    if (containsRoleChanges) {
+      if (!UserPermission.updateRole(actor)) {
+        throw new Error("Unauthorized: Only admins can change roles");
+      }
+
+      // Sync role changes to Firebase Custom Claims
+      if (updates.isAdmin === true) {
+        await UserRoleService.setAdmin(targetUserId);
+      } else if (updates.isInstructor === true) {
+        await UserRoleService.setInstructor(targetUserId);
+      } else if (updates.isStudent === true || updates.role === 'student') {
+        await UserRoleService.setStudent(targetUserId);
+      } else if (updates.role === 'instructor') {
+        await UserRoleService.setInstructor(targetUserId);
+      } else if (updates.role === 'admin') {
+        await UserRoleService.setAdmin(targetUserId);
+      }
     }
+
+    const raw = await userRepository.updateProfile(targetUserId, updates);
+    return this._toModel(raw);
   }
 
-  return userRepository.updateProfile(targetUserId, updates);
-};
+  // Delete user profile (admin/self only)
+  async deleteProfile(targetUserId, actor) {
+    if (!UserPermission.delete(actor, targetUserId)) {
+      throw new Error('Unauthorized');
+    }
 
-export const deleteProfile = async (targetUserId, user) => {
-  // Check if user can delete this profile
-  if (!UserPermission.delete(user, targetUserId)) {
-    throw new Error('Unauthorized');
+    return await userRepository.deleteProfile(targetUserId);
   }
 
-  return userRepository.deleteProfile(targetUserId);
-};
+  // ====================================================================
+  // INTERNAL METHODS (for orchestrator use - no permission checks)
+  // ====================================================================
+
+  /**
+   * Get user by UID (internal - bypasses permission for orchestrator)
+   * @param {string} uid
+   */
+  async getUserByUidInternal(uid) {
+    const raw = await userRepository.findByUid(uid);
+    return this._toModel(raw);
+  }
+
+  /**
+   * Get multiple users by UIDs (internal - bypasses permission for orchestrator)
+   * @param {string[]} uids
+   */
+  async getUsersByUidsInternal(uids) {
+    const results = await Promise.all(
+      uids.map(uid => userRepository.findByUid(uid).catch(() => null))
+    );
+    return results.filter(Boolean).map(raw => this._toModel(raw));
+  }
+}
+
+export const userService = new UserService();

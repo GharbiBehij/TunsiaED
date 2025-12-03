@@ -14,5 +14,16 @@ router.get('/stats', authenticate, requireRole('admin', 'instructor'), instructo
 router.get('/revenue-trends', authenticate, requireRole('admin', 'instructor'), instructorController.getRevenueTrends);
 router.get('/activity', authenticate, requireRole('admin', 'instructor'), instructorController.getRecentActivity);
 
+// Student progress tracking (instructor view)
+router.get('/courses/:courseId/students/progress', authenticate, requireRole('admin', 'instructor'), instructorController.getStudentProgressForCourse);
+
+// ORCHESTRATED ROUTES - Cross-module aggregation endpoints
+// Dashboard orchestrator - aggregates data from multiple sources
+router.get('/dashboard', authenticate, requireRole('admin', 'instructor'), instructorController.getDashboard);
+// Revenue overview orchestrator - combines revenue and trends
+router.get('/revenue/overview', authenticate, requireRole('admin', 'instructor'), instructorController.getRevenueOverview);
+// Course performance with progress - merges performance and student progress
+router.get('/courses/performance/detailed', authenticate, requireRole('admin', 'instructor'), instructorController.getCoursePerformanceWithProgress);
+
 export { router };
 

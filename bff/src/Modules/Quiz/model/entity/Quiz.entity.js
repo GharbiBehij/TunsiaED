@@ -1,29 +1,18 @@
-// Domain entity representing a quiz attached to a lesson or course.
-export class Quiz {
-  constructor(
-    quizId,
-    courseId,
-    lessonId,
-    title,
-    totalQuestions,
-    passingScore,
-    isPublished,
-    createdAt,
-    updatedAt,
-    extra = {}
-  ) {
-    this.quizId = quizId;
-    this.courseId = courseId;
-    this.lessonId = lessonId ?? null;
-    this.title = title;
-    this.totalQuestions = totalQuestions ?? 0;
-    this.passingScore = passingScore ?? 0;
-    this.isPublished = isPublished ?? false;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
+// src/modules/Quiz/model/entity/Quiz.entity.js
 
-    Object.assign(this, extra);
-  }
-}
+/**
+ * QuizEntity - Firestore storage format
+ * This is how quiz data is stored in Firestore
+ * 
+ * @typedef {Object} QuizEntity
+ * @property {string} courseId - Parent course ID
+ * @property {string|null} lessonId - Parent lesson ID (optional)
+ * @property {string} title - Quiz title
+ * @property {number} totalQuestions - Number of questions in quiz
+ * @property {number} passingScore - Minimum score to pass
+ * @property {boolean} isPublished - Whether quiz is visible to students
+ * @property {Date} createdAt - Firestore Timestamp
+ * @property {Date} updatedAt - Firestore Timestamp
+ */
 
-
+export const QuizEntity = {};

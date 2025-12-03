@@ -1,55 +1,61 @@
 // src/modules/payment/service/Payment.service.js
+// Single-module operations only. Cross-module purchase flow is in CoursePurchase.orchestrator.js
 import { paymentRepository } from '../repository/Payment.repository.js';
-import { courseRepository } from '../../Course/repository/Course.repository.js';
 import { PaymentPermission } from './PaymentPermission.js';
+import { PaymentMapper } from '../mapper/Payment.mapper.js';
 
 export class PaymentService {
-  async createPayment(userId, data) {
-    const course = await courseRepository.findByCourseId(data.courseId);
-    if (!course) throw new Error('Course not found');
+  // Helper: Map raw data to model
+  _toModel(raw) {
+    return raw ? PaymentMapper.toModel(raw.paymentId, raw) : null;
+  }
 
-    let amount = course.price;
-    if (data.paymentType === 'subscription' && data.subscriptionType) {
-      amount = data.subscriptionType === 'monthly' 
-        ? course.price 
-        : course.price * 10;
-    }
+  _toModels(rawList) {
+    return rawList.map(raw => PaymentMapper.toModel(raw.paymentId, raw));
+  }
 
-    const paymentData = {
-      userId,
-      courseId: data.courseId,
-      courseTitle: course.title,
-      amount,
-      currency: 'TND',
-      paymentType: data.paymentType || 'course_purchase',
-      subscriptionType: data.subscriptionType || null,
-      paymentMethod: data.paymentMethod || null,
-    };
+  _toEntity(model) {
+    return PaymentMapper.toEntity(model);
+  }
 
-    return await paymentRepository.createPayment(paymentData);
+  _toEntityUpdate(model) {
+    return PaymentMapper.toEntityUpdate(model);
+  }
+
+  // Note: createPayment with course price lookup is in CoursePurchase.orchestrator.js
+  // This method is for internal/admin use only
+  async createPaymentInternal(paymentData) {
+    PaymentMapper.validateCreate(paymentData);
+    const raw = await paymentRepository.createPayment(paymentData);
+    return this._toModel(raw);
   }
 
   async getPaymentById(paymentId) {
-    return await paymentRepository.findByPaymentId(paymentId);
+    const raw = await paymentRepository.findByPaymentId(paymentId);
+    return this._toModel(raw);
   }
 
   async updatePayment(paymentId, user, updateData) {
     if (!PaymentPermission.update(user)) {
       throw new Error('Unauthorized');
     }
-    return await paymentRepository.updatePayment(paymentId, updateData);
+    const raw = await paymentRepository.updatePayment(paymentId, updateData);
+    return this._toModel(raw);
   }
 
   async getUserPayments(userId) {
-    return await paymentRepository.findPaymentsByUser(userId);
+    const rawList = await paymentRepository.findPaymentsByUser(userId);
+    return this._toModels(rawList);
   }
 
   async getCoursePayments(courseId) {
-    return await paymentRepository.findPaymentsByCourse(courseId);
+    const rawList = await paymentRepository.findPaymentsByCourse(courseId);
+    return this._toModels(rawList);
   }
 
   async getPaymentsByStatus(status) {
-    return await paymentRepository.findPaymentsByStatus(status);
+    const rawList = await paymentRepository.findPaymentsByStatus(status);
+    return this._toModels(rawList);
   }
 
   // Paymee webhook calls this
@@ -58,6 +64,29 @@ export class PaymentService {
       status: 'completed',
       transactionId,
     });
+  }
+
+  // ====================================================================
+  // INTERNAL METHODS (for orchestrator use - no permission checks)
+  // ====================================================================
+
+  /**
+   * Get payment by ID (internal - bypasses permission for orchestrator)
+   * @param {string} paymentId
+   */
+  async getPaymentByIdInternal(paymentId) {
+    const raw = await paymentRepository.findByPaymentId(paymentId);
+    return this._toModel(raw);
+  }
+
+  /**
+   * Update payment (internal - bypasses permission for orchestrator)
+   * @param {string} paymentId
+   * @param {Object} updateData
+   */
+  async updatePaymentInternal(paymentId, updateData) {
+    const raw = await paymentRepository.updatePayment(paymentId, updateData);
+    return this._toModel(raw);
   }
 }
 

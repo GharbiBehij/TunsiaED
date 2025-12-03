@@ -1,11 +1,9 @@
 // src/components/Dashboard/StudentDashboard/StudentCoursesList.jsx
 import React, { useState } from 'react';
-import { useCourses } from '../../../../hooks/Course/useCourses';
 import StudentCourseFilters from './StudentCourseFilters';
 import CourseCard from './CourseCard';
 
-export default function StudentCoursesList() {
-  const { data: courses = [], isLoading } = useCourses();
+export default function StudentCourseList({ courses = [] }) {
   const [filters, setFilters] = useState({
     category: 'all',
     level: 'all',
@@ -22,14 +20,9 @@ export default function StudentCoursesList() {
     return true;
   });
 
-  if (isLoading) {
-    return (
-      <div className="text-center py-20">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+  if (!courses || courses.length === 0) {
+    return <p className="text-center text-gray-500 py-10">No courses found</p>;
   }
-
   return (
     <div className="flex flex-col gap-6">
       <StudentCourseFilters filters={filters} onChange={setFilters} />

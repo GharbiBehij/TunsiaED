@@ -1,8 +1,8 @@
 // Student Courses Section - Wrapper component for student courses widget
 import React from 'react';
-import StudentCourseList from './CourseList';
+import StudentCourseList from './StudentCourseList';
 
-export default function StudentCoursesSection({ data: courses = [], isLoading, showTitle = true, title = 'My Courses' }) {
+export default function StudentCoursesSection({ data = [], isLoading, showTitle = true, title = 'My Courses' }) {
 
   if (isLoading) {
     return (
@@ -15,7 +15,7 @@ export default function StudentCoursesSection({ data: courses = [], isLoading, s
   return (
     <>
       {showTitle && <h2 className="text-2xl font-bold mb-6">{title}</h2>}
-      <StudentCourseList courses={courses} />
+      <StudentCourseList courses={data} />
     </>
   );
 }

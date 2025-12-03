@@ -1,133 +1,125 @@
-// Student DAO for student-specific data aggregation
+// studentDao.js
 import { db } from '../../../../config/firebase.js';
 
-export class StudentDao {
-  // Get student's enrollments with course details
-  async getStudentEnrollments(studentId) {
-    const enrollmentsSnapshot = await db.collection('Enrollments')
-      .where('userId', '==', studentId)
+class StudentDao {
+
+  // ===============================
+  // 1. GET USER ENROLLMENTS + COURSES
+  // ===============================
+  async findEnrollmentsByUserId(userId) {
+    const snapshot = await db
+      .collection("Enrollments")
+      .where("userId", "==", userId)
       .get();
-    
-    const enrollments = [];
-    for (const doc of enrollmentsSnapshot.docs) {
-      const enrollment = doc.data();
-      const courseDoc = await db.collection('Courses').doc(enrollment.courseId).get();
-      const course = courseDoc.exists ? courseDoc.data() : null;
-      
-      enrollments.push({
-        enrollmentId: doc.id,
-        courseId: enrollment.courseId,
-        courseTitle: course?.title || 'Unknown Course',
-        enrolledAt: enrollment.enrolledAt?.toDate() || new Date(enrollment.enrolledAt),
-        progress: enrollment.progress || 0,
-        completed: enrollment.completed || false,
-        course: course ? {
-          courseId: courseDoc.id,
-          title: course.title,
-          thumbnail: course.thumbnail,
-          instructorName: course.instructorName
-        } : null
-      });
-    }
-    
-    return enrollments;
+
+    return snapshot.docs.map(doc => ({
+      enrollmentId: doc.id,
+      ...doc.data()
+    }));
   }
 
-  // Get student's overall progress
-  async getStudentProgress(studentId) {
-    const enrollmentsSnapshot = await db.collection('Enrollments')
-      .where('userId', '==', studentId)
+  // ===============================
+  // 2. GET COURSE BY ID
+  // ===============================
+  async findCourseById(courseId) {
+    const doc = await db.collection("Courses").doc(courseId).get();
+    return doc.exists ? doc.data() : null;
+  }
+
+  // ===============================
+  // 3. UPDATE PROGRESS
+  // ===============================
+  async updateEnrollmentProgress(enrollmentId, progressObject) {
+    // progressObject must be an object: { progress: number }
+    return await db
+      .collection("Enrollments")
+      .doc(enrollmentId)
+      .update(progressObject);
+  }
+
+  // ===============================
+  // 4. MARK A LESSON AS COMPLETED
+  // ===============================
+  async addCompletedLesson(enrollmentId, lessonId) {
+    const ref = db.collection("Enrollments").doc(enrollmentId);
+
+    return await ref.update({
+      completedLessons: db.FieldValue.arrayUnion(lessonId)
+    });
+  }
+
+  // ===============================
+  // 5. FIND ENROLLMENT BY ID
+  // ===============================
+  async findEnrollmentById(enrollmentId) {
+    const doc = await db.collection("Enrollments").doc(enrollmentId).get();
+    return doc.exists ? { id: doc.id, ...doc.data() } : null;
+  }
+
+  // ===============================
+  // 6. MARK ENROLLMENT AS COMPLETED (progress = 100)
+  // ===============================
+  async markEnrollmentAsCompleted(enrollmentId) {
+    return await db.collection("Enrollments").doc(enrollmentId).update({
+      progress: 100,
+      completed: true,
+      completedAt: new Date()
+    });
+  }
+
+  // ===============================
+  // 7. GET STUDENT STATS (count + total progress)
+  // ===============================
+  async getStudentStats(userId) {
+    const enrollmentsSnapshot = await db
+      .collection("Enrollments")
+      .where("userId", "==", userId)
       .get();
-    
-    if (enrollmentsSnapshot.empty) {
-      return {
-        totalCourses: 0,
-        completedCourses: 0,
-        inProgressCourses: 0,
-        averageProgress: 0
-      };
-    }
-    
+
     let totalProgress = 0;
     let completedCount = 0;
-    let inProgressCount = 0;
-    
+    const count = enrollmentsSnapshot.size;
+
     enrollmentsSnapshot.docs.forEach(doc => {
-      const enrollment = doc.data();
-      const progress = enrollment.progress || 0;
-      totalProgress += progress;
-      
-      if (enrollment.completed === true) {
-        completedCount++;
-      } else if (progress > 0) {
-        inProgressCount++;
-      }
+      const e = doc.data();
+      if (e.progress) totalProgress += e.progress;
+      if (e.completed === true) completedCount++;
     });
-    
-    const totalCourses = enrollmentsSnapshot.size;
-    const averageProgress = totalCourses > 0 ? Math.round(totalProgress / totalCourses) : 0;
-    
+
+    // Get certificates count
+    const certificatesSnapshot = await db
+      .collection('Certificates')
+      .where("userId", "==", userId)
+      .get();
+
+    // Calculate streak (placeholder - you can enhance this with actual last access dates)
+    const streak = completedCount > 0 ? Math.min(completedCount * 2, 30) : 0;
+
     return {
-      totalCourses,
-      completedCourses: completedCount,
-      inProgressCourses: inProgressCount,
-      averageProgress
+      totalCourses: count,
+      averageProgress: count > 0 ? totalProgress / count : 0,
+      streak: streak,
+      completed: completedCount,
+      certificates: certificatesSnapshot.size
     };
   }
-
-  // Get student's certificates
   async getStudentCertificates(studentId) {
-    const certificatesSnapshot = await db.collection('Certificates')
-      .where('userId', '==', studentId)
+    //we need to fetch the Certificate collection for the student 
+    const certificates = await db
+      .collection('Certificates')
+      .where("userId", "==", studentId)
       .orderBy('issuedAt', 'desc')
       .get();
-    
-    const certificates = [];
-    for (const doc of certificatesSnapshot.docs) {
-      const certificate = doc.data();
-      const courseDoc = await db.collection('Courses').doc(certificate.courseId).get();
-      const course = courseDoc.exists ? courseDoc.data() : null;
-      
-      certificates.push({
-        certificateId: doc.id,
-        courseId: certificate.courseId,
-        courseTitle: course?.title || 'Unknown Course',
-        issuedAt: certificate.issuedAt?.toDate() || new Date(certificate.issuedAt),
-        grade: certificate.grade || null
-      });
-    }
-    
-    return certificates;
-  }
 
-  // Get student's learning statistics
-  async getStudentStats(studentId) {
-    const enrollmentsSnapshot = await db.collection('Enrollments')
-      .where('userId', '==', studentId)
-      .get();
-    
-    const certificatesSnapshot = await db.collection('Certificates')
-      .where('userId', '==', studentId)
-      .get();
-    
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const recentEnrollments = enrollmentsSnapshot.docs.filter(doc => {
-      const enrollment = doc.data();
-      const enrolledAt = enrollment.enrolledAt?.toDate() || new Date(enrollment.enrolledAt);
-      return enrolledAt >= thirtyDaysAgo;
-    });
-    
-    return {
-      totalEnrollments: enrollmentsSnapshot.size,
-      completedCourses: enrollmentsSnapshot.docs.filter(doc => doc.data().completed === true).length,
-      certificatesEarned: certificatesSnapshot.size,
-      recentEnrollments: recentEnrollments.length,
-      totalLearningHours: 0 // Would need to calculate from lessons watched
-    };
+    return certificates.docs.map(doc => ({
+      certificateId: doc.id,
+      ...doc.data()
+    }));
+  }
+  async createCertificate(data) {
+    const docRef = await db.collection("Certificates").add(data);
+    return { id: docRef.id, ...data };
   }
 }
 
 export const studentDao = new StudentDao();
-

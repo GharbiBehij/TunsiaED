@@ -1,9 +1,9 @@
 // Dynamic Dashboard Component - Renders dashboards based on configuration
 import React from 'react';
 import { getDashboardConfig, WIDGET_REGISTRY } from '../../config/dashboardConfig';
-import { useAdminDashboard } from '../../hooks/useAdminDashboard';
-import { useInstructorDashboard } from '../../hooks/useInstructorDashboard';
-import { useStudentDashboard } from '../../hooks/useStudentDashboard';
+import { useAdminDashboard } from '../../hooks/Admin/useAdmin';
+import { useInstructorDashboard } from '../../hooks/Instructor/useInstructor';
+import { useStudentDashboard } from '../../hooks/Student/useStudent';
 import { DashboardSpinner } from './DashboardSpinner';
 import { DashboardError } from './DashboardError';
 
@@ -23,9 +23,10 @@ export default function DynamicDashboard({ role }) {
   const { data, isLoading, isError, error, refetch } = useDashboard();
 
   // Map widget IDs to props using config.propsMap
+  // Pass isLoading and isError so widgets can render their own loading/error states
   const widgetProps = React.useMemo(
-    () => (config.propsMap && data ? config.propsMap(data) : {}),
-    [config, data]
+    () => (config.propsMap ? config.propsMap(data, isLoading, isError) : {}),
+    [config, data, isLoading, isError]
   );
 
   // Helper to get widget component

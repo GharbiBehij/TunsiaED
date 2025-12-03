@@ -1,7 +1,22 @@
-// Firestore DAO for quizzes.
+// src/modules/Quiz/model/dao/Quiz.dao.js
+// DAO returns raw Firestore data - mapping happens in Service layer
 import { db } from '../../../../config/firebase.js';
 
+const COLLECTION = 'Quizzes';
+
 export class QuizDao {
+  get collection() {
+    return db.collection(COLLECTION);
+  }
+
+  _docToRaw(doc) {
+    return doc.exists ? { quizId: doc.id, ...doc.data() } : null;
+  }
+
+  _snapshotToRaw(snapshot) {
+    return snapshot.docs.map(doc => ({ quizId: doc.id, ...doc.data() }));
+  }
+
   async createQuiz(courseId, lessonId, data) {
     const docData = {
       courseId,
@@ -14,71 +29,48 @@ export class QuizDao {
       updatedAt: new Date(),
     };
 
-    const ref = await db.collection('Quizzes').add(docData);
-    return {
-      quizId: ref.id,
-      ...docData,
-    };
+    const ref = await this.collection.add(docData);
+    return { quizId: ref.id, ...docData };
   }
 
   async getQuizById(quizId) {
-    const snap = await db.collection('Quizzes').doc(quizId).get();
-    return snap.exists ? snap.data() : null;
+    const doc = await this.collection.doc(quizId).get();
+    return this._docToRaw(doc);
   }
 
   async updateQuiz(quizId, data) {
-    const update = {
-      updatedAt: new Date(),
-    };
-
+    const update = { updatedAt: new Date() };
     if (data.title !== undefined) update.title = data.title;
-    if (data.totalQuestions !== undefined)
-      update.totalQuestions = data.totalQuestions;
+    if (data.totalQuestions !== undefined) update.totalQuestions = data.totalQuestions;
     if (data.passingScore !== undefined) update.passingScore = data.passingScore;
     if (data.isPublished !== undefined) update.isPublished = data.isPublished;
 
-    await db.collection('Quizzes').doc(quizId).update(update);
-    const snap = await db.collection('Quizzes').doc(quizId).get();
-    return snap.exists ? snap.data() : null;
+    await this.collection.doc(quizId).update(update);
+    return this.getQuizById(quizId);
   }
 
   async deleteQuiz(quizId) {
-    await db.collection('Quizzes').doc(quizId).delete();
+    await this.collection.doc(quizId).delete();
   }
 
   async getQuizzesByCourse(courseId) {
-    const snapshot = await db
-      .collection('Quizzes')
+    const snapshot = await this.collection
       .where('courseId', '==', courseId)
       .get();
-
-    return snapshot.docs.map(doc => ({
-      quizId: doc.id,
-      ...doc.data(),
-    }));
+    return this._snapshotToRaw(snapshot);
   }
 
   async getQuizzesByLesson(lessonId) {
-    const snapshot = await db
-      .collection('Quizzes')
+    const snapshot = await this.collection
       .where('lessonId', '==', lessonId)
       .get();
-
-    return snapshot.docs.map(doc => ({
-      quizId: doc.id,
-      ...doc.data(),
-    }));
+    return this._snapshotToRaw(snapshot);
   }
 
   async getAllQuizzes() {
-    const snapshot = await db.collection('Quizzes').get();
-    return snapshot.docs.map(doc => ({
-      quizId: doc.id,
-      ...doc.data(),
-    }));
+    const snapshot = await this.collection.get();
+    return this._snapshotToRaw(snapshot);
   }
 }
 
 export const quizDao = new QuizDao();
-
-

@@ -2,7 +2,7 @@
 import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
 import { useRoleRedirect } from '../hooks/Roles/useRoleRedirect';
-import DashboardHeader from '../components/Headers/DashboardHeader';
+import Header from '../components/home/Header/Header';
 
 export default function MainLayout({ children }) {
   useRoleRedirect(); // ← Perfect
@@ -14,9 +14,9 @@ export default function MainLayout({ children }) {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col lg:ml-72">  {/* ← RESPONSIVE */}
-        <DashboardHeader />
+        <Header />
         <main className="flex-1 overflow-y-auto p-8">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>

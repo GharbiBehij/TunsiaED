@@ -12,5 +12,14 @@ router.get('/activity', authenticate, requireRole('admin'), adminController.getR
 router.get('/courses/performance', authenticate, requireRole('admin'), adminController.getCoursePerformance);
 router.get('/engagement', authenticate, requireRole('admin'), adminController.getUserEngagement);
 
+// Promotion routes
+router.get('/promotions/active', authenticate, requireRole('admin'), adminController.getActivePromotions);
+router.post('/promotions', authenticate, requireRole('admin'), adminController.createPromotion);
+
+// Subscription routes
+router.get('/subscriptions/plans', authenticate, requireRole('admin'), adminController.getSubscriptionPlans);
+router.get('/subscriptions/stats', authenticate, requireRole('admin'), adminController.getSubscriptionStats);
+router.patch('/subscriptions/:planId', authenticate, requireRole('admin'), adminController.updateSubscriptionPlan);
+
 export { router };
 

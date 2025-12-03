@@ -41,11 +41,11 @@ export const onboardCourse = async (req, res) => {
   }
 };
 
-// GET A SINGLE COURSE
+// Get a single course by ID (public)
 export const getMyCourse = async (req, res) => {
   try {
     const courseId = req.params.courseId;
-    const course = await courseService.getMyCourse(courseId);
+    const course = await courseService.getCourseById(courseId);
 
     if (!course) {
       return res.status(404).json({ error: "Course not found" });
@@ -57,7 +57,7 @@ export const getMyCourse = async (req, res) => {
   }
 };
 
-// GET ALL COURSES
+// Get all courses (public)
 export const getAllCourses = async (req, res) => {
   try {
     const courses = await courseService.getAllCourses();
@@ -67,7 +67,7 @@ export const getAllCourses = async (req, res) => {
   }
 };
 
-// GET INSTRUCTOR'S COURSES
+// Get all courses for authenticated instructor
 export const getInstructorCourses = async (req, res) => {
   try {
     const instructorId = req.user.uid;
@@ -78,7 +78,7 @@ export const getInstructorCourses = async (req, res) => {
   }
 };
 
-// UPDATE A COURSE
+// Update a course (admin/course owner only)
 export const updateMyCourse = async (req, res) => {
   const parsed = UpdateCourseSchema.safeParse(req.body);
 
@@ -95,7 +95,7 @@ export const updateMyCourse = async (req, res) => {
     
     const user = await userRepository.findByUid(userId);
 
-    const updated = await courseService.updateMyCourse(
+    const updated = await courseService.updateCourse(
       courseId,
       user,
       parsed.data
@@ -114,7 +114,7 @@ export const updateMyCourse = async (req, res) => {
   }
 };
 
-// DELETE A COURSE
+// Delete a course (admin/course owner only)
 export const deleteMycourse = async (req, res) => {
   try {
     const courseId = req.params.courseId;
@@ -122,7 +122,7 @@ export const deleteMycourse = async (req, res) => {
     
     const user = await userRepository.findByUid(userId);
 
-    await courseService.deleteMycourse(courseId, user);
+    await courseService.deleteCourse(courseId, user);
     
     res.json({ message: "Course deleted successfully" });
   } catch (err) {
@@ -136,7 +136,7 @@ export const deleteMycourse = async (req, res) => {
   }
 };
 
-// Public filter by category
+// Get courses filtered by category (public)
 export const getCoursesByCategory = async (req, res) => {
   try {
     const { category } = req.params;

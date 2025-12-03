@@ -11,5 +11,9 @@ router.get('/enrollments', authenticate, enrollmentController.getUserEnrollments
 router.get('/:enrollmentId', authenticate, enrollmentController.getEnrollmentById);
 router.get('/course/:courseId/students', authenticate, enrollmentController.getStudentsForCourse);
 
+// Progress tracking routes
+router.get('/course/:courseId/progress', authenticate, enrollmentController.getCourseEnrollmentsWithProgress);
+router.get('/:enrollmentId/progress', authenticate, enrollmentController.getEnrollmentWithProgress);
+
 export { router };
 

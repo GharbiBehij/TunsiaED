@@ -1,7 +1,8 @@
-// src/components/Course/StudentCourseCard.jsx
+// src/components/Course/CourseCard.jsx
 import React from 'react';
+import { Link } from 'react-router-dom';
 
-export default function StudentCourseCard({ course }) {
+export default function CourseCard({ course }) {
   const progressPercent = course.progress || 0;
   const isCompleted = progressPercent === 100;
 
@@ -41,7 +42,8 @@ export default function StudentCourseCard({ course }) {
         </div>
 
         <div className="mt-4 flex items-center justify-between">
-          <button
+          <Link
+            to={`/courses/${course.courseId || course.id}`}
             className={`w-full flex items-center justify-center rounded-lg px-4 py-2.5 text-sm font-semibold ${
               isCompleted
                 ? 'bg-gray-100 text-[#111418] border border-gray-300'
@@ -53,7 +55,7 @@ export default function StudentCourseCard({ course }) {
               : progressPercent > 0
               ? 'Continue Learning'
               : 'Start Course'}
-          </button>
+          </Link>
         </div>
       </div>
     </div>

@@ -13,9 +13,14 @@ import { router as certificateRouter } from './src/Modules/Certificate/Api/Certi
 import { router as adminRouter } from './src/Modules/Admin/api/Admin.routes.js';
 import { router as instructorRouter } from './src/Modules/Instructor/api/Instructor.routes.js';
 import { router as studentRouter } from './src/Modules/Student/api/Student.routes.js';
-import { router as notificationRouter } from './src/Modules/Notification/api/Notification.routes.js';
+import { router as progressRouter } from './src/Modules/Progress/api/Progress.routes.js';
+import { initializeFirebaseNotifications } from './src/events/index.js';
 
 const app = express();
+
+// Initialize event system (Firebase notifications)
+initializeFirebaseNotifications();
+console.log('✅ Event system initialized');
 
 // Allowed origins
 const allowedOrigins = [
@@ -81,7 +86,8 @@ app.use('/api/v1/certificate', certificateRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/instructor', instructorRouter);
 app.use('/api/v1/student', studentRouter);
-app.use('/api/v1/notification', notificationRouter);
+app.use('/api/v1/progress', progressRouter);
+
 // 6️ Global error handler
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);

@@ -1,84 +1,33 @@
 // src/modules/Course/repository/Course.repository.js
 import { courseDao } from '../model/dao/Course.dao.js';
-import { Course } from '../model/entity/Course.entity.js';
 
 export class CourseRepository {
+  // Create course via DAO
   async createCourse(instructorId, instructorName, data) {
-    const raw = await courseDao.createCourse(instructorId, instructorName, data);
-
-    return new Course(
-      raw.courseId,
-      raw.title,
-      raw.description,
-      raw.instructorId,
-      raw.instructorName,
-      raw.category,
-      raw.level,
-      raw.price,
-      raw.thumbnail || undefined,
-      raw.duration,
-      raw.enrolledCount || 0,
-      raw.rating || 0,
-      new Date(raw.createdAt),
-      new Date(raw.updatedAt),
-      raw
-    );
+    return await courseDao.createCourse(instructorId, instructorName, data);
   }
 
+  // Find a course by ID via DAO
   async findByCourseId(courseId) {
     try {
       const doc = await courseDao.getCourseById(courseId);
-      if (!doc) return null;
-
-      return new Course(
-        courseId,
-        doc.title,
-        doc.description,
-        doc.instructorId,
-        doc.instructorName,
-        doc.category,
-        doc.level,
-        doc.price,
-        doc.thumbnail,
-        doc.duration,
-        doc.enrolledCount || 0,
-        doc.rating || 0,
-        new Date(doc.createdAt),
-        new Date(doc.updatedAt),
-        doc
-      );
+      return doc || null;
     } catch {
       return null;
     }
   }
 
+  // Update course via DAO
   async updateCourse(courseId, data) {
     try {
       const doc = await courseDao.updateCourse(courseId, data);
-      if (!doc) return null;
-
-      return new Course(
-        courseId,
-        doc.title,
-        doc.description,
-        doc.instructorId,
-        doc.instructorName,
-        doc.category,
-        doc.level,
-        doc.price,
-        doc.thumbnail,
-        doc.duration,
-        doc.enrolledCount || 0,
-        doc.rating || 0,
-        new Date(doc.createdAt),
-        new Date(doc.updatedAt),
-        doc
-      );
+      return doc || null;
     } catch {
       return null;
     }
   }
 
+  // Delete course via DAO
   async deleteCourse(courseId) {
     try {
       await courseDao.deleteCourse(courseId);
@@ -88,82 +37,31 @@ export class CourseRepository {
     }
   }
 
+  // Find all courses by instructor via DAO
   async findCoursesByInstructor(instructorId) {
     try {
       const docs = await courseDao.getCoursesByInstructor(instructorId);
-      return docs.map((doc) =>
-        new Course(
-          doc.courseId,
-          doc.title,
-          doc.description,
-          doc.instructorId,
-          doc.instructorName,
-          doc.category,
-          doc.level,
-          doc.price,
-          doc.thumbnail,
-          doc.duration,
-          doc.enrolledCount || 0,
-          doc.rating || 0,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt),
-          doc
-        )
-      );
+      return docs;
     } catch {
       return [];
     }
   }
 
+  // Find all courses via DAO
   async findAllCourses() {
     try {
       const docs = await courseDao.getAllCourses();
-      return docs.map((doc) =>
-        new Course(
-          doc.courseId,
-          doc.title,
-          doc.description,
-          doc.instructorId,
-          doc.instructorName,
-          doc.category,
-          doc.level,
-          doc.price,
-          doc.thumbnail,
-          doc.duration,
-          doc.enrolledCount || 0,
-          doc.rating || 0,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt),
-          doc
-        )
-      );
+      return docs;
     } catch {
       return [];
     }
   }
 
+  // Find courses by category via DAO
   async findCoursesByCategory(category) {
     try {
       const docs = await courseDao.getCoursesByCategory(category);
-      return docs.map((doc) =>
-        new Course(
-          doc.courseId,
-          doc.title,
-          doc.description,
-          doc.instructorId,
-          doc.instructorName,
-          doc.category,
-          doc.level,
-          doc.price,
-          doc.thumbnail,
-          doc.duration,
-          doc.enrolledCount || 0,
-          doc.rating || 0,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt),
-          doc
-        )
-      );
+      return docs;
     } catch {
       return [];
     }

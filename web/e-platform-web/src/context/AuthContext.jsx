@@ -24,6 +24,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [authAction, setAuthAction] = useState(null);
 
+
   const navigate = useNavigate();
   const location = useLocation();
 

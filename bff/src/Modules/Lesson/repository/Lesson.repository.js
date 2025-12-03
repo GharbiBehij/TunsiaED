@@ -1,66 +1,33 @@
 // Repository for Lesson domain logic.
 import { lessonDao } from '../model/dao/Lesson.dao.js';
-import { Lesson } from '../model/entity/Lesson.entity.js';
 
 export class LessonRepository {
+  // Create lesson via DAO
   async createLesson(courseId, chapterId, data) {
-    const raw = await lessonDao.createLesson(courseId, chapterId, data);
-    return new Lesson(
-      raw.lessonId,
-      raw.chapterId,
-      raw.courseId,
-      raw.title,
-      raw.order,
-      raw.durationMinutes,
-      raw.isPublished,
-      new Date(raw.createdAt),
-      new Date(raw.updatedAt),
-      raw
-    );
+    return await lessonDao.createLesson(courseId, chapterId, data);
   }
 
+  // Find a lesson by ID via DAO
   async findByLessonId(lessonId) {
     try {
       const doc = await lessonDao.getLessonById(lessonId);
-      if (!doc) return null;
-      return new Lesson(
-        lessonId,
-        doc.chapterId,
-        doc.courseId,
-        doc.title,
-        doc.order,
-        doc.durationMinutes,
-        doc.isPublished,
-        new Date(doc.createdAt),
-        new Date(doc.updatedAt),
-        doc
-      );
+      return doc || null;
     } catch {
       return null;
     }
   }
 
+  // Update lesson via DAO
   async updateLesson(lessonId, data) {
     try {
       const doc = await lessonDao.updateLesson(lessonId, data);
-      if (!doc) return null;
-      return new Lesson(
-        lessonId,
-        doc.chapterId,
-        doc.courseId,
-        doc.title,
-        doc.order,
-        doc.durationMinutes,
-        doc.isPublished,
-        new Date(doc.createdAt),
-        new Date(doc.updatedAt),
-        doc
-      );
+      return doc || null;
     } catch {
       return null;
     }
   }
 
+  // Delete lesson via DAO
   async deleteLesson(lessonId) {
     try {
       await lessonDao.deleteLesson(lessonId);
@@ -70,67 +37,31 @@ export class LessonRepository {
     }
   }
 
+  // Find all lessons by chapter via DAO
   async findLessonsByChapter(chapterId) {
     try {
       const docs = await lessonDao.getLessonsByChapter(chapterId);
-      return docs.map(doc =>
-        new Lesson(
-          doc.lessonId,
-          doc.chapterId,
-          doc.courseId,
-          doc.title,
-          doc.order,
-          doc.durationMinutes,
-          doc.isPublished,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt),
-          doc
-        )
-      );
+      return docs;
     } catch {
       return [];
     }
   }
 
+  // Find all lessons by course via DAO
   async findLessonsByCourse(courseId) {
     try {
       const docs = await lessonDao.getLessonsByCourse(courseId);
-      return docs.map(doc =>
-        new Lesson(
-          doc.lessonId,
-          doc.chapterId,
-          doc.courseId,
-          doc.title,
-          doc.order,
-          doc.durationMinutes,
-          doc.isPublished,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt),
-          doc
-        )
-      );
+      return docs;
     } catch {
       return [];
     }
   }
 
+  // Find all lessons via DAO
   async findAllLessons() {
     try {
       const docs = await lessonDao.getAllLessons();
-      return docs.map(doc =>
-        new Lesson(
-          doc.lessonId,
-          doc.chapterId,
-          doc.courseId,
-          doc.title,
-          doc.order,
-          doc.durationMinutes,
-          doc.isPublished,
-          new Date(doc.createdAt),
-          new Date(doc.updatedAt),
-          doc
-        )
-      );
+      return docs;
     } catch {
       return [];
     }

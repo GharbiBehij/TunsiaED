@@ -1,0 +1,5 @@
+{
+    "cmake.ignoreCMakeListsMissing": true,
+    "postman.settings.dotenv-detection-notification-visibility": false,
+    "git.ignoreLimitWarning": true
+}

@@ -1,25 +1,16 @@
-// Domain entity representing a chapter within a course.
-export class Chapter {
-  constructor(
-    chapterId,
-    courseId,
-    title,
-    order,
-    isPublished,
-    createdAt,
-    updatedAt,
-    extra = {}
-  ) {
-    this.chapterId = chapterId;
-    this.courseId = courseId;
-    this.title = title;
-    this.order = order ?? 0;
-    this.isPublished = isPublished ?? false;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
+// src/modules/Chapter/model/entity/Chapter.entity.js
 
-    Object.assign(this, extra);
-  }
-}
+/**
+ * ChapterEntity - Firestore storage format
+ * This is how chapter data is stored in Firestore
+ * 
+ * @typedef {Object} ChapterEntity
+ * @property {string} courseId - Parent course ID
+ * @property {string} title - Chapter title
+ * @property {number} order - Display order within course
+ * @property {boolean} isPublished - Whether chapter is visible to students
+ * @property {Date} createdAt - Firestore Timestamp
+ * @property {Date} updatedAt - Firestore Timestamp
+ */
 
-
+export const ChapterEntity = {};

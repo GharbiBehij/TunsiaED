@@ -1,7 +1,22 @@
-// src/modules/payment/Model/dao/Payment.dao.js
+// src/modules/payment/model/dao/Payment.dao.js
+// DAO returns raw Firestore data - mapping happens in Service layer
 import { db } from '../../../../config/firebase.js';
 
+const COLLECTION = 'payments';
+
 export class PaymentDao {
+  get collection() {
+    return db.collection(COLLECTION);
+  }
+
+  _docToRaw(doc) {
+    return doc.exists ? { paymentId: doc.id, ...doc.data() } : null;
+  }
+
+  _snapshotToRaw(snapshot) {
+    return snapshot.docs.map(doc => ({ paymentId: doc.id, ...doc.data() }));
+  }
+
   async createPayment(data) {
     const paymentDoc = {
       userId: data.userId,
@@ -18,51 +33,41 @@ export class PaymentDao {
       updatedAt: new Date(),
     };
 
-    const docRef = await db.collection('payments').add(paymentDoc);
-    
-    return {
-      paymentId: docRef.id,
-      ...paymentDoc,
-    };
+    const docRef = await this.collection.add(paymentDoc);
+    return { paymentId: docRef.id, ...paymentDoc };
   }
 
   async getPaymentById(paymentId) {
-    const doc = await db.collection('payments').doc(paymentId).get();
-    if (!doc.exists) return null;
-    return { paymentId: doc.id, ...doc.data() };
+    const doc = await this.collection.doc(paymentId).get();
+    return this._docToRaw(doc);
   }
 
   async updatePayment(paymentId, updateData) {
     const finalUpdate = { ...updateData, updatedAt: new Date() };
-    await db.collection('payments').doc(paymentId).update(finalUpdate);
-    
-    const doc = await db.collection('payments').doc(paymentId).get();
-    return doc.exists ? { paymentId: doc.id, ...doc.data() } : null;
+    await this.collection.doc(paymentId).update(finalUpdate);
+    return this.getPaymentById(paymentId);
   }
 
   async getPaymentsByUser(userId) {
-    const snapshot = await db.collection('payments')
+    const snapshot = await this.collection
       .where('userId', '==', userId)
       .orderBy('createdAt', 'desc')
       .get();
-    
-    return snapshot.docs.map(doc => ({ paymentId: doc.id, ...doc.data() }));
+    return this._snapshotToRaw(snapshot);
   }
 
   async getPaymentsByCourse(courseId) {
-    const snapshot = await db.collection('payments')
+    const snapshot = await this.collection
       .where('courseId', '==', courseId)
       .get();
-    
-    return snapshot.docs.map(doc => ({ paymentId: doc.id, ...doc.data() }));
+    return this._snapshotToRaw(snapshot);
   }
 
   async getPaymentsByStatus(status) {
-    const snapshot = await db.collection('payments')
+    const snapshot = await this.collection
       .where('status', '==', status)
       .get();
-    
-    return snapshot.docs.map(doc => ({ paymentId: doc.id, ...doc.data() }));
+    return this._snapshotToRaw(snapshot);
   }
 }
 

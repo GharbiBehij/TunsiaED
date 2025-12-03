@@ -1,47 +1,110 @@
-# Environment variables
+# ============================================
+# Environment & Secrets
+# ============================================
 .env
 .env.local
 .env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.env
+firebase-credentials.json
+*service-account*.json
+*serviceAccountKey*.json
+*firebase-adminsdk*.json
 
+# ============================================
 # Dependencies
+# ============================================
 node_modules/
 .pnp
 .pnp.js
+jspm_packages/
+bower_components/
 
-# Testing
-coverage/
-*.lcov
-
-# Production
+# ============================================
+# Build Outputs
+# ============================================
 build/
 dist/
+.next/
+out/
 *.js.map
+bff/dist/
+bff/build/
+web/e-platform-web/build/
+web/e-platform-web/dist/
 
-# Misc
-.DS_Store
+# ============================================
+# Testing
+# ============================================
+coverage/
+*.lcov
+.nyc_output/
+junit.xml
+test-results/
+*.test.js.snap
+
+# ============================================
+# Cache & Temp
+# ============================================
+.cache/
+.temp/
+.tmp/
+*.tsbuildinfo
+.eslintcache
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================
+# Logs
+# ============================================
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+logs/
+
+# ============================================
+# IDE & Editor
+# ============================================
 .idea/
-.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
 *.swp
 *.swo
+*.swn
 *~
 
+# ============================================
+# OS Files
+# ============================================
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+.Spotlight-V100
+.Trashes
+
+# ============================================
 # Firebase
+# ============================================
 .firebase/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
-.firebaserc
-firebase.json
-firebase.indexes.json
-firestore.rules
-storage.rules
 
-# Flutter
+# ============================================
+# Flutter/Mobile
+# ============================================
 mobile/**/flutter_*.sh
 mobile/**/.flutter-plugins
 mobile/**/.flutter-plugins-dependencies
@@ -50,15 +113,11 @@ mobile/**/.dart_tool/
 mobile/**/.packages
 mobile/**/build/
 mobile/**/*.g.dart
+mobile/e_platform_mobile/pubspec.lock
 
-
-
-# OS
-Thumbs.db
-Desktop.ini
-
-# Service account keys (NEVER commit these!)
-*service-account*.json
-*serviceAccountKey*.json
-*firebase-adminsdk*.json
+# ============================================
+# Redis
+# ============================================
+dump.rdb
+appendonly.aof
 

@@ -1,40 +1,23 @@
-// Domain entity representing a course record coming from Firestore.
-export class Course {
-  constructor(
-    courseId,
-    title,
-    description,
-    instructorId,
-    instructorName,
-    category,
-    level,
-    price,
-    thumbnail,
-    duration,
-    enrolledCount,
-    rating,
-    createdAt,
-    updatedAt,
-    extra = {}
-  ) {
-    this.courseId = courseId;
-    this.title = title;
-    this.description = description;
-    this.instructorId = instructorId;
-    this.instructorName = instructorName;
-    this.category = category;
-    this.level = level;
-    this.price = price;
-    this.thumbnail = thumbnail ?? null;
-    this.duration = duration ?? null;
-    this.enrolledCount = enrolledCount ?? 0;
-    this.rating = rating ?? 0;
-    this.createdAt = createdAt;
-    this.updatedAt = updatedAt;
+// src/modules/Course/model/entity/Course.entity.js
 
-    // Allow additional fields (e.g., published flag) without breaking callers.
-    Object.assign(this, extra);
-  }
-}
+/**
+ * CourseEntity - Firestore storage format
+ * This is how course data is stored in Firestore
+ * 
+ * @typedef {Object} CourseEntity
+ * @property {string} title - Course title
+ * @property {string} description - Course description
+ * @property {string} instructorId - Instructor's user ID
+ * @property {string} instructorName - Instructor's display name
+ * @property {string} category - Course category
+ * @property {string} level - Difficulty level
+ * @property {number} price - Course price
+ * @property {string|null} thumbnail - Thumbnail URL
+ * @property {string} duration - Estimated duration
+ * @property {number} enrolledCount - Number of enrolled students
+ * @property {number} rating - Average rating
+ * @property {Date} createdAt - Firestore Timestamp
+ * @property {Date} updatedAt - Firestore Timestamp
+ */
 
-
+export const CourseEntity = {};
