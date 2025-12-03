@@ -15,7 +15,7 @@ export function initializeFirebaseNotifications() {
     
     try {
       await FirebaseMessagingAdapter.sendToDevice(userId, {
-        title: '✅ Payment Successful',
+        title: ' Payment Successful',
         body: `Your payment of ${amount} TND for "${courseTitle}" has been confirmed.`,
         data: {
           type: 'payment_success',
@@ -35,7 +35,7 @@ export function initializeFirebaseNotifications() {
     
     try {
       await FirebaseMessagingAdapter.sendToDevice(userId, {
-        title: '❌ Payment Failed',
+        title: ' Payment Failed',
         body: `Payment for "${courseTitle}" was unsuccessful. ${reason || 'Please try again.'}`,
         data: {
           type: 'payment_failed',
@@ -55,7 +55,7 @@ export function initializeFirebaseNotifications() {
     try {
       // Notify student
       await FirebaseMessagingAdapter.sendToDevice(studentId, {
-        title: '🎓 Enrollment Confirmed',
+        title: ' Enrollment Confirmed',
         body: `You're now enrolled in "${courseTitle}". Start learning today!`,
         data: {
           type: 'enrollment_created',
@@ -66,7 +66,7 @@ export function initializeFirebaseNotifications() {
 
       // Notify instructor
       await FirebaseMessagingAdapter.sendToDevice(instructorId, {
-        title: '👨‍🎓 New Student Enrolled',
+        title: ' New Student Enrolled',
         body: `A new student enrolled in your course "${courseTitle}"`,
         data: {
           type: 'student_enrolled',
@@ -86,7 +86,7 @@ export function initializeFirebaseNotifications() {
     
     try {
       await FirebaseMessagingAdapter.sendToDevice(userId, {
-        title: '🏆 Certificate Earned!',
+        title: ' Certificate Earned!',
         body: `Congratulations! You've earned a certificate for completing "${courseTitle}"`,
         data: {
           type: 'certificate_granted',
@@ -112,7 +112,7 @@ export function initializeFirebaseNotifications() {
     
     try {
       await FirebaseMessagingAdapter.sendToDevice(userId, {
-        title: `📊 ${milestone}% Complete!`,
+        title: ` ${milestone}% Complete!`,
         body: `You're making great progress in "${courseTitle}". Keep it up!`,
         data: {
           type: 'progress_milestone',

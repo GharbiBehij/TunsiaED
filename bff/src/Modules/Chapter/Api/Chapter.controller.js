@@ -96,7 +96,7 @@ export const deleteChapter = async (req, res) => {
   try {
     const { chapterId } = req.params;
     const userId = req.user.uid;
-    const user = await userRepository.findByUid(userId);
+    const user = await userRepository.findByUid(userId);//needs to exist to know who is logged in
     const isAdmin = user?.isAdmin === true;
 
     await chapterService.deleteChapter(chapterId, user);

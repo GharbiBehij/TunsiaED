@@ -12,6 +12,7 @@ export const onboardUser = async (req, res) => {
 
   try {
     const profile = await userService.onboardUser(req.user, parsed.data);
+
     return res.json({ message: "Welcome!", profile });
   } catch (err) {
     return res.status(500).json({ error: err.message });
@@ -57,9 +58,7 @@ export const updateProfile = async (req, res) => {
 export const deleteProfile = async (req, res) => {
   try {
     const userId = req.user.uid;
-    const user = await userRepository.findByUid(userId);
-    
-    await userService.deleteProfile(userId, user);
+    await userService.deleteProfile(userId);
     res.json({ message: "Profile deleted successfully" });
   } catch (err) {
     if (err.message === 'Unauthorized') {

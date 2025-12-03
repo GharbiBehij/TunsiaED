@@ -68,6 +68,9 @@ export class ChapterService {
 
   // Update chapter details (admin/course owner only)
   async updateChapter(chapterId, user, data) {
+    if (!ChapterPermission.update(user)) {
+      throw new Error('Unauthorized');
+    }
     const existing = await chapterRepository.findByChapterId(chapterId);
     if (!existing) throw new Error('Chapter not found');
     const rawCourse = await courseRepository.findByCourseId(existing.courseId);
@@ -82,6 +85,9 @@ export class ChapterService {
 
   // Delete a chapter (admin/course owner only)
   async deleteChapter(chapterId, user) {
+    if (!ChapterPermission.delete(user)) {
+      throw new Error('Unauthorized');
+    }
     const existing = await chapterRepository.findByChapterId(chapterId);
     if (!existing) throw new Error('Chapter not found');
     const rawCourse = await courseRepository.findByCourseId(existing.courseId);

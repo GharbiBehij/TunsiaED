@@ -39,12 +39,27 @@ export class CoursePurchaseOrchestrator {
       paymentMethod: purchaseData.paymentMethod || null,
       status: 'pending',
     });
+let paymeeResponse;
+try {
+  paymeeResponse = await PaymeeAdapter.initiatePayment({
+    paymentId: payment.paymentId,
+    amount: payment.amount,
+    currency: payment.currency,
+    method: purchaseData.paymentMethod,
+  });
+} catch (err) {
+  return {
+    success: false,
+    message: 'Payment system is currently under maintenance. Please try again later.',
+  };
+};
 
     // 4. Return clean DTO
     return {
       paymentId: payment.paymentId,
       amount: payment.amount,
       currency: payment.currency,
+      gatewayRedirectUrl:gatewayResponse.paymentUrl,
       courseId: payment.courseId,
       courseTitle: payment.courseTitle,
       status: payment.status,
@@ -60,6 +75,9 @@ export class CoursePurchaseOrchestrator {
    */
   async completePurchase(user, confirmationData) {
     // 1. Get payment details (Payment service)
+   try {
+
+   
     const payment = await paymentService.getPaymentById(confirmationData.paymentId);
     if (!payment) {
       throw new Error('Payment not found');
@@ -114,7 +132,15 @@ export class CoursePurchaseOrchestrator {
       courseTitle: payment.courseTitle,
       courseThumbnail: payment.courseThumbnail || null,
     });
-
+  } catch (error) {
+    if (isGatewayDown(error)) {
+      return {
+        success: false,
+        message:'Payment system is currently under maintenance. Please try again later.'
+      };
+    }
+    throw error;
+  }
     // 6. Return clean DTO
     return {
       success: true,
