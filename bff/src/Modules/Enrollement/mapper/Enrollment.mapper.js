@@ -1,6 +1,4 @@
-// src/modules/Enrollement/mapper/Enrollment.mapper.js
-import '../model/Enrollment.model.js';
-import '../model/entity/Enrollement.entity.js';
+// src/modules/enrollment/mapper/Enrollment.mapper.js
 
 /**
  * EnrollmentMapper - Converts between EnrollmentModel (API) and EnrollmentEntity (Firestore)

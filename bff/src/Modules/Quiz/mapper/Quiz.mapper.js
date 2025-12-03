@@ -1,6 +1,4 @@
-// src/modules/Quiz/mapper/Quiz.mapper.js
-import '../model/Quiz.model.js';
-import '../model/entity/Quiz.entity.js';
+// src/modules/quiz/mapper/Quiz.mapper.js
 
 /**
  * QuizMapper - Converts between QuizModel (API) and QuizEntity (Firestore)

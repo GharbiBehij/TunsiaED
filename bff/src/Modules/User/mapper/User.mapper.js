@@ -1,6 +1,4 @@
-// src/modules/User/mapper/User.mapper.js
-import '../model/User.model.js';
-import '../model/entity/User.entity.js';
+// src/modules/user/mapper/User.mapper.js
 
 /**
  * UserMapper - Converts between UserModel (API) and UserEntity (Firestore)

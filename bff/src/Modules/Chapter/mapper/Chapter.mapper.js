@@ -1,6 +1,4 @@
-// src/modules/Chapter/mapper/Chapter.mapper.js
-import '../model/Chapter.model.js';
-import '../model/entity/Chapter.entity.js';
+// src/modules/chapter/mapper/Chapter.mapper.js
 
 /**
  * ChapterMapper - Converts between ChapterModel (API) and ChapterEntity (Firestore)

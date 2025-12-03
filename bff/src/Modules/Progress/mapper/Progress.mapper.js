@@ -1,6 +1,4 @@
 // src/modules/Progress/mapper/Progress.mapper.js
-import '../model/Progress.model.js';
-import '../model/entity/Progress.entity.js';
 
 /**
  * Helper: Convert Firestore Timestamp to ISO string

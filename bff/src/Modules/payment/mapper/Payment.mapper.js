@@ -1,6 +1,4 @@
 // src/modules/payment/mapper/Payment.mapper.js
-import '../model/Payment.model.js';
-import '../model/entity/Payment.entity.js';
 
 /**
  * PaymentMapper - Converts between PaymentModel (API) and PaymentEntity (Firestore)

@@ -1,6 +1,4 @@
-// src/modules/Certificate/mapper/Certificate.mapper.js
-import '../model/Certificate.model.js';
-import '../model/entity/Certificate.entity.js';
+// src/modules/certificate/mapper/Certificate.mapper.js
 
 /**
  * CertificateMapper - Converts between CertificateModel (API) and CertificateEntity (Firestore)

@@ -1,6 +1,4 @@
-// src/modules/Lesson/mapper/Lesson.mapper.js
-import '../model/Lesson.model.js';
-import '../model/entity/Lesson.entity.js';
+// src/modules/lesson/mapper/Lesson.mapper.js
 
 /**
  * LessonMapper - Converts between LessonModel (API) and LessonEntity (Firestore)

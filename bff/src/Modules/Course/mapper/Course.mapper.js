@@ -1,6 +1,4 @@
-// src/modules/Course/mapper/Course.mapper.js
-import '../model/Course.model.js';
-import '../model/entity/Course.entity.js';
+// src/modules/course/mapper/Course.mapper.js
 
 /**
  * CourseMapper - Converts between CourseModel (API) and CourseEntity (Firestore)
