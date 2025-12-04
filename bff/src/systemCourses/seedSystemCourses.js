@@ -8,12 +8,19 @@ import { SYSTEM_CHAPTERS } from './systemChapters.data.js';
 import { SYSTEM_LESSONS } from './systemLessons.data.js';
 import { validateAllSystemCourses } from './validateSystemCourses.js';
 
+const COLLECTIONS = {
+  USERS: 'User',
+  COURSES: 'Courses',
+  CHAPTERS: 'Chapters',
+  LESSONS: 'Lessons',
+};
+
 /**
  * Seed system instructor profile into users collection
  */
 async function seedSystemInstructor() {
   try {
-    const userRef = db.collection('User').doc(SYSTEM_INSTRUCTOR_UID);
+    const userRef = db.collection(COLLECTIONS.USERS).doc(SYSTEM_INSTRUCTOR_UID);
     const userDoc = await userRef.get();
 
     if (!userDoc.exists) {
@@ -49,7 +56,7 @@ async function seedSystemCourses() {
     let existingCount = 0;
 
     for (const course of SYSTEM_COURSES) {
-      const courseRef = db.collection('Course').doc(course.courseId);
+      const courseRef = db.collection(COLLECTIONS.COURSES).doc(course.courseId);
       const courseDoc = await courseRef.get();
 
       if (!courseDoc.exists) {
@@ -93,7 +100,7 @@ async function seedSystemChapters() {
       const chapters = SYSTEM_CHAPTERS[courseId];
       
       for (const chapter of chapters) {
-        const chapterRef = db.collection('Chapter').doc(chapter.chapterId);
+        const chapterRef = db.collection(COLLECTIONS.CHAPTERS).doc(chapter.chapterId);
         const chapterDoc = await chapterRef.get();
 
         if (!chapterDoc.exists) {
@@ -133,7 +140,7 @@ async function seedSystemLessons() {
       const lessons = SYSTEM_LESSONS[chapterId];
       
       for (const lesson of lessons) {
-        const lessonRef = db.collection('Lesson').doc(lesson.lessonId);
+        const lessonRef = db.collection(COLLECTIONS.LESSONS).doc(lesson.lessonId);
         const lessonDoc = await lessonRef.get();
 
         if (!lessonDoc.exists) {
