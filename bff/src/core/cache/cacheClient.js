@@ -4,15 +4,55 @@
 
 import Redis from 'ioredis';
 
-const redis = new Redis({
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: process.env.REDIS_PORT || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
-});
+let redis = null;
+let redisEnabled = false;
+
+// Only initialize Redis if explicitly enabled via REDIS_ENABLED env var
+if (process.env.REDIS_ENABLED === 'true') {
+  try {
+    const redisConfig = {
+      host: process.env.REDIS_HOST || '127.0.0.1',
+      port: process.env.REDIS_PORT || 6379,
+      password: process.env.REDIS_PASSWORD || undefined,
+      retryStrategy: () => null, // Don't retry on connection failure
+      lazyConnect: true, // Don't connect immediately
+    };
+
+    // Enable TLS if connecting to Upstash or other cloud Redis
+    if (process.env.REDIS_HOST && process.env.REDIS_HOST.includes('upstash.io')) {
+      redisConfig.tls = {};
+    }
+
+    redis = new Redis(redisConfig);
+
+    redis.on('error', (err) => {
+      console.warn('⚠️  Redis connection error (caching disabled):', err.message);
+      redisEnabled = false;
+    });
+
+    redis.on('connect', () => {
+      console.log('✅ Redis cache connected');
+      redisEnabled = true;
+    });
+
+    // Attempt connection
+    redis.connect().catch(() => {
+      console.warn('⚠️  Redis not available (caching disabled)');
+      redisEnabled = false;
+    });
+  } catch (err) {
+    console.warn('⚠️  Redis initialization failed (caching disabled):', err.message);
+    redis = null;
+    redisEnabled = false;
+  }
+} else {
+  console.log('ℹ️  Redis caching disabled (set REDIS_ENABLED=true to enable)');
+}
 
 /**
  * Central cache client with standardized methods
  * All cache operations should use this client for consistency
+ * Falls back to no-op when Redis is not available
  */
 export const cacheClient = {
   /**
@@ -21,8 +61,14 @@ export const cacheClient = {
    * @returns {Promise<any|null>} Parsed value or null if not found
    */
   async get(key) {
-    const data = await redis.get(key);
-    return data ? JSON.parse(data) : null;
+    if (!redis || !redisEnabled) return null;
+    try {
+      const data = await redis.get(key);
+      return data ? JSON.parse(data) : null;
+    } catch (err) {
+      console.warn('Cache get error:', err.message);
+      return null;
+    }
   },
 
   /**
@@ -32,7 +78,12 @@ export const cacheClient = {
    * @param {number} ttlSeconds - Time to live in seconds (default: 60)
    */
   async set(key, value, ttlSeconds = 60) {
-    await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+    if (!redis || !redisEnabled) return;
+    try {
+      await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds);
+    } catch (err) {
+      console.warn('Cache set error:', err.message);
+    }
   },
 
   /**
@@ -40,7 +91,12 @@ export const cacheClient = {
    * @param {string} key - Cache key or pattern
    */
   async del(key) {
-    await redis.del(key);
+    if (!redis || !redisEnabled) return;
+    try {
+      await redis.del(key);
+    } catch (err) {
+      console.warn('Cache del error:', err.message);
+    }
   },
 
   /**
@@ -48,9 +104,14 @@ export const cacheClient = {
    * @param {string} pattern - Redis key pattern (e.g., 'student_dashboard_*')
    */
   async delPattern(pattern) {
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
+    if (!redis || !redisEnabled) return;
+    try {
+      const keys = await redis.keys(pattern);
+      if (keys.length > 0) {
+        await redis.del(...keys);
+      }
+    } catch (err) {
+      console.warn('Cache delPattern error:', err.message);
     }
   },
 
@@ -60,8 +121,14 @@ export const cacheClient = {
    * @returns {Promise<boolean>}
    */
   async exists(key) {
-    const result = await redis.exists(key);
-    return result === 1;
+    if (!redis || !redisEnabled) return false;
+    try {
+      const result = await redis.exists(key);
+      return result === 1;
+    } catch (err) {
+      console.warn('Cache exists error:', err.message);
+      return false;
+    }
   },
 
   /**
@@ -70,7 +137,13 @@ export const cacheClient = {
    * @returns {Promise<number>} TTL in seconds, -1 if no expire, -2 if key doesn't exist
    */
   async ttl(key) {
-    return await redis.ttl(key);
+    if (!redis || !redisEnabled) return -2;
+    try {
+      return await redis.ttl(key);
+    } catch (err) {
+      console.warn('Cache ttl error:', err.message);
+      return -2;
+    }
   },
 
   /**
@@ -80,7 +153,13 @@ export const cacheClient = {
    * @returns {Promise<number>} New value after increment
    */
   async incr(key, by = 1) {
-    return await redis.incrby(key, by);
+    if (!redis || !redisEnabled) return 0;
+    try {
+      return await redis.incrby(key, by);
+    } catch (err) {
+      console.warn('Cache incr error:', err.message);
+      return 0;
+    }
   },
 
   /**
