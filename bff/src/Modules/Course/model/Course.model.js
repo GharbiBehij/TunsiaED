@@ -14,7 +14,7 @@
  * @property {string} level - Difficulty level (beginner, intermediate, advanced)
  * @property {number} price - Course price
  * @property {string|null} thumbnail - Thumbnail URL
- * @property {string} duration - Estimated duration
+ * @property {number} duration - Estimated duration in hours
  * @property {number} enrolledCount - Number of enrolled students
  * @property {number} rating - Average rating (0-5)
  * @property {string} createdAt - ISO date string
@@ -31,7 +31,7 @@
  * @property {string} level - Difficulty level (required)
  * @property {number} price - Course price (required)
  * @property {string} [thumbnail] - Thumbnail URL
- * @property {string} duration - Estimated duration (required)
+ * @property {number} duration - Estimated duration in hours (required)
  */
 
 /**
@@ -44,7 +44,7 @@
  * @property {string} [level] - Difficulty level
  * @property {number} [price] - Course price
  * @property {string} [thumbnail] - Thumbnail URL
- * @property {string} [duration] - Estimated duration
+ * @property {number} [duration] - Estimated duration in hours
  */
 
 export const CourseModel = {};

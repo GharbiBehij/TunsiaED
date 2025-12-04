@@ -3,6 +3,25 @@
 
 import eventBus from '../eventBus.js';
 import { FirebaseMessagingAdapter } from '../../adapters/firebaseAdapter.js';
+import { SYSTEM_INSTRUCTOR_UID } from '../../systemCourses/systemCourses.data.js';
+
+/**
+ * Safe notification sender - skips system instructor
+ * @param {string} userId - User ID to send notification to
+ * @param {Object} payload - Notification payload
+ */
+async function sendNotificationSafe(userId, payload) {
+  // Skip notifications for system instructor (no FCM token)
+  if (userId === SYSTEM_INSTRUCTOR_UID) {
+    return;
+  }
+  
+  try {
+    await FirebaseMessagingAdapter.sendToDevice(userId, payload);
+  } catch (error) {
+    console.error(`Failed to send notification to ${userId}:`, error.message);
+  }
+}
 
 /**
  * Initialize Firebase notification listeners
@@ -13,20 +32,16 @@ export function initializeFirebaseNotifications() {
   eventBus.on('payment.completed', async (data) => {
     const { userId, courseTitle, amount, transactionId } = data;
     
-    try {
-      await FirebaseMessagingAdapter.sendToDevice(userId, {
-        title: ' Payment Successful',
-        body: `Your payment of ${amount} TND for "${courseTitle}" has been confirmed.`,
-        data: {
-          type: 'payment_success',
-          transactionId,
-          courseTitle,
-        },
-      });
-      console.log(`Payment notification sent to user ${userId}`);
-    } catch (error) {
-      console.error('Failed to send payment notification:', error);
-    }
+    await sendNotificationSafe(userId, {
+      title: ' Payment Successful',
+      body: `Your payment of ${amount} TND for "${courseTitle}" has been confirmed.`,
+      data: {
+        type: 'payment_success',
+        transactionId,
+        courseTitle,
+      },
+    });
+    console.log(`Payment notification sent to user ${userId}`);
   });
 
   // Payment failed - notify user
@@ -52,32 +67,28 @@ export function initializeFirebaseNotifications() {
   eventBus.on('enrollment.created', async (data) => {
     const { studentId, instructorId, courseTitle, courseThumbnail } = data;
     
-    try {
-      // Notify student
-      await FirebaseMessagingAdapter.sendToDevice(studentId, {
-        title: ' Enrollment Confirmed',
-        body: `You're now enrolled in "${courseTitle}". Start learning today!`,
-        data: {
-          type: 'enrollment_created',
-          courseTitle,
-        },
-        imageUrl: courseThumbnail,
-      });
+    // Notify student
+    await sendNotificationSafe(studentId, {
+      title: ' Enrollment Confirmed',
+      body: `You're now enrolled in "${courseTitle}". Start learning today!`,
+      data: {
+        type: 'enrollment_created',
+        courseTitle,
+      },
+      imageUrl: courseThumbnail,
+    });
 
-      // Notify instructor
-      await FirebaseMessagingAdapter.sendToDevice(instructorId, {
-        title: ' New Student Enrolled',
-        body: `A new student enrolled in your course "${courseTitle}"`,
-        data: {
-          type: 'student_enrolled',
-          courseTitle,
-        },
-      });
-      
-      console.log(`Enrollment notifications sent for course ${courseTitle}`);
-    } catch (error) {
-      console.error('Failed to send enrollment notifications:', error);
-    }
+    // Notify instructor (safely skips system instructor)
+    await sendNotificationSafe(instructorId, {
+      title: ' New Student Enrolled',
+      body: `A new student enrolled in your course "${courseTitle}"`,
+      data: {
+        type: 'student_enrolled',
+        courseTitle,
+      },
+    });
+    
+    console.log(`Enrollment notifications sent for course ${courseTitle}`);
   });
 
   // Certificate granted - notify student

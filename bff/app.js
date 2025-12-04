@@ -15,12 +15,16 @@ import { router as instructorRouter } from './src/Modules/Instructor/api/Instruc
 import { router as studentRouter } from './src/Modules/Student/api/Student.routes.js';
 import { router as progressRouter } from './src/Modules/Progress/api/Progress.routes.js';
 import { initializeFirebaseNotifications } from './src/events/index.js';
+import { seedSystemData } from './src/systemCourses/seedSystemCourses.js';
 
 const app = express();
 
 // Initialize event system (Firebase notifications)
 initializeFirebaseNotifications();
 console.log('✅ Event system initialized');
+
+// Seed system courses (only inserts if not already present)
+seedSystemData().catch(err => console.warn('⚠️  System data seeding failed:', err.message));
 
 // Allowed origins
 const allowedOrigins = [

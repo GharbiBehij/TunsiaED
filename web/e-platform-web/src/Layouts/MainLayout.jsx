@@ -3,6 +3,7 @@ import React from 'react';
 import Sidebar from '../components/sidebar/Sidebar';
 import { useRoleRedirect } from '../hooks/Roles/useRoleRedirect';
 import Header from '../components/home/Header/Header';
+import {Outlet} from "react-router" 
 
 export default function MainLayout({ children }) {
   useRoleRedirect(); // ← Perfect

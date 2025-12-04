@@ -17,9 +17,9 @@ import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 
 // Dashboards
-import AdminDashboard from './dashboard/admin';
-import InstructorDashboard from './dashboard/instructor';
-import StudentDashboard from './dashboard/student';
+import AdminDashboard from './pages/Admin/AdminDashboard';
+import InstructorDashboard from './pages/Instructor/InstructorDashboard';
+import StudentDashboard from './pages/Student/StudentDashboard';
 
 // Components
 import ProtectedRoute from './components/shared/ProtectedRoute';

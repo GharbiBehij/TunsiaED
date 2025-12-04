@@ -6,7 +6,8 @@
     "dev": "nodemon app.js",
     "start": "node app.js",
     "build": "echo 'No build needed for JS'",
-    "postinstall": "echo 'Deploy ready'"
+    "postinstall": "echo 'Deploy ready'",
+    "seed:system": "node src/systemCourses/seedSystemCourses.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

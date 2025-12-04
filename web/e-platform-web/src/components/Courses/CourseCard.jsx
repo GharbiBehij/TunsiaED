@@ -5,7 +5,8 @@ export default function CourseCard({ course }) {
   const { isAuthenticated } = useAuth();
 
   return (
-    <Link to={`/courses/${course.id}`} className="group block">
+    <Link to={`/courses/${course.courseId}`} className="group block">//variables are always based on teh return value of firestore
+    //to prevent mismatch between backend and frontend 
       <div className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-gray-200 dark:border-gray-700">
         {/* Thumbnail */}
         <div className="aspect-video bg-gradient-to-br from-primary to-blue-600"></div>

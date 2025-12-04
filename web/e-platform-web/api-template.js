@@ -13,6 +13,3 @@ router.post('/RESOURCE', authenticate, async (req, res) => {
   await db.collection('COLLECTION').doc(id).set(data);
   res.json({ success: true });
 });
-
-// 3. GOOGLE SERVERS
-// Firestore saves/retrieves data

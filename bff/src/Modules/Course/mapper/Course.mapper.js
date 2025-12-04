@@ -77,6 +77,7 @@ export const CourseMapper = {
       duration: entity.duration,
       enrolledCount: entity.enrolledCount || 0,
       rating: entity.rating || 0,
+      isSystemCourse: entity.isSystemCourse || false,
       createdAt: entity.createdAt?.toDate?.() 
         ? entity.createdAt.toDate().toISOString() 
         : entity.createdAt,
@@ -116,6 +117,12 @@ export const CourseMapper = {
 
     if (typeof data.price !== 'number' || data.price < 0) {
       const error = new Error('Price must be a non-negative number');
+      error.status = 400;
+      throw error;
+    }
+
+    if (typeof data.duration !== 'number' || data.duration <= 0) {
+      const error = new Error('Duration must be a positive number (hours)');
       error.status = 400;
       throw error;
     }

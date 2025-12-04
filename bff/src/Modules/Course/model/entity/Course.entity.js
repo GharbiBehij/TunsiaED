@@ -13,8 +13,9 @@
  * @property {string} level - Difficulty level
  * @property {number} price - Course price
  * @property {string|null} thumbnail - Thumbnail URL
- * @property {string} duration - Estimated duration
+ * @property {number} duration - Estimated duration in hours
  * @property {number} enrolledCount - Number of enrolled students
+ * @property {boolean} [isSystemCourse] - Indicates courses seeded by the platform
  * @property {number} rating - Average rating
  * @property {Date} createdAt - Firestore Timestamp
  * @property {Date} updatedAt - Firestore Timestamp
