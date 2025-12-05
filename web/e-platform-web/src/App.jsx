@@ -55,13 +55,13 @@ function App() {
 
             {/* Student Dashboard */}
             <Route 
-              path="/pages/student/studentdashboard" 
+              path="/dashboard/student" 
               element={<ProtectedRoute roles={['student']}><StudentDashboard /></ProtectedRoute>} 
             />
 
             {/* Instructor Dashboard */}
             <Route 
-              path="/pages/instructor/instructordashboard" 
+              path="/dashboard/instructor" 
               element={<ProtectedRoute roles={['instructor']}><InstructorDashboard /></ProtectedRoute>} 
             />
             <Route 
@@ -71,7 +71,7 @@ function App() {
 
             {/* Admin Dashboard */}
             <Route 
-              path="/pages/admin/admindashboard" 
+              path="/dashboard/admin" 
               element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} 
             />
           </Route>

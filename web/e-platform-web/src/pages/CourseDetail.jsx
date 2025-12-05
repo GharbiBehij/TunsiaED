@@ -52,12 +52,9 @@ export default function CourseDetailPage() {
       navigate(`/pages/student/studentdashboard`);
       return;
     }
-
     setEnrollmentMethod(method);
-
     if (method === 'purchase') {
       const isFree = !course.price || course.price === 0;
-      
       if (isFree) {
         // Free course - enroll directly without payment
         try {
@@ -90,7 +87,7 @@ export default function CourseDetailPage() {
           const result = await initiatePurchase.mutateAsync({
             courseId,
             paymentType: 'course_purchase',
-            paymentMethod: 'paymee', // Default to Paymee for Tunisia
+            paymentMethod: 'stripe', // Default to Stripe
           });
           
           // Redirect to payment page with payment ID

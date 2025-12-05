@@ -3,7 +3,7 @@
 import { paymentService } from '../service/Payment.service.js';
 import { coursePurchaseOrchestrator } from '../../../orchestrators/CoursePurchase.orchestrator.js';
 import { userRepository } from '../../User/repository/User.repository.js';
-import { paymeeService } from '../service/PaymeeService.js';
+import { stripeService } from '../service/StripeService.js';
 import emailService from '../../../utils/EmailService.js';
 import { courseService } from '../../Course/service/Course.service.js';
 
@@ -222,16 +222,16 @@ export class PaymentController {
   }
 
   /**
-   * PAYMEE GATEWAY ENDPOINTS
-   * Tunisian payment gateway integration (https://www.paymee.tn)
+   * STRIPE GATEWAY ENDPOINTS
+   * International payment gateway integration (https://stripe.com)
    */
 
   /**
-   * Initiate Paymee payment
-   * Creates a payment record and returns Paymee gateway URL for iframe
+   * Initiate Stripe payment
+   * Creates a payment record and returns Stripe Checkout URL
    * @param {Object} req.body - { courseId, amount, note, firstName, lastName, email, phone }
    */
-  async initiatePaymeePayment(req, res) {
+  async initiateStripePayment(req, res) {
     try {
       const userId = req.user?.uid;
       if (!userId) {
@@ -246,14 +246,14 @@ export class PaymentController {
         courseId,
         amount,
         paymentType: 'course_purchase',
-        paymentMethod: 'paymee',
+        paymentMethod: 'stripe',
         status: 'pending',
       });
 
-      // Step 2: Initiate Paymee payment
-      let paymeeResult;
+      // Step 2: Initiate Stripe payment
+      let stripeResult;
       try {
-        paymeeResult = await paymeeService.initiatePayment({
+        stripeResult = await stripeService.initiatePayment({
           amount,
           note: note || `Course Purchase: ${courseId}`,
           firstName: firstName || user.firstName || 'Customer',
@@ -262,9 +262,9 @@ export class PaymentController {
           phone: phone || user.phone || '+21600000000',
           orderId: internalPayment.id, // Link to our internal payment ID
         });
-      } catch (paymeeError) {
-        // Paymee is down or unavailable
-        if (paymeeError.message.includes('PAYMEE_SERVER_DOWN') || paymeeError.message.includes('PAYMEE_SERVER_ERROR')) {
+      } catch (stripeError) {
+        // Stripe is down or unavailable
+        if (stripeError.message.includes('STRIPE_SERVER_DOWN') || stripeError.message.includes('STRIPE_SERVER_ERROR')) {
           // Update payment status to indicate gateway issue
           await paymentService.updatePayment(internalPayment.id, {
             status: 'failed',
@@ -280,46 +280,46 @@ export class PaymentController {
         }
         
         // Other errors - rethrow
-        throw paymeeError;
+        throw stripeError;
       }
 
-      // Step 3: Update internal payment with Paymee token
+      // Step 3: Update internal payment with Stripe session ID
       await paymentService.updatePayment(internalPayment.id, {
-        paymeeToken: paymeeResult.token,
-        gatewayUrl: paymeeResult.gatewayUrl,
+        stripeSessionId: stripeResult.sessionId,
+        checkoutUrl: stripeResult.checkoutUrl,
       });
 
       res.status(201).json({
         success: true,
         paymentId: internalPayment.id,
-        paymeeToken: paymeeResult.token,
-        gatewayUrl: paymeeResult.gatewayUrl,
-        amount: paymeeResult.amount,
+        sessionId: stripeResult.sessionId,
+        checkoutUrl: stripeResult.checkoutUrl,
+        amount: stripeResult.amount,
       });
     } catch (error) {
-      console.error('Paymee initiation error:', error);
+      console.error('Stripe initiation error:', error);
       res.status(400).json({ error: error.message });
     }
   }
 
   /**
-   * Handle Paymee webhook
-   * Receives payment status from Paymee after payment attempt
-   * No authentication - verified by checksum
+   * Handle Stripe webhook
+   * Receives payment status from Stripe after payment attempt
+   * No authentication - verified by signature
    * Sends email notification to user on success/failure
    */
-  async handlePaymeeWebhook(req, res) {
+  async handleStripeWebhook(req, res) {
     try {
-      console.log('Paymee webhook received:', req.body);
+      console.log('Stripe webhook received:', req.body);
 
       // Process and verify webhook data
-      const webhookResult = paymeeService.processWebhook(req.body);
+      const webhookResult = stripeService.processWebhook(req.body);
 
       // Get internal payment by order_id (which is our paymentId)
       const payment = await paymentService.getPaymentById(webhookResult.orderId);
       
       if (!payment) {
-        console.error('Payment not found for Paymee webhook:', webhookResult.orderId);
+        console.error('Payment not found for Stripe webhook:', webhookResult.orderId);
         return res.status(404).json({ error: 'Payment not found' });
       }
 
@@ -333,7 +333,7 @@ export class PaymentController {
         const confirmationData = {
           paymentId: payment.id,
           gatewayTransactionId: String(webhookResult.transactionId),
-          paymentGateway: 'paymee',
+          paymentGateway: 'Stripe',
         };
 
         await coursePurchaseOrchestrator.completePurchase(user, confirmationData);
@@ -346,15 +346,15 @@ export class PaymentController {
           courseTitle,
           amount: webhookResult.amount,
           transactionId: String(webhookResult.transactionId),
-          paymentMethod: 'Paymee',
+          paymentMethod: 'Stripe',
         });
 
-        console.log('Paymee payment completed successfully:', webhookResult.orderId);
+        console.log('Stripe payment completed successfully:', webhookResult.orderId);
       } else {
         // Payment failed - update payment status
         await paymentService.updatePayment(payment.id, {
           status: 'failed',
-          failureReason: 'Payment declined by Paymee',
+          failureReason: 'Payment declined by Stripe',
         });
 
         // Send failure email
@@ -367,23 +367,23 @@ export class PaymentController {
           reason: 'Payment was declined or cancelled',
         });
 
-        console.log('Paymee payment failed:', webhookResult.orderId);
+        console.log('Stripe payment failed:', webhookResult.orderId);
       }
 
-      // Always respond 200 to Paymee
+      // Always respond 200 to Stripe
       res.status(200).json({ received: true });
     } catch (error) {
-      console.error('Paymee webhook error:', error);
-      // Still respond 200 to avoid Paymee retries
+      console.error('Stripe webhook error:', error);
+      // Still respond 200 to avoid Stripe retries
       res.status(200).json({ received: true, error: error.message });
     }
   }
 
   /**
-   * Get Paymee payment status by token
-   * Used to check payment status on frontend after iframe completion
+   * Get Stripe payment status by session ID
+   * Used to check payment status on frontend after Stripe Checkout completion
    */
-  async getPaymeePaymentStatus(req, res) {
+  async getStripePaymentStatus(req, res) {
     try {
       const userId = req.user?.uid;
       if (!userId) {
@@ -392,9 +392,9 @@ export class PaymentController {
 
       const { token } = req.params;
 
-      // Find payment by Paymee token
+      // Find payment by Stripe session ID
       const payments = await paymentService.getUserPayments(userId);
-      const payment = payments.find(p => p.paymeeToken === token);
+      const payment = payments.find(p => p.stripeSessionId === token);
 
       if (!payment) {
         return res.status(404).json({ error: 'Payment not found' });
@@ -412,7 +412,7 @@ export class PaymentController {
   }
 
   /**
-   * Simulate Payment (for testing while Paymee sandbox is down)
+   * Simulate Payment (for testing when payment gateway is unavailable)
    * Creates payment, completes it, and sends email notification
    * @param {Object} req.body - { courseId, amount, simulateSuccess: true/false }
    */

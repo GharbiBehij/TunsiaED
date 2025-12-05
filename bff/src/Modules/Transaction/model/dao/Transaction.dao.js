@@ -32,7 +32,7 @@ export class TransactionDao {
       amount: data.amount,
       currency: data.currency || 'TND',
       status: data.status || 'pending',
-      gateway: data.gateway || 'paymee',
+      gateway: data.gateway || 'stripe',
       gateway_ref: data.gatewayRef || null,
       created_at: new Date(),
       updated_at: new Date(),

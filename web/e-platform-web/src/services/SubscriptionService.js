@@ -38,7 +38,7 @@ class SubscriptionService {
       body: JSON.stringify({
         planId,
         paymentType: 'subscription',
-        paymentMethod: 'paymee',
+        paymentMethod: 'stripe',
       }),
     });
     if (!res.ok) throw new Error('Failed to initiate subscription');

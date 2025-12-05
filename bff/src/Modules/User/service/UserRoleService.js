@@ -1,6 +1,6 @@
 import { auth } from '../../../config/firebase.js';
 
-const ADMIN_EMAIL = 'admin@tunisiaed.com';
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
 
 export class UserRoleService {
   static async setAdmin(uid) {

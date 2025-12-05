@@ -179,47 +179,53 @@ export function useCompletePurchase() {
 }
 
 // ====================================================================
-// PAYMEE GATEWAY HOOKS (Tunisian payment gateway)
-// Integration without redirection - uses iframe
+// STRIPE GATEWAY HOOKS (International payment gateway)
+// Integration without redirection - uses Stripe Checkout
 // ====================================================================
 
 /**
- * Initiate a Paymee payment
- * Creates payment and returns gateway URL for iframe
- * @returns {UseMutationResult} Mutation with { paymentId, paymeeToken, gatewayUrl, amount }
+ * Initiate a Stripe payment
+ * Creates payment and returns Stripe Checkout URL
+ * @returns {UseMutationResult} Mutation with { paymentId, sessionId, checkoutUrl, amount }
  */
-export function useInitiatePaymeePayment() {
+export function useInitiateStripePayment() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (paymentData) => PaymentService.initiatePaymeePayment(paymentData, token),
+    mutationFn: (paymentData) => PaymentService.initiateStripePayment(paymentData, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PAYMENT_KEYS.mine() });
     },
   });
 }
 
+// Backward compatibility alias
+export const useInitiatePaymeePayment = useInitiateStripePayment;
+
 /**
- * Get Paymee payment status by token
- * Used after iframe payment completion to check status
- * @param {string} paymeeToken - The Paymee token
+ * Get Stripe payment status by session ID
+ * Used after Stripe Checkout completion to check status
+ * @param {string} sessionId - The Stripe session ID
  * @param {Object} options - Query options (enabled, refetchInterval, etc.)
  */
-export function usePaymeePaymentStatus(paymeeToken, options = {}) {
+export function useStripePaymentStatus(sessionId, options = {}) {
   const { token } = useAuth();
   
   return useQuery({
-    queryKey: PAYMENT_KEYS.paymeeStatus(paymeeToken),
-    queryFn: () => PaymentService.getPaymeePaymentStatus(paymeeToken, token),
+    queryKey: PAYMENT_KEYS.stripeStatus(sessionId),
+    queryFn: () => PaymentService.getStripePaymentStatus(sessionId, token),
     staleTime: 5 * 1000, // 5 seconds (status can change quickly)
-    enabled: !!token && !!paymeeToken,
+    enabled: !!token && !!sessionId,
     ...options,
   });
 }
 
+// Backward compatibility alias
+export const usePaymeePaymentStatus = useStripePaymentStatus;
+
 // ====================================================================
-// SIMULATION HOOKS (for testing when Paymee sandbox is down)
+// SIMULATION HOOKS (for testing when payment gateway is unavailable)
 // ====================================================================
 
 /**

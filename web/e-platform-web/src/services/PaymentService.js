@@ -167,19 +167,19 @@ class PaymentService {
   }
 
   // ====================================================================
-  // PAYMEE GATEWAY OPERATIONS (Tunisian payment gateway)
-  // Integration without redirection - uses iframe
+  // STRIPE GATEWAY OPERATIONS (International payment gateway)
+  // Integration using Stripe Checkout
   // ====================================================================
 
   /**
-   * Initiate a Paymee payment
-   * Returns gateway URL for iframe embedding
+   * Initiate a Stripe payment
+   * Returns Stripe Checkout URL for payment
    * @param {Object} paymentData - { courseId, amount, note, firstName, lastName, email, phone }
    * @param {string} token - Authentication token
-   * @returns {Promise<Object>} { paymentId, paymeeToken, gatewayUrl, amount }
+   * @returns {Promise<Object>} { paymentId, sessionId, checkoutUrl, amount }
    */
-  static async initiatePaymeePayment(paymentData, token) {
-    const res = await fetch(`${API_URL}/api/v1/payment/paymee/initiate`, {
+  static async initiateStripePayment(paymentData, token) {
+    const res = await fetch(`${API_URL}/api/v1/payment/stripe/initiate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -191,42 +191,52 @@ class PaymentService {
     const responseData = await res.json().catch(() => ({}));
     
     if (!res.ok) {
-      // Check for Paymee downtime (503 Service Unavailable)
+      // Check for payment gateway downtime (503 Service Unavailable)
       if (res.status === 503) {
         const error = new Error(responseData.message || 'Payment gateway temporarily unavailable');
-        error.code = 'PAYMEE_DOWN';
+        error.code = 'GATEWAY_DOWN';
         error.details = responseData;
         throw error;
       }
       
-      throw new Error(responseData.error || 'Failed to initiate Paymee payment');
+      throw new Error(responseData.error || 'Failed to initiate Stripe payment');
     }
     
     return responseData;
   }
 
+  // Backward compatibility alias
+  static async initiatePaymeePayment(paymentData, token) {
+    return this.initiateStripePayment(paymentData, token);
+  }
+
   /**
-   * Get Paymee payment status by token
-   * Used after iframe payment completion
-   * @param {string} paymeeToken - The Paymee token
+   * Get Stripe payment status by session ID
+   * Used after Stripe Checkout completion
+   * @param {string} sessionId - The Stripe session ID
    * @param {string} token - Authentication token
    * @returns {Promise<Object>} { paymentId, status, courseId, amount }
    */
-  static async getPaymeePaymentStatus(paymeeToken, token) {
-    const res = await fetch(`${API_URL}/api/v1/payment/paymee/status/${paymeeToken}`, {
+  static async getStripePaymentStatus(sessionId, token) {
+    const res = await fetch(`${API_URL}/api/v1/payment/stripe/status/${sessionId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
       },
     });
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to get Paymee payment status');
+      throw new Error(errorData.error || 'Failed to get Stripe payment status');
     }
     return res.json();
   }
 
+  // Backward compatibility alias
+  static async getPaymeePaymentStatus(paymeeToken, token) {
+    return this.getStripePaymentStatus(paymeeToken, token);
+  }
+
   // ====================================================================
-  // PAYMENT SIMULATION (for testing when Paymee sandbox is down)
+  // PAYMENT SIMULATION (for testing when payment gateway is unavailable)
   // ====================================================================
 
   /**

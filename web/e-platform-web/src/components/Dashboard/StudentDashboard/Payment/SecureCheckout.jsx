@@ -1,15 +1,15 @@
 // SecureCheckout - Payment form widget for course/subscription purchases
 // Uses useInitiatePurchase and useCompletePurchase hooks for payment flow
 // Payment types: 'course_purchase' | 'subscription'
-// Payment methods: 'card' | 'paypal' | 'paymee' (Tunisian gateway)
-// Test mode: Uses simulation endpoint for testing when Paymee sandbox is down
+// Payment methods: 'card' | 'paypal' | 'stripe' (International gateway)
+// Test mode: Uses simulation endpoint for testing when payment gateway is unavailable
 
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   useInitiatePurchase, 
   useCompletePurchase, 
-  useInitiatePaymeePayment,
-  usePaymeePaymentStatus,
+  useInitiateStripePayment,
+  useStripePaymentStatus,
   useSimulatePayment 
 } from '../../../../hooks/Payment/usePayment';
 
@@ -47,35 +47,23 @@ const PaymentMethodCard = ({ method, label, icon, description, selected, onSelec
 );
 
 /**
- * PaymeeIframe - Embedded Paymee gateway iframe
- * Listens for paymee.complete event
+ * StripeCheckout - Redirects to Stripe Checkout
+ * Stripe handles the payment UI externally
  */
-const PaymeeIframe = ({ gatewayUrl, onComplete, onError }) => {
-  const iframeRef = useRef(null);
-
+const StripeCheckout = ({ checkoutUrl }) => {
   useEffect(() => {
-    // Listen for Paymee completion event
-    const handleMessage = (event) => {
-      if (event.data?.event_id === 'paymee.complete') {
-        console.log('Paymee payment complete event received');
-        onComplete();
-      }
-    };
-
-    window.addEventListener('message', handleMessage, false);
-    return () => window.removeEventListener('message', handleMessage);
-  }, [onComplete]);
+    // Redirect to Stripe Checkout
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+    }
+  }, [checkoutUrl]);
 
   return (
-    <div className="relative w-full" style={{ minHeight: '500px' }}>
-      <iframe
-        ref={iframeRef}
-        src={gatewayUrl}
-        className="w-full h-full absolute inset-0 rounded-lg border border-slate-200 dark:border-slate-700"
-        style={{ minHeight: '500px' }}
-        title="Paymee Payment Gateway"
-        allow="payment"
-      />
+    <div className="relative w-full flex items-center justify-center" style={{ minHeight: '500px' }}>
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-slate-600 dark:text-slate-400">Redirecting to Stripe Checkout...</p>
+      </div>
     </div>
   );
 };
@@ -93,48 +81,48 @@ export default function SecureCheckout({
   data = {}, 
   isLoading = false, 
   isError = false,
-  testMode = false, // Enable test mode when Paymee sandbox is unavailable
+  testMode = false, // Enable test mode when payment gateway is unavailable
   onSuccess,
   onCancel
 }) {
-  const [paymentMethod, setPaymentMethod] = useState('paymee'); // Default to Paymee for Tunisia
+  const [paymentMethod, setPaymentMethod] = useState('stripe'); // Default to Stripe
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
   const [cardholderName, setCardholderName] = useState('');
   const [phone, setPhone] = useState('');
-  const [step, setStep] = useState('form'); // 'form' | 'paymee-iframe' | 'processing' | 'success' | 'error'
-  const [paymeeToken, setPaymeeToken] = useState(null);
-  const [paymeeGatewayUrl, setPaymeeGatewayUrl] = useState(null);
+  const [step, setStep] = useState('form'); // 'form' | 'stripe-redirect' | 'processing' | 'success' | 'error'
+  const [stripeSessionId, setStripeSessionId] = useState(null);
+  const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState(null);
   const [isTestMode, setIsTestMode] = useState(testMode);
   const [simulateSuccess, setSimulateSuccess] = useState(true);
 
   // Payment hooks
   const initiatePurchase = useInitiatePurchase();
   const completePurchase = useCompletePurchase();
-  const initiatePaymee = useInitiatePaymeePayment();
+  const initiateStripe = useInitiateStripePayment();
   const simulatePayment = useSimulatePayment();
   
-  // Poll Paymee status after iframe completion
-  const { data: paymeeStatus, refetch: refetchPaymeeStatus } = usePaymeePaymentStatus(
-    paymeeToken, 
+  // Poll Stripe status after checkout completion
+  const { data: stripeStatus, refetch: refetchStripeStatus } = useStripePaymentStatus(
+    stripeSessionId, 
     { 
-      enabled: !!paymeeToken && step === 'processing',
+      enabled: !!stripeSessionId && step === 'processing',
       refetchInterval: step === 'processing' ? 2000 : false, // Poll every 2 seconds
     }
   );
 
-  // Check Paymee status when polling
+  // Check Stripe status when polling
   useEffect(() => {
-    if (paymeeStatus) {
-      if (paymeeStatus.status === 'completed') {
+    if (stripeStatus) {
+      if (stripeStatus.status === 'completed') {
         setStep('success');
-        if (onSuccess) onSuccess(paymeeStatus);
-      } else if (paymeeStatus.status === 'failed') {
+        if (onSuccess) onSuccess(stripeStatus);
+      } else if (stripeStatus.status === 'failed') {
         setStep('error');
       }
     }
-  }, [paymeeStatus, onSuccess]);
+  }, [stripeStatus, onSuccess]);
 
   // Extract checkout data
   const { 
@@ -145,7 +133,7 @@ export default function SecureCheckout({
     total = 0, 
     paymentType = 'course_purchase',
     subscriptionType, // 'monthly' | 'yearly' (only for subscription)
-    // User info for Paymee
+    // User info for payment
     firstName,
     lastName,
     email,
@@ -176,7 +164,7 @@ export default function SecureCheckout({
     setCvv(value);
   };
 
-  // Handle phone input for Paymee
+  // Handle phone input
   const handlePhoneChange = (e) => {
     const value = e.target.value.replace(/[^\d+]/g, '').slice(0, 12);
     setPhone(value);
@@ -192,19 +180,19 @@ export default function SecureCheckout({
         cardholderName.trim().length >= 2
       );
     }
-    if (paymentMethod === 'paymee') {
-      // Phone is required for Paymee
-      return phone.length >= 8;
+    if (paymentMethod === 'stripe') {
+      // Phone is optional for Stripe
+      return true;
     }
     // For PayPal, just need to be selected
     return true;
   };
 
-  // Handle Paymee iframe completion
-  const handlePaymeeComplete = () => {
+  // Handle Stripe completion (called after return from Stripe)
+  const handleStripeComplete = () => {
     setStep('processing');
     // Start polling for payment status
-    refetchPaymeeStatus();
+    refetchStripeStatus();
   };
 
   // Handle form submission
@@ -236,12 +224,12 @@ export default function SecureCheckout({
 
     if (!isFormValid()) return;
 
-    // Paymee payment flow
-    if (paymentMethod === 'paymee') {
+    // Stripe payment flow
+    if (paymentMethod === 'stripe') {
       try {
         setStep('processing');
         
-        const paymeeData = {
+        const stripeData = {
           courseId: courseId || items[0]?.courseId,
           amount: total,
           note: items.length > 0 ? `Course: ${items[0]?.title}` : 'Course Purchase',
@@ -251,13 +239,13 @@ export default function SecureCheckout({
           phone: phone,
         };
 
-        const result = await initiatePaymee.mutateAsync(paymeeData);
+        const result = await initiateStripe.mutateAsync(stripeData);
         
-        setPaymeeToken(result.paymeeToken);
-        setPaymeeGatewayUrl(result.gatewayUrl);
-        setStep('paymee-iframe');
+        setStripeSessionId(result.sessionId);
+        setStripeCheckoutUrl(result.checkoutUrl);
+        setStep('stripe-redirect');
       } catch (error) {
-        console.error('Paymee initiation failed:', error);
+        console.error('Stripe initiation failed:', error);
         setStep('error');
       }
       return;
@@ -299,8 +287,8 @@ export default function SecureCheckout({
 
   const handleRetry = () => {
     setStep('form');
-    setPaymeeToken(null);
-    setPaymeeGatewayUrl(null);
+    setStripeSessionId(null);
+    setStripeCheckoutUrl(null);
   };
 
   // Loading State
@@ -322,15 +310,15 @@ export default function SecureCheckout({
     );
   }
 
-  // Paymee iframe State
-  if (step === 'paymee-iframe' && paymeeGatewayUrl) {
+  // Stripe redirect State
+  if (step === 'stripe-redirect' && stripeCheckoutUrl) {
     return (
       <div className="rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-[#182431]">
         {/* Header */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
           <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="material-symbols-outlined">payments</span>
-            Paymee Payment
+            Stripe Checkout
           </h2>
           <button
             onClick={handleRetry}
@@ -342,15 +330,13 @@ export default function SecureCheckout({
 
         <div className="p-4">
           <p className="text-sm text-slate-600 dark:text-slate-400 mb-4">
-            Complete your payment securely with Paymee. 
+            Complete your payment securely with Stripe. 
             <span className="block text-xs mt-1 text-slate-500">
-              Test account: Phone: 11111111 | Password: 11111111
+              Test card: 4242 4242 4242 4242 | Expiry: Any future date | CVC: Any 3 digits
             </span>
           </p>
-          <PaymeeIframe 
-            gatewayUrl={paymeeGatewayUrl} 
-            onComplete={handlePaymeeComplete}
-            onError={() => setStep('error')}
+          <StripeCheckout 
+            checkoutUrl={stripeCheckoutUrl}
           />
         </div>
       </div>
@@ -494,7 +480,7 @@ export default function SecureCheckout({
             {isTestMode && (
               <div className="space-y-2">
                 <p className="text-xs text-yellow-700 dark:text-yellow-300">
-                  Test mode bypasses Paymee and simulates payment. Email notification will be sent.
+                  Test mode bypasses Stripe and simulates payment. Email notification will be sent.
                 </p>
                 <div className="flex items-center gap-4">
                   <label className="flex items-center gap-2 text-sm">
@@ -530,11 +516,11 @@ export default function SecureCheckout({
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <PaymentMethodCard
-              method="paymee"
-              label="Paymee"
-              icon="account_balance"
-              description="Tunisia"
-              selected={paymentMethod === 'paymee'}
+              method="stripe"
+              label="Stripe"
+              icon="credit_card"
+              description="International"
+              selected={paymentMethod === 'stripe'}
               onSelect={setPaymentMethod}
             />
             <PaymentMethodCard
@@ -549,19 +535,19 @@ export default function SecureCheckout({
               method="paypal"
               label="PayPal"
               icon="account_balance_wallet"
-              description="International"
+              description="Alternative"
               selected={paymentMethod === 'paypal'}
               onSelect={setPaymentMethod}
             />
           </div>
         </div>
 
-        {/* Paymee Phone Input */}
-        {paymentMethod === 'paymee' && (
+        {/* Stripe Phone Input (Optional) */}
+        {paymentMethod === 'stripe' && (
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Phone Number <span className="text-red-500">*</span>
+                Phone Number <span className="text-slate-400">(Optional)</span>
               </label>
               <input
                 type="tel"
@@ -569,16 +555,15 @@ export default function SecureCheckout({
                 onChange={handlePhoneChange}
                 placeholder="+216 XX XXX XXX"
                 className="w-full h-10 px-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-1 focus:ring-primary"
-                required
               />
               <p className="text-xs text-slate-500 mt-1">
-                Enter your Tunisian phone number for Paymee
+                Enter your phone number (optional)
               </p>
             </div>
             <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <p className="text-sm text-blue-700 dark:text-blue-400">
                 <span className="material-symbols-outlined text-base align-middle mr-1">info</span>
-                You will complete payment in a secure Paymee window.
+                You will be redirected to Stripe Checkout to complete your payment securely.
               </p>
             </div>
           </div>
@@ -667,14 +652,14 @@ export default function SecureCheckout({
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={(!isTestMode && !isFormValid()) || initiatePurchase.isPending || completePurchase.isPending || initiatePaymee.isPending || simulatePayment.isPending}
+          disabled={(!isTestMode && !isFormValid()) || initiatePurchase.isPending || completePurchase.isPending || initiateStripe.isPending || simulatePayment.isPending}
           className="w-full mt-6 h-12 rounded-lg bg-primary text-white font-bold text-sm hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           <span className="material-symbols-outlined">{isTestMode ? 'science' : 'lock'}</span>
           {isTestMode 
             ? `Test Payment - ${formatCurrency(total)}`
-            : paymentMethod === 'paymee' 
-              ? `Pay with Paymee - ${formatCurrency(total)}` 
+            : paymentMethod === 'stripe' 
+              ? `Pay with Stripe - ${formatCurrency(total)}` 
               : `Pay ${formatCurrency(total)}`
           }
         </button>

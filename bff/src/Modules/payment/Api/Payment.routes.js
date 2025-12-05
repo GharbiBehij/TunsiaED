@@ -22,15 +22,20 @@ router.post('/purchase/complete', authenticate, paymentController.completePurcha
 // Purchase status orchestrator - returns complete purchase status
 router.get('/purchase/:paymentId/status', authenticate, paymentController.getPurchaseStatus);
 
-// PAYMEE GATEWAY ROUTES - Tunisian payment gateway integration
-// Initiate Paymee payment - creates payment and returns gateway URL for iframe
-router.post('/paymee/initiate', authenticate, paymentController.initiatePaymeePayment);
-// Paymee webhook - receives payment status from Paymee (no auth, verified by checksum)
-router.post('/paymee/webhook', paymentController.handlePaymeeWebhook);
-// Check Paymee payment status by token
-router.get('/paymee/status/:token', authenticate, paymentController.getPaymeePaymentStatus);
+// STRIPE GATEWAY ROUTES - International payment gateway integration
+// Initiate Stripe payment - creates payment and returns Stripe Checkout URL
+router.post('/stripe/initiate', authenticate, paymentController.initiateStripePayment);
+// Stripe webhook - receives payment status from Stripe (no auth, verified by signature)
+router.post('/stripe/webhook', paymentController.handleStripeWebhook);
+// Check Stripe payment status by session ID
+router.get('/stripe/status/:token', authenticate, paymentController.getStripePaymentStatus);
 
-// MANUAL PAYMENT SIMULATION (for testing while Paymee sandbox is down)
+// LEGACY PAYMEE ROUTES (backward compatibility - redirect to Stripe)
+router.post('/paymee/initiate', authenticate, paymentController.initiateStripePayment);
+router.post('/paymee/webhook', paymentController.handleStripeWebhook);
+router.get('/paymee/status/:token', authenticate, paymentController.getStripePaymentStatus);
+
+// MANUAL PAYMENT SIMULATION (for testing when payment gateway is unavailable)
 // Simulates a payment and sends email notification
 router.post('/simulate', authenticate, paymentController.simulatePayment);
 

@@ -12,8 +12,8 @@
  * @property {number} amount - Transaction amount
  * @property {string} currency - Currency code (TND, USD, EUR)
  * @property {string} status - Transaction status (pending, completed, failed, refunded)
- * @property {string} paymentMethod - Payment method used (paymee, card, paypal)
- * @property {string} paymentGateway - Payment gateway (paymee, stripe, paypal)
+ * @property {string} paymentMethod - Payment method used (stripe, card, paypal)
+ * @property {string} paymentGateway - Payment gateway (stripe, paypal)
  * @property {string|null} gatewayTransactionId - External gateway transaction ID
  * @property {string|null} gatewayResponse - Raw gateway response
  * @property {Date} createdAt - When transaction was created
@@ -60,7 +60,8 @@ export const TransactionStatus = {
  * Payment method enum
  */
 export const PaymentMethod = {
-  PAYMEE: 'paymee',
+  STRIPE: 'stripe',
+  PAYMEE: 'paymee', // Legacy
   CARD: 'card',
   PAYPAL: 'paypal',
 };

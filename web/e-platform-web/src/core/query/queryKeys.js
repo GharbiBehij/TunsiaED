@@ -90,6 +90,13 @@ export const COURSE_KEYS = {
  */
 export const PAYMENT_KEYS = {
   all: () => ['payments'],
+  mine: () => [...PAYMENT_KEYS.all(), 'mine'],
+  byId: (paymentId) => [...PAYMENT_KEYS.all(), paymentId],
+  byCourse: (courseId) => [...PAYMENT_KEYS.all(), 'course', courseId],
+  byStatus: (status) => [...PAYMENT_KEYS.all(), 'status', status],
+  purchaseStatus: (paymentId) => [...PAYMENT_KEYS.all(), 'purchase', paymentId],
+  stripeStatus: (sessionId) => [...PAYMENT_KEYS.all(), 'stripe', 'status', sessionId],
+  paymeeStatus: (token) => [...PAYMENT_KEYS.all(), 'paymee', 'status', token], // Legacy - redirects to stripeStatus
   history: () => [...PAYMENT_KEYS.all(), 'history'],
   pending: () => [...PAYMENT_KEYS.all(), 'pending'],
   detail: (paymentId) => [...PAYMENT_KEYS.all(), paymentId],
