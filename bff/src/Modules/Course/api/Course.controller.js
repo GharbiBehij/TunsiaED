@@ -171,6 +171,8 @@ export const courseController = {
   createCourse: onboardCourse,
   getCourseById: getMyCourse,
   getAllCourses,
+  getSystemCourses,
+  getAllCategories,
   getCoursesByCategory,
   getCoursesByInstructor: getInstructorCourses,
   updateCourse: updateMyCourse,

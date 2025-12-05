@@ -6,15 +6,20 @@ import { courseController } from './Course.controller.js';
 
 const router = Router();
 
-router.post('/', authenticate, requireRole('admin', 'instructor'), courseController.createCourse);
+// CREATE course (admin/instructor only)
+router.post('/onboard', authenticate, requireRole('admin', 'instructor'), courseController.createCourse);
 
-router.get('/', courseController.getAllCourses);
+// GET routes - specific paths BEFORE dynamic :courseId
+router.get('/', courseController.getAllCourses); // Changed from '/course' to '/'
 router.get('/system', courseController.getSystemCourses);
 router.get('/categories', courseController.getAllCategories);
 router.get('/category/:category', courseController.getCoursesByCategory);
-router.get('/instructor/my-courses', authenticate, courseController.getCoursesByInstructor);
+router.get('/instructor/my-courses', authenticate, requireRole('instructor'), courseController.getCoursesByInstructor);
+
+// Dynamic route LAST to avoid matching other paths
 router.get('/:courseId', courseController.getCourseById);
 
+// UPDATE and DELETE routes
 router.put('/:courseId', authenticate, requireRole('admin', 'instructor'), courseController.updateCourse);
 router.delete('/:courseId', authenticate, requireRole('admin', 'instructor'), courseController.deleteCourse);
 
