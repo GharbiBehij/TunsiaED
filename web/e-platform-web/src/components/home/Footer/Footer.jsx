@@ -26,9 +26,9 @@ export default function Footer() {
             <h3 className="font-semibold mb-4 text-text-light dark:text-text-dark">Platform</h3>
             <ul className="space-y-2 text-sm">
               <li><Link to="/courses" className="text-text-light/70 dark:text-text-dark/70 hover:text-primary dark:hover:text-primary transition">Courses</Link></li>
-              <li><Link to="/roadmaps" className="text-text-light/70 dark:text-text-dark/70 hover:text-primary dark:hover:text-primary transition">Roadmaps</Link></li>
+              <li><Link to="/subscription" className="text-text-light/70 dark:text-text-dark/70 hover:text-primary dark:hover:text-primary transition">Subscription</Link></li>
               <li><Link to="/instructors" className="text-text-light/70 dark:text-text-dark/70 hover:text-primary dark:hover:text-primary transition">Instructors</Link></li>
-              <li><Link to="/pricing" className="text-text-light/70 dark:text-text-dark/70 hover:text-primary dark:hover:text-primary transition">Pricing</Link></li>
+              <li><Link to="/roadmaps" className="text-text-light/70 dark:text-text-dark/70 hover:text-primary dark:hover:text-primary transition">Roadmaps</Link></li>
             </ul>
           </div>
 

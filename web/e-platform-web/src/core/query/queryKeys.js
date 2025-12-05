@@ -81,6 +81,8 @@ export const COURSE_KEYS = {
   detail: (courseId) => ['Courses', courseId],
   category: (category) => ['Courses', 'category', category],
   instructor: () => ['Courses', 'instructor'],
+  system: () => ['Courses', 'system'],
+  categories: () => ['Courses', 'categories'],
 };
 
 /**
@@ -134,6 +136,17 @@ export const PROGRESS_KEYS = {
 };
 
 /**
+ * SUBSCRIPTION DOMAIN KEYS
+ */
+export const SUBSCRIPTION_KEYS = {
+  all: () => ['subscriptions'],
+  plans: () => [...SUBSCRIPTION_KEYS.all(), 'plans'],
+  plan: (planId) => [...SUBSCRIPTION_KEYS.all(), 'plan', planId],
+  userSubscription: () => [...SUBSCRIPTION_KEYS.all(), 'user'],
+  active: () => [...SUBSCRIPTION_KEYS.all(), 'active'],
+};
+
+/**
  * Helper function to get all keys for a domain
  */
 export const getAllDomainKeys = (domain) => {
@@ -147,6 +160,7 @@ export const getAllDomainKeys = (domain) => {
     certificate: CERTIFICATE_KEYS,
     enrollment: ENROLLMENT_KEYS,
     progress: PROGRESS_KEYS,
+    subscription: SUBSCRIPTION_KEYS,
   };
   return keyMap[domain]?.all() || [];
 };
@@ -164,6 +178,7 @@ export const QUERY_KEY_REGISTRY = {
   CERTIFICATE_KEYS,
   ENROLLMENT_KEYS,
   PROGRESS_KEYS,
+  SUBSCRIPTION_KEYS,
 };
 
 export default QUERY_KEY_REGISTRY;

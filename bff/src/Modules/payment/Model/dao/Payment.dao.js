@@ -20,7 +20,8 @@ export class PaymentDao {
   async createPayment(data) {
     const paymentDoc = {
       userId: data.userId,
-      courseId: data.courseId,
+      courseId: data.courseId || null,
+      planId: data.planId || null,
       courseTitle: data.courseTitle,
       amount: data.amount,
       currency: data.currency || 'TND',

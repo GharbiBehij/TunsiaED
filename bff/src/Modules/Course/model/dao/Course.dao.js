@@ -80,6 +80,20 @@ export class CourseDao {
       .get();
     return this._snapshotToRaw(snapshot);
   }
+
+  async getSystemCourses() {
+    const snapshot = await this.collection
+      .where('isSystemCourse', '==', true)
+      .get();
+    return this._snapshotToRaw(snapshot);
+  }
+
+  async getAllCategories() {
+    const snapshot = await this.collection.get();
+    const courses = this._snapshotToRaw(snapshot);
+    const categories = [...new Set(courses.map(c => c.category).filter(Boolean))];
+    return categories;
+  }
 }
 
 export const courseDao = new CourseDao();

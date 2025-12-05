@@ -58,6 +58,9 @@ export const UserMapper = {
       birthPlace: model.birthPlace || null,
       level: model.level || null,
       bio: model.bio || null,
+      hasActiveSubscription: model.hasActiveSubscription || false,
+      activePlanId: model.activePlanId || null,
+      subscriptionExpiresAt: model.subscriptionExpiresAt || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -106,6 +109,11 @@ export const UserMapper = {
       birthPlace: entity.birthPlace,
       level: entity.level,
       bio: entity.bio,
+      hasActiveSubscription: entity.hasActiveSubscription || false,
+      activePlanId: entity.activePlanId || null,
+      subscriptionExpiresAt: entity.subscriptionExpiresAt?.toDate?.()
+        ? entity.subscriptionExpiresAt.toDate().toISOString()
+        : entity.subscriptionExpiresAt,
       createdAt: entity.createdAt?.toDate?.() 
         ? entity.createdAt.toDate().toISOString() //To counter the js plain text / and timestamp objects for firestore 
         : entity.createdAt,

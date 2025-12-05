@@ -5,8 +5,8 @@ import HeroSection from '../components/home/HeroSection/HeroSection';
 import Features from '../components/home/Features/Features';
 import Categories from '../components/home/Categories/Categories';
 import FeaturedCourses from '../components/home/FeaturedCourses/FeaturedCourses';
+import SubscriptionCTA from '../components/home/SubscriptionCTA/SubscriptionCTA';
 import Testimonials from '../components/home/Testimonials/Testimonials';
-import Pricing from '../components/home/Pricing/Pricing';
 import Footer from '../components/home/Footer/Footer';
 
 export default function HomePage() {
@@ -19,8 +19,8 @@ export default function HomePage() {
         <Features />
         <Categories />
         <FeaturedCourses />
+        <SubscriptionCTA />
         <Testimonials />
-        <Pricing />
       </main>
 
       <Footer />

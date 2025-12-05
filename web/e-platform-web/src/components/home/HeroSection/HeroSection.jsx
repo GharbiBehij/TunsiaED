@@ -24,10 +24,10 @@ export default function HeroSection() {
           </div>
 
           <Link
-            to="/signup"
+            to="/courses"
             className="flex min-w-[200px] max-w-[480px] items-center justify-center rounded-lg h-12 px-8 bg-accent text-primary text-base font-bold hover:bg-accent/90 transition-colors shadow-lg"
           >
-            Get Started for Free
+            Browse Courses
           </Link>
         </div>
       </div>

@@ -66,6 +66,26 @@ export class CourseRepository {
       return [];
     }
   }
+
+  // Find system courses via DAO
+  async findSystemCourses() {
+    try {
+      const docs = await courseDao.getSystemCourses();
+      return docs;
+    } catch {
+      return [];
+    }
+  }
+
+  // Get all unique categories via DAO
+  async findAllCategories() {
+    try {
+      const categories = await courseDao.getAllCategories();
+      return categories;
+    } catch {
+      return [];
+    }
+  }
 }
 
 export const courseRepository = new CourseRepository();

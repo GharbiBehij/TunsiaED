@@ -16,6 +16,9 @@
  * @property {string|null} birthPlace - Birth place
  * @property {string|null} level - Education level
  * @property {string|null} bio - User biography
+ * @property {boolean} hasActiveSubscription - Whether user has an active subscription plan
+ * @property {string|null} activePlanId - ID of the active subscription plan
+ * @property {Date|null} subscriptionExpiresAt - When the subscription expires
  * @property {Date} createdAt - Firestore Timestamp
  * @property {Date} updatedAt - Firestore Timestamp
  */

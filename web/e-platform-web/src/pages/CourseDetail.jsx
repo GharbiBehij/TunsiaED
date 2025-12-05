@@ -2,16 +2,36 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCourseById } from '../hooks/Course/useCourse';
+import { useChaptersByCourse, useLessonsByCourse } from '../hooks/useChapters';
 import { useAuth } from '../context/AuthContext';
 import { useInitiatePurchase } from '../hooks/Payment/usePayment';
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated, user, isStudent } = useAuth();
+  const { isAuthenticated, user, isStudent, hasActiveSubscription } = useAuth();
   const { data: course, isLoading, isError } = useCourseById(courseId);
+  const { data: chapters = [], isLoading: chaptersLoading } = useChaptersByCourse(courseId);
+  const { data: lessons = [], isLoading: lessonsLoading } = useLessonsByCourse(courseId);
   const initiatePurchase = useInitiatePurchase();
   const [enrollmentMethod, setEnrollmentMethod] = useState(null); // 'purchase' | 'subscription'
+  const [expandedChapters, setExpandedChapters] = useState({});
+
+  const toggleChapter = (chapterId) => {
+    setExpandedChapters(prev => ({
+      ...prev,
+      [chapterId]: !prev[chapterId]
+    }));
+  };
+
+  // Group lessons by chapter
+  const lessonsByChapter = lessons.reduce((acc, lesson) => {
+    if (!acc[lesson.chapterId]) {
+      acc[lesson.chapterId] = [];
+    }
+    acc[lesson.chapterId].push(lesson);
+    return acc;
+  }, {});
 
   const handleEnroll = async (method) => {
     if (!isAuthenticated) {
@@ -25,23 +45,61 @@ export default function CourseDetailPage() {
       return;
     }
 
+    // Check if user has subscription access for system courses
+    if (course.isSystemCourse && course.price > 0 && hasActiveSubscription) {
+      // User has subscription, grant access directly
+      alert('You have access to this course through your subscription! Redirecting to course content...');
+      navigate(`/pages/student/studentdashboard`);
+      return;
+    }
+
     setEnrollmentMethod(method);
 
     if (method === 'purchase') {
-      // Direct course purchase
-      try {
-        const result = await initiatePurchase.mutateAsync({
-          courseId,
-          paymentType: 'course_purchase',
-          paymentMethod: 'paymee', // Default to Paymee for Tunisia
-        });
-        
-        // Redirect to payment page with payment ID
-        navigate(`/payment/${result.paymentId}`);
-      } catch (error) {
-        console.error('Failed to initiate purchase:', error);
-        alert('Failed to start enrollment. Please try again.');
-        setEnrollmentMethod(null);
+      const isFree = !course.price || course.price === 0;
+      
+      if (isFree) {
+        // Free course - enroll directly without payment
+        try {
+          const API_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
+          const response = await fetch(`${API_URL}/api/v1/enrollment/enroll`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${user.token || localStorage.getItem('token')}`,
+            },
+            body: JSON.stringify({ courseId }),
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to enroll');
+          }
+
+          // Success - redirect to course dashboard or show success message
+          alert('Successfully enrolled! You can now access the course.');
+          navigate(`/pages/student/studentdashboard`);
+        } catch (error) {
+          console.error('Failed to enroll in free course:', error);
+          alert(error.message || 'Failed to enroll. Please try again.');
+          setEnrollmentMethod(null);
+        }
+      } else {
+        // Paid course - go through payment flow
+        try {
+          const result = await initiatePurchase.mutateAsync({
+            courseId,
+            paymentType: 'course_purchase',
+            paymentMethod: 'paymee', // Default to Paymee for Tunisia
+          });
+          
+          // Redirect to payment page with payment ID
+          navigate(`/payment/${result.paymentId}`);
+        } catch (error) {
+          console.error('Failed to initiate purchase:', error);
+          alert('Failed to start enrollment. Please try again.');
+          setEnrollmentMethod(null);
+        }
       }
     } else if (method === 'subscription') {
       // Redirect to subscription page
@@ -151,33 +209,96 @@ export default function CourseDetailPage() {
                 </div>
               </div>
 
-              {/* Course Content */}
+              {/* Course Content - Chapters & Lessons */}
               <div className="bg-white dark:bg-gray-800 rounded-xl p-8 border border-gray-200 dark:border-gray-700">
                 <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary">list</span>
                   Course Content
                 </h2>
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Structured curriculum with chapters, lessons, and quizzes. Certificate upon completion.
-                </p>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="material-symbols-outlined text-primary">folder</span>
-                    <span className="text-gray-700 dark:text-gray-300">Multiple Chapters</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="material-symbols-outlined text-primary">play_circle</span>
-                    <span className="text-gray-700 dark:text-gray-300">Video Lessons (Coming in V2)</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="material-symbols-outlined text-primary">quiz</span>
-                    <span className="text-gray-700 dark:text-gray-300">Interactive Quizzes</span>
-                  </div>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <span className="material-symbols-outlined text-primary">workspace_premium</span>
-                    <span className="text-gray-700 dark:text-gray-300">Certificate of Completion</span>
-                  </div>
+                <div className="mb-4 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-base">folder</span>
+                    {chapters.length} chapters
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="material-symbols-outlined text-base">play_circle</span>
+                    {lessons.length} lessons
+                  </span>
                 </div>
+
+                {chaptersLoading || lessonsLoading ? (
+                  <div className="space-y-3">
+                    <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                    <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                  </div>
+                ) : chapters.length > 0 ? (
+                  <div className="space-y-2">
+                    {chapters
+                      .sort((a, b) => a.order - b.order)
+                      .map((chapter, index) => {
+                        const chapterLessons = (lessonsByChapter[chapter.id] || []).sort((a, b) => a.order - b.order);
+                        const isExpanded = expandedChapters[chapter.id];
+                        
+                        return (
+                          <div key={chapter.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                            {/* Chapter Header */}
+                            <button
+                              onClick={() => toggleChapter(chapter.id)}
+                              className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-primary font-bold">#{index + 1}</span>
+                                <div className="text-left">
+                                  <h3 className="font-semibold text-gray-900 dark:text-white">{chapter.title}</h3>
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {chapterLessons.length} lessons
+                                  </p>
+                                </div>
+                              </div>
+                              <span className={`material-symbols-outlined text-gray-600 dark:text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>
+                                expand_more
+                              </span>
+                            </button>
+
+                            {/* Chapter Lessons */}
+                            {isExpanded && chapterLessons.length > 0 && (
+                              <div className="bg-white dark:bg-gray-800">
+                                {chapterLessons.map((lesson, lessonIndex) => (
+                                  <div
+                                    key={lesson.id}
+                                    className="flex items-center gap-3 p-4 border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition"
+                                  >
+                                    <span className="material-symbols-outlined text-primary text-sm">
+                                      {lesson.contentType === 'video' ? 'play_circle' : 
+                                       lesson.contentType === 'quiz' ? 'quiz' : 'article'}
+                                    </span>
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-white">
+                                        {lessonIndex + 1}. {lesson.title}
+                                      </p>
+                                      {lesson.duration && (
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                          {lesson.duration} min
+                                        </p>
+                                      )}
+                                    </div>
+                                    {!isAuthenticated && (
+                                      <span className="material-symbols-outlined text-gray-400 text-sm">lock</span>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                    <p>Course content will be available soon.</p>
+                  </div>
+                )}
               </div>
 
               {/* Requirements */}
@@ -236,6 +357,19 @@ export default function CourseDetailPage() {
 
                 {/* Enrollment Options */}
                 <div className="space-y-3 mb-6">
+                  {/* Show subscription access badge for system courses */}
+                  {course.isSystemCourse && course.price > 0 && hasActiveSubscription && (
+                    <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                      <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <span className="material-symbols-outlined">verified</span>
+                        <span className="font-semibold">Included in your subscription</span>
+                      </div>
+                      <p className="text-sm text-green-600 dark:text-green-500 mt-1">
+                        You have full access to this course
+                      </p>
+                    </div>
+                  )}
+
                   {isFree ? (
                     <button
                       onClick={() => handleEnroll('purchase')}
@@ -253,6 +387,14 @@ export default function CourseDetailPage() {
                           Enroll for Free
                         </>
                       )}
+                    </button>
+                  ) : course.isSystemCourse && hasActiveSubscription ? (
+                    <button
+                      onClick={() => handleEnroll('purchase')}
+                      className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-green-600 text-white rounded-lg font-bold hover:bg-green-700 transition"
+                    >
+                      <span className="material-symbols-outlined">play_arrow</span>
+                      Start Learning Now
                     </button>
                   ) : (
                     <>

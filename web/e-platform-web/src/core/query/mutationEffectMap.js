@@ -12,6 +12,7 @@ import {
   ENROLLMENT_KEYS,
   PROGRESS_KEYS,
   USER_KEYS,
+  SUBSCRIPTION_KEYS,
 } from './queryKeys';
 
 /**
@@ -103,6 +104,8 @@ export const MUTATION_EFFECTS = {
     reactQuery: [
       COURSE_KEYS.all(),
       COURSE_KEYS.instructor(),
+      COURSE_KEYS.system(),
+      COURSE_KEYS.categories(),
       INSTRUCTOR_KEYS.dashboard(),
       INSTRUCTOR_KEYS.coursePerformance(),
       ADMIN_KEYS.dashboard(),
@@ -111,6 +114,7 @@ export const MUTATION_EFFECTS = {
     redis: [
       'instructor_dashboard_*',
       'instructor_courses_stats_*',
+      'system_courses_*',
     ],
   },
 
@@ -118,6 +122,8 @@ export const MUTATION_EFFECTS = {
     reactQuery: [
       COURSE_KEYS.all(),
       COURSE_KEYS.instructor(),
+      COURSE_KEYS.system(),
+      COURSE_KEYS.categories(),
       INSTRUCTOR_KEYS.dashboard(),
       ADMIN_KEYS.dashboard(),
       ADMIN_KEYS.coursePerformance(),
@@ -125,6 +131,7 @@ export const MUTATION_EFFECTS = {
     redis: [
       'instructor_dashboard_*',
       'course_content_*',
+      'system_courses_*',
     ],
   },
 
@@ -132,6 +139,8 @@ export const MUTATION_EFFECTS = {
     reactQuery: [
       COURSE_KEYS.all(),
       COURSE_KEYS.instructor(),
+      COURSE_KEYS.system(),
+      COURSE_KEYS.categories(),
       INSTRUCTOR_KEYS.dashboard(),
       ADMIN_KEYS.dashboard(),
       ADMIN_KEYS.coursePerformance(),
@@ -141,6 +150,7 @@ export const MUTATION_EFFECTS = {
       'instructor_courses_stats_*',
       'course_content_*',
       'course_progress_*',
+      'system_courses_*',
     ],
   },
 
@@ -200,15 +210,6 @@ export const MUTATION_EFFECTS = {
       'instructor_dashboard_*',
       'instructor_revenue_*',
     ],
-  },
-
-  initiateSubscription: {
-    reactQuery: [
-      PAYMENT_KEYS.history(),
-      PAYMENT_KEYS.pending(),
-      ADMIN_KEYS.subscriptionStats(),
-    ],
-    redis: [],
   },
 
   // ====================================================================
@@ -280,17 +281,52 @@ export const MUTATION_EFFECTS = {
   },
 
   // ====================================================================
+  // SUBSCRIPTION MUTATIONS
+  // ====================================================================
+  initiateSubscription: {
+    reactQuery: [
+      SUBSCRIPTION_KEYS.all(),
+      SUBSCRIPTION_KEYS.plans(),
+      SUBSCRIPTION_KEYS.userSubscription(),
+      PAYMENT_KEYS.all(),
+      PAYMENT_KEYS.pending(),
+      PAYMENT_KEYS.history(),
+      STUDENT_KEYS.dashboard(),
+      STUDENT_KEYS.enrollments(),
+      COURSE_KEYS.all(),
+      COURSE_KEYS.system(),
+      ADMIN_KEYS.subscriptionStats(),
+      USER_KEYS.profile(),
+    ],
+    redis: [
+      'student_dashboard_*',
+      'student_learning_overview_*',
+      'user_subscriptions_*',
+      'user_profile_*',
+      'subscription_plans_public',
+      'system_courses_*',
+    ],
+  },
+
+  // ====================================================================
   // ADMIN MUTATIONS
   // ====================================================================
   updateSubscriptionPlan: {
     reactQuery: [
       ADMIN_KEYS.subscriptions(),
       ADMIN_KEYS.subscriptionPlans(),
+      SUBSCRIPTION_KEYS.all(),
+      SUBSCRIPTION_KEYS.plans(),
+      COURSE_KEYS.system(),
       ADMIN_KEYS.dashboard(),
       ADMIN_KEYS.stats(),
       ADMIN_KEYS.revenue(),
     ],
-    redis: [],
+    redis: [
+      'subscription_plans_public',
+      'subscription_plan_*',
+      'system_courses_*',
+    ],
   },
 
   createPromotion: {

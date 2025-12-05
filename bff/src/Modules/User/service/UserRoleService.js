@@ -4,23 +4,29 @@ const ADMIN_EMAIL = 'admin@tunisiaed.com';
 
 export class UserRoleService {
   static async setAdmin(uid) {
-    await auth.setCustomUserClaims(uid,{
-        isAdmin: true,
-        isInstructor:false,
-        isStudent:false,
-    })};
-    static async setInstructor(uid) {
-        await auth.setCustomUserClaims(uid,{
-            isAdmin: false,
-            isInstructor:true,
-            isStudent:false,
-        })};
-    static async setStudent(uid) {
-            await auth.setCustomUserClaims(uid,{
-                isAdmin: false,
-                isInstructor:false,
-                isStudent:true,
-            })};
+    await auth.setCustomUserClaims(uid, {
+      isAdmin: true,
+      isInstructor: false,
+      isStudent: false,
+    });
+  }
+
+  static async setInstructor(uid) {
+    await auth.setCustomUserClaims(uid, {
+      isAdmin: false,
+      isInstructor: true,
+      isStudent: false,
+    });
+  }
+
+  static async setStudent(uid) {
+    await auth.setCustomUserClaims(uid, {
+      isAdmin: false,
+      isInstructor: false,
+      isStudent: true,
+    });
+  }
+
   static async getRoles(uid) {
     const user = await auth.getUser(uid);
     return {

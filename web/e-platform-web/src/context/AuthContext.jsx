@@ -19,8 +19,16 @@ const PendingProfileSchema = z.object({
 });
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  // ✅ Initialize from localStorage to maintain state on refresh
+  const [user, setUser] = useState(() => {
+    try {
+      const storedUser = localStorage.getItem("user");
+      return storedUser ? JSON.parse(storedUser) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [isLoading, setIsLoading] = useState(true);
   const [authAction, setAuthAction] = useState(null);
 
@@ -127,7 +135,8 @@ export const AuthProvider = ({ children }) => {
       await signOut(auth);
       setUser(null);
       setToken(null);
-      localStorage.clear();
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
       navigate("/login", { replace: true });
       console.log('✅ Logged out');
     } catch (error) {
@@ -140,7 +149,7 @@ export const AuthProvider = ({ children }) => {
       try {
         const result = await getRedirectResult(auth);
         
-        if (result) {
+        if (result && result.user) {
           console.log('✅ Google sign-in successful via redirect:', result.user.email);
           
           const wasGoogleAuth = localStorage.getItem('googleAuthInProgress');
@@ -271,6 +280,8 @@ export const AuthProvider = ({ children }) => {
         isStudent:
           user?.profile?.isStudent === true ||
           (!user?.profile?.isAdmin && !user?.profile?.isInstructor),
+        hasActiveSubscription: user?.profile?.hasActiveSubscription === true,
+        activePlanId: user?.profile?.activePlanId || null,
 
         login,
         signup,

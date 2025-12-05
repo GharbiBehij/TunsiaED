@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import PaymentService from '../../services/PaymentService';
 import { useAuth } from '../../context/AuthContext';
-import { PAYMENT_KEYS } from '../../core/query/queryKeys';
+import { PAYMENT_KEYS, STUDENT_KEYS } from '../../core/query/queryKeys';
 import { getAffectedQueryKeys } from '../../core/query/mutationEffectMap';
 
 // Re-export PAYMENT_KEYS for backward compatibility

@@ -7,6 +7,7 @@ import { SYSTEM_COURSES, SYSTEM_INSTRUCTOR_PROFILE, SYSTEM_INSTRUCTOR_UID } from
 import { SYSTEM_CHAPTERS } from './systemChapters.data.js';
 import { SYSTEM_LESSONS } from './systemLessons.data.js';
 import { validateAllSystemCourses } from './validateSystemCourses.js';
+import { seedSubscriptionPlans } from './seedSubscriptionPlans.js';
 
 const COLLECTIONS = {
   USERS: 'User',
@@ -186,6 +187,9 @@ export async function seedSystemData() {
 
     // Step 4: Seed system lessons
     await seedSystemLessons();
+
+    // Step 5: Seed subscription plans
+    await seedSubscriptionPlans();
 
     console.log('\n🎉 System data seeding complete!');
     return { success: true };

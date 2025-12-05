@@ -251,15 +251,37 @@ export class PaymentController {
       });
 
       // Step 2: Initiate Paymee payment
-      const paymeeResult = await paymeeService.initiatePayment({
-        amount,
-        note: note || `Course Purchase: ${courseId}`,
-        firstName: firstName || user.firstName || 'Customer',
-        lastName: lastName || user.lastName || 'User',
-        email: email || user.email,
-        phone: phone || user.phone || '+21600000000',
-        orderId: internalPayment.id, // Link to our internal payment ID
-      });
+      let paymeeResult;
+      try {
+        paymeeResult = await paymeeService.initiatePayment({
+          amount,
+          note: note || `Course Purchase: ${courseId}`,
+          firstName: firstName || user.firstName || 'Customer',
+          lastName: lastName || user.lastName || 'User',
+          email: email || user.email,
+          phone: phone || user.phone || '+21600000000',
+          orderId: internalPayment.id, // Link to our internal payment ID
+        });
+      } catch (paymeeError) {
+        // Paymee is down or unavailable
+        if (paymeeError.message.includes('PAYMEE_SERVER_DOWN') || paymeeError.message.includes('PAYMEE_SERVER_ERROR')) {
+          // Update payment status to indicate gateway issue
+          await paymentService.updatePayment(internalPayment.id, {
+            status: 'failed',
+            failureReason: 'Payment gateway temporarily unavailable',
+          });
+          
+          return res.status(503).json({
+            error: 'Payment gateway temporarily unavailable',
+            message: 'Our payment system is currently under maintenance. Please try again in a few minutes or use the simulation option for testing.',
+            paymentId: internalPayment.id,
+            canSimulate: process.env.NODE_ENV !== 'production',
+          });
+        }
+        
+        // Other errors - rethrow
+        throw paymeeError;
+      }
 
       // Step 3: Update internal payment with Paymee token
       await paymentService.updatePayment(internalPayment.id, {
@@ -395,6 +417,9 @@ export class PaymentController {
    * @param {Object} req.body - { courseId, amount, simulateSuccess: true/false }
    */
   async simulatePayment(req, res) {
+    if (process.env.NODE_ENV === 'production') {
+  return res.status(403).json({ error: 'Simulation not available in production' });
+}
     try {
       const userId = req.user?.uid;
       if (!userId) {

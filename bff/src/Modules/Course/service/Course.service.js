@@ -88,6 +88,17 @@ export class CourseService {
     return this._toModels(rawList);
   }
 
+  // Get system courses (public)
+  async getSystemCourses() {
+    const rawList = await courseRepository.findSystemCourses();
+    return this._toModels(rawList);
+  }
+
+  // Get all unique categories (public)
+  async getAllCategories() {
+    return await courseRepository.findAllCategories();
+  }
+
   // ====================================================================
   // INTERNAL METHODS (for orchestrator use - no permission checks)
   // ====================================================================

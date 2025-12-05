@@ -3,6 +3,7 @@ import { userRepository } from '../repository/User.repository.js';
 import { UserPermission } from './UserPermission.js';
 import { UserRoleService } from './UserRoleService.js';
 import { UserMapper } from '../mapper/User.mapper.js';
+import { cacheClient } from '../../../core/cache/cacheClient.js';
 
 export class UserService {
   // Helper: Map raw data to model
@@ -46,8 +47,23 @@ export class UserService {
 
   // Get user profile by UID (admin/self only)
   async getProfile(uid) {
+    const cacheKey = `user_profile_${uid}`;
+    
+    // Check cache first
+    const cached = await cacheClient.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
     const raw = await userRepository.findByUid(uid);
-    return this._toModel(raw);
+    const profile = this._toModel(raw);
+    
+    // Cache for 10 minutes (subscription status doesn't change frequently)
+    if (profile) {
+      await cacheClient.set(cacheKey, profile, 600);
+    }
+    
+    return profile;
   }
 
   // Update user profile (admin/self only, role changes admin only)
@@ -83,6 +99,10 @@ export class UserService {
     }
 
     const raw = await userRepository.updateProfile(targetUserId, updates);
+    
+    // Invalidate user profile cache
+    await cacheClient.del(`user_profile_${targetUserId}`);
+    
     return this._toModel(raw);
   }
 
@@ -117,6 +137,31 @@ export class UserService {
       uids.map(uid => userRepository.findByUid(uid).catch(() => null))
     );
     return results.filter(Boolean).map(raw => this._toModel(raw));
+  }
+
+  /**
+   * Update user subscription status (internal - for orchestrator use)
+   * @param {string} uid - User ID
+   * @param {Object} subscriptionData - Subscription data
+   * @param {boolean} subscriptionData.hasActiveSubscription - Active subscription flag
+   * @param {string|null} subscriptionData.activePlanId - Plan ID
+   * @param {Date|null} subscriptionData.subscriptionExpiresAt - Expiration date
+   */
+  async updateSubscriptionStatusInternal(uid, subscriptionData) {
+    const raw = await userRepository.updateProfile(uid, {
+      hasActiveSubscription: subscriptionData.hasActiveSubscription,
+      activePlanId: subscriptionData.activePlanId || null,
+      subscriptionExpiresAt: subscriptionData.subscriptionExpiresAt || null,
+    });
+    
+    // Invalidate caches related to this user
+    await Promise.all([
+      cacheClient.del(`user_profile_${uid}`),
+      cacheClient.del(`student_dashboard_${uid}`),
+      cacheClient.del(`student_learning_overview_${uid}`),
+    ]);
+    
+    return this._toModel(raw);
   }
 }
 

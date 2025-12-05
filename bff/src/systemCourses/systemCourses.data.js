@@ -27,7 +27,7 @@ export const SYSTEM_COURSES = [
     instructorName: SYSTEM_INSTRUCTOR_NAME,
     category: 'Programming',
     level: 'beginner',
-    price: 299,
+    price: 0, // FREE COURSE
     thumbnail: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=800',
     duration: 40,
     enrolledCount: 0,
@@ -44,7 +44,7 @@ export const SYSTEM_COURSES = [
     instructorName: SYSTEM_INSTRUCTOR_NAME,
     category: 'Programming',
     level: 'intermediate',
-    price: 249,
+    price: 0, // FREE COURSE
     thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=800',
     duration: 30,
     enrolledCount: 0,

@@ -187,11 +187,22 @@ class PaymentService {
       },
       body: JSON.stringify(paymentData),
     });
+    
+    const responseData = await res.json().catch(() => ({}));
+    
     if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.error || 'Failed to initiate Paymee payment');
+      // Check for Paymee downtime (503 Service Unavailable)
+      if (res.status === 503) {
+        const error = new Error(responseData.message || 'Payment gateway temporarily unavailable');
+        error.code = 'PAYMEE_DOWN';
+        error.details = responseData;
+        throw error;
+      }
+      
+      throw new Error(responseData.error || 'Failed to initiate Paymee payment');
     }
-    return res.json();
+    
+    return responseData;
   }
 
   /**

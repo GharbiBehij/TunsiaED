@@ -4,63 +4,74 @@ import { paymentService } from '../Modules/payment/service/Payment.service.js';
 import { transactionService } from '../Modules/Transaction/service/Transaction.service.js';
 import { enrollmentService } from '../Modules/Enrollement/service/Enrollement.service.js';
 import { courseService } from '../Modules/Course/service/Course.service.js';
+import { userService } from '../Modules/User/service/User.service.js';
 import { eventBus } from '../events/eventBus.js';
 
 export class CoursePurchaseOrchestrator {
   /**
-   * Initiate course purchase (creates payment)
+   * Initiate purchase (course or subscription)
    * @param {Object} user - Authenticated user
-   * @param {Object} purchaseData - { courseId, paymentType, subscriptionType, paymentMethod }
+   * @param {Object} purchaseData - { courseId?, planId?, paymentType, paymentMethod }
    * @returns {Object} Payment DTO
    */
   async initiatePurchase(user, purchaseData) {
-    // 1. Validate course exists (Course service - internal)
-    const course = await courseService.getCourseByIdInternal(purchaseData.courseId);
-    if (!course) {
-      throw new Error('Course not found');
+    let itemTitle, itemPrice, itemCurrency, itemId;
+
+    // Handle subscription purchase
+    if (purchaseData.planId) {
+      const { adminService } = await import('../Modules/Admin/service/Admin.service.js');
+      const plan = await adminService.getSubscriptionPlanByIdPublic(purchaseData.planId);
+      if (!plan) {
+        throw new Error('Subscription plan not found');
+      }
+      itemTitle = `${plan.name} Subscription`;
+      itemPrice = plan.price || 0;
+      itemCurrency = 'TND';
+      itemId = purchaseData.planId;
+    }
+    // Handle course purchase
+    else if (purchaseData.courseId) {
+      const course = await courseService.getCourseByIdInternal(purchaseData.courseId);
+      if (!course) {
+        throw new Error('Course not found');
+      }
+
+      // Check if already enrolled
+      const enrollments = await enrollmentService.getUserEnrollments(user.uid);
+      const alreadyEnrolled = enrollments.some(e => e.courseId === purchaseData.courseId);
+      if (alreadyEnrolled) {
+        throw new Error('Already enrolled in this course');
+      }
+
+      itemTitle = course.title;
+      itemPrice = course.price || 0;
+      itemCurrency = course.currency || 'TND';
+      itemId = purchaseData.courseId;
+    } else {
+      throw new Error('Either courseId or planId is required');
     }
 
-    // 2. Check if already enrolled (Enrollment service)
-    const enrollments = await enrollmentService.getUserEnrollments(user.uid);
-    const alreadyEnrolled = enrollments.some(e => e.courseId === purchaseData.courseId);
-    if (alreadyEnrolled) {
-      throw new Error('Already enrolled in this course');
-    }
-
-    // 3. Create payment using payment service (internal)
+    // Create payment using payment service (internal)
     const payment = await paymentService.createPaymentInternal({
       userId: user.uid,
-      courseId: purchaseData.courseId,
-      courseTitle: course.title,
-      amount: course.price || 0,
-      currency: course.currency || 'TND',
-      paymentType: purchaseData.paymentType || 'course_purchase',
+      courseId: purchaseData.courseId || null,
+      planId: purchaseData.planId || null,
+      courseTitle: itemTitle,
+      amount: itemPrice,
+      currency: itemCurrency,
+      paymentType: purchaseData.paymentType || (purchaseData.planId ? 'subscription' : 'course_purchase'),
       subscriptionType: purchaseData.subscriptionType || null,
       paymentMethod: purchaseData.paymentMethod || null,
       status: 'pending',
     });
-let paymeeResponse;
-try {
-  paymeeResponse = await PaymeeAdapter.initiatePayment({
-    paymentId: payment.paymentId,
-    amount: payment.amount,
-    currency: payment.currency,
-    method: purchaseData.paymentMethod,
-  });
-} catch (err) {
-  return {
-    success: false,
-    message: 'Payment system is currently under maintenance. Please try again later.',
-  };
-};
 
     // 4. Return clean DTO
     return {
       paymentId: payment.paymentId,
       amount: payment.amount,
       currency: payment.currency,
-      gatewayRedirectUrl:gatewayResponse.paymentUrl,
       courseId: payment.courseId,
+      planId: payment.planId,
       courseTitle: payment.courseTitle,
       status: payment.status,
     };
@@ -75,9 +86,6 @@ try {
    */
   async completePurchase(user, confirmationData) {
     // 1. Get payment details (Payment service)
-   try {
-
-   
     const payment = await paymentService.getPaymentById(confirmationData.paymentId);
     if (!payment) {
       throw new Error('Payment not found');
@@ -111,12 +119,16 @@ try {
       transactionId: transaction.transactionId,
     });
 
-    // 4. Create enrollment using enrollment service (internal)
-    const enrollment = await enrollmentService.createEnrollmentInternal(user.uid, {
-      courseId: payment.courseId,
-      courseTitle: payment.courseTitle,
-      paymentId: payment.paymentId,
-    });
+    // 4. Create enrollment only for course purchases (skip for subscriptions)
+    let enrollment = null;
+    if (payment.courseId && payment.paymentType !== 'subscription') {
+      enrollment = await enrollmentService.createEnrollmentInternal(user.uid, {
+        courseId: payment.courseId,
+        courseTitle: payment.courseTitle,
+        paymentId: payment.paymentId,
+      });
+    }
+    // For subscriptions, enrollment is handled separately by subscription service
 
     // 5. Emit events for notifications (non-blocking)
     eventBus.emit('payment.completed', {
@@ -124,23 +136,35 @@ try {
       courseTitle: payment.courseTitle,
       amount: payment.amount,
       transactionId: transaction.transactionId,
+      paymentType: payment.paymentType,
     });
 
-    eventBus.emit('enrollment.created', {
-      studentId: user.uid,
-      instructorId: payment.instructorId || null,
-      courseTitle: payment.courseTitle,
-      courseThumbnail: payment.courseThumbnail || null,
-    });
-  } catch (error) {
-    if (isGatewayDown(error)) {
-      return {
-        success: false,
-        message:'Payment system is currently under maintenance. Please try again later.'
-      };
+    // Emit enrollment event only for course purchases
+    if (enrollment) {
+      eventBus.emit('enrollment.created', {
+        studentId: user.uid,
+        instructorId: payment.instructorId || null,
+        courseTitle: payment.courseTitle,
+        courseThumbnail: payment.courseThumbnail || null,
+      });
     }
-    throw error;
-  }
+
+    // Emit subscription event for subscription purchases
+    if (payment.paymentType === 'subscription' && payment.planId) {
+      eventBus.emit('subscription.activated', {
+        userId: user.uid,
+        planId: payment.planId,
+        transactionId: transaction.transactionId,
+      });
+
+      // 5. Update user's subscription status in Firestore
+      await userService.updateSubscriptionStatusInternal(user.uid, {
+        hasActiveSubscription: true,
+        activePlanId: payment.planId,
+        subscriptionExpiresAt: null,
+      });
+    }
+
     // 6. Return clean DTO
     return {
       success: true,
@@ -149,12 +173,13 @@ try {
         amount: transaction.amount,
         status: transaction.status,
       },
-      enrollment: {
+      enrollment: enrollment ? {
         enrollmentId: enrollment.enrollmentId,
         courseId: enrollment.courseId,
         courseTitle: enrollment.courseTitle,
         enrolledAt: enrollment.enrolledAt,
-      },
+      } : null,
+      hasActiveSubscription: payment.paymentType === 'subscription' && payment.planId ? true : undefined,
     };
   }
 

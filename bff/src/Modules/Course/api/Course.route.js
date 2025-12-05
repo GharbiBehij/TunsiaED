@@ -9,6 +9,8 @@ const router = Router();
 router.post('/', authenticate, requireRole('admin', 'instructor'), courseController.createCourse);
 
 router.get('/', courseController.getAllCourses);
+router.get('/system', courseController.getSystemCourses);
+router.get('/categories', courseController.getAllCategories);
 router.get('/category/:category', courseController.getCoursesByCategory);
 router.get('/instructor/my-courses', authenticate, courseController.getCoursesByInstructor);
 router.get('/:courseId', courseController.getCourseById);

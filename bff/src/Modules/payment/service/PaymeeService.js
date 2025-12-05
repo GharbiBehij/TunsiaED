@@ -80,6 +80,14 @@ class PaymeeService {
         body: JSON.stringify(requestBody),
       });
 
+      // Check if response is OK (status 200-299)
+      if (!response.ok) {
+        // Server returned an error status
+        const errorText = await response.text();
+        console.error(`Paymee server error (${response.status}):`, errorText);
+        throw new Error(`PAYMEE_SERVER_ERROR: Server returned ${response.status}`);
+      }
+
       const data = await response.json();
 
       if (!data.status || data.code !== 50) {
@@ -97,6 +105,23 @@ class PaymeeService {
       };
     } catch (error) {
       console.error('Paymee initiation error:', error);
+      
+      // Detect network/connection errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        throw new Error('PAYMEE_SERVER_DOWN: Payment gateway is currently unavailable. Please try again later.');
+      }
+      
+      // Detect fetch errors (network issues)
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        throw new Error('PAYMEE_SERVER_DOWN: Unable to connect to payment gateway. Please try again later.');
+      }
+      
+      // Pass through server errors
+      if (error.message.startsWith('PAYMEE_SERVER_ERROR') || error.message.startsWith('PAYMEE_SERVER_DOWN')) {
+        throw error;
+      }
+      
+      // Generic error
       throw new Error(`Paymee payment initiation failed: ${error.message}`);
     }
   }

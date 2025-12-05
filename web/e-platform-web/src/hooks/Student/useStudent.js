@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import StudentService from '../../services/StudentService';
 import ProgressService from '../../services/ProgressService';
 import { useAuth } from '../../context/AuthContext';
-import { STUDENT_KEYS } from '../../core/query/queryKeys';
+import { STUDENT_KEYS, INSTRUCTOR_KEYS, ADMIN_KEYS } from '../../core/query/queryKeys';
 import { getAffectedQueryKeys } from '../../core/query/mutationEffectMap';
 
 // Re-export STUDENT_KEYS for backward compatibility

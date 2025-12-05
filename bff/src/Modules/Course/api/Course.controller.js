@@ -67,6 +67,26 @@ export const getAllCourses = async (req, res) => {
   }
 };
 
+// Get system courses (public)
+export const getSystemCourses = async (req, res) => {
+  try {
+    const courses = await courseService.getSystemCourses();
+    res.json(courses);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// Get all categories (public)
+export const getAllCategories = async (req, res) => {
+  try {
+    const categories = await courseService.getAllCategories();
+    res.json(categories);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 // Get all courses for authenticated instructor
 export const getInstructorCourses = async (req, res) => {
   try {

@@ -12,6 +12,7 @@ import MainLayout from './Layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import Course from './pages/Course';
 import CourseDetailPage from './pages/CourseDetail';
+import SubscriptionPage from './pages/SubscriptionPage';
 import CreateCourse from './pages/Instructor/CreateCourse';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
@@ -21,8 +22,10 @@ import AdminDashboard from './pages/Admin/AdminDashboard';
 import InstructorDashboard from './pages/Instructor/InstructorDashboard';
 import StudentDashboard from './pages/Student/StudentDashboard';
 
-// Components
-import ProtectedRoute from './components/shared/ProtectedRoute';
+// Route Protection Components
+import ProtectedRoute from './components/shared/ProtectedRoute'; // Requires authentication + specific roles
+import SubscriptionProtectedRoute from './components/shared/SubscriptionProtectedRoute'; // Requires active subscription
+import CourseAccessRoute from './components/shared/CourseAccessRoute'; // Grants access based on enrollment, subscription, or free course
 
 function App() {
   return (
@@ -33,8 +36,19 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/course" element={<Course />} />
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+          <Route path="/subscription" element={<SubscriptionPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+
+          {/* Course Content Routes - Protected by enrollment OR subscription */}
+          { /*<Route path="/courses/:courseId/learn" element={<CourseAccessRoute><CoursePlayer /></CourseAccessRoute>} />}
+          {<Route path="/courses/:courseId/lessons/:lessonId" element={<CourseAccessRoute><LessonView /></CourseAccessRoute>} />}
+
+          {/* Subscription Protected Routes - Premium content requiring active subscription */}
+          {/* Example premium routes - uncomment and add premium pages as needed */}
+          { /*<Route path="/premium/resources" element={<SubscriptionProtectedRoute><PremiumResources /></SubscriptionProtectedRoute>} /> }
+          { <Route path="/premium/masterclasses" element={<SubscriptionProtectedRoute><Masterclasses /></SubscriptionProtectedRoute>} />}
+          { <Route path="/premium/community" element={<SubscriptionProtectedRoute><PremiumCommunity /></SubscriptionProtectedRoute>} />}
 
           {/* Protected Dashboard Routes */}
           <Route element={<ProtectedRoute roles={['student', 'instructor', 'admin']}><MainLayout /></ProtectedRoute>}>

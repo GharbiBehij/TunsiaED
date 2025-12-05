@@ -34,6 +34,26 @@ class CourseService {
   }
 
   /**
+   * Fetches system courses (platform-seeded courses)
+   * @returns {Promise<Array>} List of system courses
+   */
+  static async getSystemCourses() {
+    const res = await fetch(`${API_URL}/api/v1/course/system`);
+    if (!res.ok) throw new Error('Failed to fetch system courses');
+    return res.json();
+  }
+
+  /**
+   * Fetches all unique course categories
+   * @returns {Promise<Array>} List of category names
+   */
+  static async getAllCategories() {
+    const res = await fetch(`${API_URL}/api/v1/course/categories`);
+    if (!res.ok) throw new Error('Failed to fetch categories');
+    return res.json();
+  }
+
+  /**
    * Creates a new course
    * @param {Object} courseData - Course creation data
    * @param {string} token - Authentication token

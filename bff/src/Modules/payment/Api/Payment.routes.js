@@ -34,5 +34,10 @@ router.get('/paymee/status/:token', authenticate, paymentController.getPaymeePay
 // Simulates a payment and sends email notification
 router.post('/simulate', authenticate, paymentController.simulatePayment);
 
+// SUBSCRIPTION PLANS (PUBLIC - for subscription page)
+import { subscriptionController } from './Subscription.controller.js';
+router.get('/subscriptions/plans', subscriptionController.getSubscriptionPlans);
+router.get('/subscriptions/plans/:planId', subscriptionController.getSubscriptionPlanById);
+
 export { router };
 

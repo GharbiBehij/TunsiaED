@@ -1,6 +1,7 @@
 // bff/src/Modules/Admin/service/Admin.service.js
 import { adminRepository } from '../repository/Admin.repository.js';
 import { AdminPermission } from './AdminPermission.js';
+import { cacheClient } from '../../../core/cache/cacheClient.js';
 
 export class AdminService {
   // Get dashboard statistics (admin only)
@@ -59,12 +60,53 @@ export class AdminService {
     return await adminRepository.createPromotion(promotionData);
   }
 
-  // Get subscription plans (admin only)
+  // Get subscription plans (admin only - returns all plans)
   async getSubscriptionPlans(user) {
     if (!AdminPermission.getSubscriptions(user)) {
       throw new Error('Unauthorized');
     }
     return await adminRepository.getSubscriptionPlans();
+  }
+
+  // Get subscription plans (public - returns only active plans)
+  async getSubscriptionPlansPublic() {
+    const cacheKey = 'subscription_plans_public';
+    
+    // Check cache first (30 min cache - plans don't change often)
+    const cached = await cacheClient.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+    
+    const allPlans = await adminRepository.getSubscriptionPlans();
+    const activePlans = allPlans
+      .filter(plan => plan.isActive !== false)
+      .sort((a, b) => (a.price || 0) - (b.price || 0));
+    
+    // Cache for 30 minutes
+    await cacheClient.set(cacheKey, activePlans, 1800);
+    
+    return activePlans;
+  }
+
+  // Get single subscription plan (public - returns only if active)
+  async getSubscriptionPlanByIdPublic(planId) {
+    const cacheKey = `subscription_plan_${planId}`;
+    
+    // Check cache first
+    const cached = await cacheClient.get(cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+    
+    const allPlans = await adminRepository.getSubscriptionPlans();
+    const plan = allPlans.find(p => p.id === planId);
+    const result = (plan && plan.isActive !== false) ? plan : null;
+    
+    // Cache for 30 minutes
+    await cacheClient.set(cacheKey, result, 1800);
+    
+    return result;
   }
 
   // Get subscription statistics (admin only)
@@ -80,7 +122,16 @@ export class AdminService {
     if (!AdminPermission.manageSubscriptions(user)) {
       throw new Error('Unauthorized');
     }
-    return await adminRepository.updateSubscriptionPlan(planId, updateData);
+    
+    const result = await adminRepository.updateSubscriptionPlan(planId, updateData);
+    
+    // Invalidate subscription plan caches
+    await Promise.all([
+      cacheClient.del('subscription_plans_public'),
+      cacheClient.del(`subscription_plan_${planId}`),
+    ]);
+    
+    return result;
   }
 }
 
