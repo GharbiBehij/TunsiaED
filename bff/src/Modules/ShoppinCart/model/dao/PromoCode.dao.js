@@ -1,7 +1,6 @@
 // bff/src/Modules/ShoppingCart/model/dao/PromoCode.dao.js
 // DAO handles raw Firestore operations
 import { db } from '../../../../config/firebase.js';
-import admin from '../../../../config/firebase.js';
 
 const COLLECTION = 'PromoCodes';
 
