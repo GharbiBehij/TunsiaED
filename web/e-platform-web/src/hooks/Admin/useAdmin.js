@@ -214,3 +214,141 @@ export function useCreatePromotion() {
     },
   });
 }
+
+/**
+ * Get all users (admin only)
+ * Stale after 3 minutes
+ */
+export function useAdminUsers(options = {}) {
+  const { token } = useAuth();
+  
+  return useQuery({
+    queryKey: ADMIN_KEYS.users(options),
+    queryFn: () => AdminService.getAllUsers(token, options),
+    staleTime: 3 * 60 * 1000, // 3 minutes
+    enabled: !!token,
+  });
+}
+
+/**
+ * Ban user mutation
+ * Invalidates user-related queries on success
+ */
+export function useBanUser() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (userId) => AdminService.banUser(token, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.users() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.stats() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.activity() });
+    },
+  });
+}
+
+/**
+ * Unban user mutation
+ * Invalidates user-related queries on success
+ */
+export function useUnbanUser() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (userId) => AdminService.unbanUser(token, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.users() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.stats() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.activity() });
+    },
+  });
+}
+
+/**
+ * Approve instructor application
+ * Invalidates user and instructor queries on success
+ */
+export function useApproveInstructor() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (userId) => AdminService.approveInstructor(token, userId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.users() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.stats() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.activity() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.userEngagement() });
+    },
+  });
+}
+
+/**
+ * Decline instructor application
+ * Invalidates user queries on success
+ */
+export function useDeclineInstructor() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ userId, reason }) => AdminService.declineInstructor(token, userId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.users() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.activity() });
+    },
+  });
+}
+
+/**
+ * Get all courses (admin only)
+ * Stale after 5 minutes
+ */
+export function useAdminCourses(options = {}) {
+  const { token } = useAuth();
+  
+  return useQuery({
+    queryKey: ADMIN_KEYS.courses(options),
+    queryFn: () => AdminService.getAllCourses(token, options),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    enabled: !!token,
+  });
+}
+
+/**
+ * Approve course mutation
+ * Invalidates course-related queries on success
+ */
+export function useApproveCourse() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (courseId) => AdminService.approveCourse(token, courseId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.courses() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.stats() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.activity() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.coursePerformance() });
+    },
+  });
+}
+
+/**
+ * Reject course mutation
+ * Invalidates course-related queries on success
+ */
+export function useRejectCourse() {
+  const { token } = useAuth();
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ courseId, reason }) => AdminService.rejectCourse(token, courseId, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.courses() });
+      queryClient.invalidateQueries({ queryKey: ADMIN_KEYS.activity() });
+    },
+  });
+}

@@ -2,6 +2,9 @@
 import { adminRepository } from '../repository/Admin.repository.js';
 import { AdminPermission } from './AdminPermission.js';
 import { cacheClient } from '../../../core/cache/cacheClient.js';
+import { userRepository } from '../../User/repository/User.repository.js';
+import { courseRepository } from '../../Course/repository/Course.repository.js';
+import { FirebaseAuthAdapter } from '../../../adapters/firebaseAdapter.js';
 
 export class AdminService {
   // Get dashboard statistics (admin only)
@@ -132,6 +135,99 @@ export class AdminService {
     ]);
     
     return result;
+  }
+
+  // ========== User Management ==========
+
+  async getAllUsers(user, options = {}) {
+    if (!AdminPermission.manageUsers(user)) {
+      throw new Error('Unauthorized');
+    }
+    return await userRepository.getAllUsers(options);
+  }
+
+  async banUser(user, targetUserId) {
+    if (!AdminPermission.manageUsers(user)) {
+      throw new Error('Unauthorized');
+    }
+    await FirebaseAuthAdapter.updateUser(targetUserId, { disabled: true });
+    return await userRepository.updateProfile(targetUserId, { banned: true });
+  }
+
+  async unbanUser(user, targetUserId) {
+    if (!AdminPermission.manageUsers(user)) {
+      throw new Error('Unauthorized');
+    }
+    await FirebaseAuthAdapter.updateUser(targetUserId, { disabled: false });
+    return await userRepository.updateProfile(targetUserId, { banned: false });
+  }
+
+  // Approve instructor application (admin only)
+  async approveInstructor(user, targetUserId) {
+    if (!AdminPermission.manageUsers(user)) {
+      throw new Error('Unauthorized');
+    }
+    
+    // Check if user has pending instructor application
+    const targetUser = await userRepository.findByUid(targetUserId);
+    if (!targetUser) {
+      throw new Error('User not found');
+    }
+    
+    // Set instructor role
+    const claims = {
+      isAdmin: false,
+      isInstructor: true,
+      isStudent: false,
+    };
+    
+    await FirebaseAuthAdapter.setCustomClaims(targetUserId, claims);
+    return await userRepository.updateProfile(targetUserId, {
+      ...claims,
+      instructorStatus: 'approved',
+      role: 'instructor',
+    });
+  }
+
+  // Decline instructor application (admin only)
+  async declineInstructor(user, targetUserId, reason) {
+    if (!AdminPermission.manageUsers(user)) {
+      throw new Error('Unauthorized');
+    }
+    
+    const targetUser = await userRepository.findByUid(targetUserId);
+    if (!targetUser) {
+      throw new Error('User not found');
+    }
+    
+    // Keep student role and mark instructor application as declined
+    return await userRepository.updateProfile(targetUserId, {
+      instructorStatus: 'declined',
+      instructorDeclineReason: reason || 'Application requirements not met',
+    });
+  }
+
+  // ========== Course Management ==========
+
+  async getAllCourses(user, options = {}) {
+    if (!AdminPermission.manageCourses(user)) {
+      throw new Error('Unauthorized');
+    }
+    return await courseRepository.getAllCourses(options);
+  }
+
+  async approveCourse(user, courseId) {
+    if (!AdminPermission.manageCourses(user)) {
+      throw new Error('Unauthorized');
+    }
+    return await courseRepository.updateCourse(courseId, { status: 'approved' });
+  }
+
+  async rejectCourse(user, courseId, reason) {
+    if (!AdminPermission.manageCourses(user)) {
+      throw new Error('Unauthorized');
+    }
+    return await courseRepository.updateCourse(courseId, { status: 'rejected', rejectionReason: reason });
   }
 }
 

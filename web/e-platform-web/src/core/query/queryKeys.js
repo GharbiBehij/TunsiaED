@@ -69,6 +69,10 @@ export const ADMIN_KEYS = {
   subscriptionStats: () => [...ADMIN_KEYS.all(), 'subscriptions', 'stats'],
   subscriptions: () => [...ADMIN_KEYS.all(), 'subscriptions'],
   promotions: () => [...ADMIN_KEYS.all(), 'promotions'],
+  // User management keys
+  users: (filters = {}) => [...ADMIN_KEYS.all(), 'users', filters],
+  // Course management keys
+  courses: (filters = {}) => [...ADMIN_KEYS.all(), 'courses', filters],
   // Orchestrated keys
   dashboard: () => [...ADMIN_KEYS.all(), 'dashboard'],
 };
@@ -143,6 +147,35 @@ export const PROGRESS_KEYS = {
 };
 
 /**
+ * QUIZ DOMAIN KEYS
+ */
+export const QUIZ_KEYS = {
+  all: () => ['quizzes'],
+  detail: (quizId) => [...QUIZ_KEYS.all(), quizId],
+  byCourse: (courseId) => [...QUIZ_KEYS.all(), 'course', courseId],
+  byLesson: (lessonId) => [...QUIZ_KEYS.all(), 'lesson', lessonId],
+};
+
+/**
+ * CHAPTER DOMAIN KEYS
+ */
+export const CHAPTER_KEYS = {
+  all: () => ['chapters'],
+  detail: (chapterId) => [...CHAPTER_KEYS.all(), chapterId],
+  byCourse: (courseId) => [...CHAPTER_KEYS.all(), 'course', courseId],
+};
+
+/**
+ * LESSON DOMAIN KEYS
+ */
+export const LESSON_KEYS = {
+  all: () => ['lessons'],
+  detail: (lessonId) => [...LESSON_KEYS.all(), lessonId],
+  byCourse: (courseId) => [...LESSON_KEYS.all(), 'course', courseId],
+  byChapter: (chapterId) => [...LESSON_KEYS.all(), 'chapter', chapterId],
+};
+
+/**
  * SUBSCRIPTION DOMAIN KEYS
  */
 export const SUBSCRIPTION_KEYS = {
@@ -163,6 +196,9 @@ export const getAllDomainKeys = (domain) => {
     instructor: INSTRUCTOR_KEYS,
     admin: ADMIN_KEYS,
     course: COURSE_KEYS,
+    chapter: CHAPTER_KEYS,
+    lesson: LESSON_KEYS,
+    quiz: QUIZ_KEYS,
     payment: PAYMENT_KEYS,
     certificate: CERTIFICATE_KEYS,
     enrollment: ENROLLMENT_KEYS,
@@ -181,6 +217,9 @@ export const QUERY_KEY_REGISTRY = {
   INSTRUCTOR_KEYS,
   ADMIN_KEYS,
   COURSE_KEYS,
+  CHAPTER_KEYS,
+  LESSON_KEYS,
+  QUIZ_KEYS,
   PAYMENT_KEYS,
   CERTIFICATE_KEYS,
   ENROLLMENT_KEYS,

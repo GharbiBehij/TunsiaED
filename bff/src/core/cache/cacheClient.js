@@ -4,6 +4,53 @@
 
 import Redis from 'ioredis';
 
+// ====================================================================
+// REDIS CACHE KEY REGISTRY
+// ====================================================================
+
+/**
+ * Centralized registry of all Redis cache key patterns used in the application
+ * This ensures consistency across all cache operations and makes it easy to
+ * track and manage cache invalidation patterns.
+ */
+export const REDIS_KEY_REGISTRY = {
+  // Dashboard caches
+  INSTRUCTOR_DASHBOARD: 'instructor_dashboard_*',
+  STUDENT_DASHBOARD: 'student_dashboard_*',
+  STUDENT_LEARNING_OVERVIEW: 'student_learning_overview_*',
+
+  // Progress and enrollment caches
+  USER_PROGRESS: 'user_progress_*',
+  COURSE_PROGRESS: 'course_progress_*',
+  ENROLLMENT: 'enrollment_*',
+  USER_PROGRESS_OVERVIEW: 'user_progress_overview_*',
+
+  // Instructor analytics
+  INSTRUCTOR_REVENUE: 'instructor_revenue_*',
+  INSTRUCTOR_COURSE_STATS: 'instructor_course_stats_*',
+
+  // Transaction and payment caches
+  TRANSACTION: 'transaction_*',
+  PAYMENT: 'payment_*',
+
+  // Specific key generators (for exact key lookups)
+  instructorDashboard: (userId) => `instructor_dashboard_${userId}`,
+  studentDashboard: (userId) => `student_dashboard_${userId}`,
+  studentLearningOverview: (userId) => `student_learning_overview_${userId}`,
+  userProgress: (userId, courseId) => `user_progress_${userId}_course_${courseId}`,
+  courseProgress: (courseId, userId) => `course_progress_${courseId}_${userId}`,
+  enrollment: (enrollmentId) => `enrollment_${enrollmentId}`,
+  instructorRevenue: (userId) => `instructor_revenue_${userId}`,
+  instructorCourseStats: (userId) => `instructor_course_stats_${userId}`,
+  transaction: (transactionId) => `transaction_${transactionId}`,
+  payment: (paymentId) => `payment_${paymentId}`,
+  userProgressOverview: (userId) => `user_progress_overview_${userId}`,
+  userProgressByEnrollment: (userId, enrollmentId) => `user_progress_${userId}_enrollment_${enrollmentId}`,
+};
+
+// ====================================================================
+// REDIS CLIENT INITIALIZATION
+// ====================================================================
 let redis = null;
 let redisEnabled = false;
 
@@ -112,6 +159,27 @@ export const cacheClient = {
       }
     } catch (err) {
       console.warn('Cache delPattern error:', err.message);
+    }
+  },
+
+  /**
+   * Delete multiple patterns at once using registry keys
+   * @param {string[]} patterns - Array of registry pattern constants
+   * @example cacheClient.delPatterns([REDIS_KEY_REGISTRY.STUDENT_DASHBOARD, REDIS_KEY_REGISTRY.INSTRUCTOR_DASHBOARD])
+   */
+  async delPatterns(patterns) {
+    if (!redis || !redisEnabled) return;
+    try {
+      const allKeys = [];
+      for (const pattern of patterns) {
+        const keys = await redis.keys(pattern);
+        allKeys.push(...keys);
+      }
+      if (allKeys.length > 0) {
+        await redis.del(...allKeys);
+      }
+    } catch (err) {
+      console.warn('Cache delPatterns error:', err.message);
     }
   },
 

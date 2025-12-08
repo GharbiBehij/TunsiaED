@@ -5,7 +5,7 @@ import { instructorService } from '../Modules/Instructor/service/Instructor.serv
 import { progressService } from '../Modules/Progress/service/Progress.service.js';
 import { courseService } from '../Modules/Course/service/Course.service.js';
 import { userService } from '../Modules/User/service/User.service.js';
-import { cacheClient } from '../core/cache/cacheClient.js';
+import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
 
 //facade design pattern implementation(multiple servvices calls)
 export class InstructorDashboardOrchestrator {
@@ -15,12 +15,16 @@ export class InstructorDashboardOrchestrator {
    * @returns {Object} Dashboard DTO
    */
   async getDashboardData(user) {
+    console.log('📊 [InstructorDash] getDashboardData called:', user.uid);
     const cacheKey = `instructor_dashboard_${user.uid}`;
     
     // 1. Validate permissions
+    console.log('🔐 [InstructorDash] Validating permissions...');
     if (!InstructorPermission.getStats(user)) {
+      console.error('⛔ [InstructorDash] Unauthorized');
       throw new Error('Unauthorized');
     }
+    console.log('✅ [InstructorDash] Permissions validated');
 
     // 2. Read cache (optional)
     const cached = await cacheClient.get(cacheKey);
@@ -189,10 +193,10 @@ export class InstructorDashboardOrchestrator {
    * @returns {Object[]} Array of course stats DTOs
    */
   async getCoursesWithStats(user) {
-    const cacheKey = `instructor_courses_stats_${user.uid}`;
+    const cacheKey = REDIS_KEY_REGISTRY.instructorCourseStats(user.uid);
     
     // Check cache first
-    const cached = await cache.get(cacheKey);
+    const cached = await cacheClient.get(cacheKey);
     if (cached) {
       return cached;
     }
@@ -241,7 +245,7 @@ export class InstructorDashboardOrchestrator {
     );
 
     // 4. Cache result
-    await cache.set(cacheKey, coursesWithStats, 300); // 5 min cache
+    await cacheClient.set(cacheKey, coursesWithStats, 300); // 5 min cache
 
     return coursesWithStats;
   }

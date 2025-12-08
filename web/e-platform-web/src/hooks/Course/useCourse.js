@@ -9,33 +9,17 @@ import { getAffectedQueryKeys } from '../../core/query/mutationEffectMap';
 export { COURSE_KEYS };
 
 /**
- * Fetch all courses with subscription-based access control
- * Returns all courses if user has active subscription, otherwise only free courses and enrolled courses
+ * Fetch all courses (public catalog)
+ * Everyone can see all courses in the catalog
+ * Access control happens at the course content level (enrollment or subscription required)
  */
 export const useAllCourses = () => {
-  const { hasActiveSubscription, isAuthenticated } = useAuth();
-
   return useQuery({
     queryKey: COURSE_KEYS.all(),
     queryFn: async () => {
-      const allCourses = await CourseService.getAllCourses();
-      
-      // If user has active subscription, return all courses
-      if (hasActiveSubscription) {
-        return allCourses;
-      }
-      
-      // Otherwise, only show free courses and system courses that are free
-      // (Paid system courses require subscription or individual enrollment)
-      if (!isAuthenticated) {
-        // Non-authenticated users see only free courses
-        return allCourses.filter(course => !course.price || course.price === 0);
-      }
-      
-      // Authenticated users without subscription see:
-      // - All free courses
-      // - Courses they're enrolled in (checked separately in CourseDetail page)
-      return allCourses.filter(course => !course.price || course.price === 0);
+      // Return ALL courses - system courses and instructor-created courses
+      // Access control is enforced when trying to access course content
+      return await CourseService.getAllCourses();
     },
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
   });

@@ -67,7 +67,6 @@ const StripeCheckout = ({ checkoutUrl }) => {
     </div>
   );
 };
-
 /**
  * SecureCheckout - Payment form widget
  * @param {Object} data - Checkout data { items, courseId, subtotal, tax, total, paymentType }
@@ -79,9 +78,9 @@ const StripeCheckout = ({ checkoutUrl }) => {
  */
 export default function SecureCheckout({ 
   data = {}, 
-  isLoading = false, 
-  isError = false,
-  testMode = false, // Enable test mode when payment gateway is unavailable
+  isLoading = false,   
+  isError = false, 
+  testMode = false,// Enable test mode when payment gateway is unavailable
   onSuccess,
   onCancel
 }) {
@@ -96,13 +95,27 @@ export default function SecureCheckout({
   const [stripeCheckoutUrl, setStripeCheckoutUrl] = useState(null);
   const [isTestMode, setIsTestMode] = useState(testMode);
   const [simulateSuccess, setSimulateSuccess] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Payment hooks
   const initiatePurchase = useInitiatePurchase();
   const completePurchase = useCompletePurchase();
   const initiateStripe = useInitiateStripePayment();
   const simulatePayment = useSimulatePayment();
-  
+
+  // Reset state when data changes (new payment)
+  useEffect(() => {
+    setStep('form');
+    setStripeSessionId(null);
+    setStripeCheckoutUrl(null);
+    setErrorMessage('');
+    setCardNumber('');
+    setExpiryDate('');
+    setCvv('');
+    setCardholderName('');
+    setPhone('');
+  }, [data.paymentId, data.courseId]);
+
   // Poll Stripe status after checkout completion
   const { data: stripeStatus, refetch: refetchStripeStatus } = useStripePaymentStatus(
     stripeSessionId, 
@@ -120,6 +133,7 @@ export default function SecureCheckout({
         if (onSuccess) onSuccess(stripeStatus);
       } else if (stripeStatus.status === 'failed') {
         setStep('error');
+        setErrorMessage('Stripe payment failed. Please try again.');
       }
     }
   }, [stripeStatus, onSuccess]);
@@ -170,8 +184,16 @@ export default function SecureCheckout({
     setPhone(value);
   };
 
-  // Validate form
+  // Validate form (recomputes on every render for dynamic validation)
   const isFormValid = () => {
+    // Check if we have required data
+    if (!courseId && (!items || items.length === 0)) {
+      return false;
+    }
+    if (total <= 0) {
+      return false;
+    }
+    
     if (paymentMethod === 'card') {
       return (
         cardNumber.replace(/\s/g, '').length === 16 &&
@@ -203,6 +225,7 @@ export default function SecureCheckout({
     if (isTestMode) {
       try {
         setStep('processing');
+        setErrorMessage('');
         
         const result = await simulatePayment.mutateAsync({
           courseId: courseId || items[0]?.courseId,
@@ -214,10 +237,12 @@ export default function SecureCheckout({
           if (onSuccess) onSuccess(result);
         } else {
           setStep('error');
+          setErrorMessage('Payment simulation failed as requested.');
         }
       } catch (error) {
         console.error('Payment simulation failed:', error);
         setStep('error');
+        setErrorMessage(error.message || 'Payment simulation failed.');
       }
       return;
     }
@@ -228,6 +253,7 @@ export default function SecureCheckout({
     if (paymentMethod === 'stripe') {
       try {
         setStep('processing');
+        setErrorMessage('');
         
         const stripeData = {
           courseId: courseId || items[0]?.courseId,
@@ -241,18 +267,24 @@ export default function SecureCheckout({
 
         const result = await initiateStripe.mutateAsync(stripeData);
         
-        setStripeSessionId(result.sessionId);
-        setStripeCheckoutUrl(result.checkoutUrl);
-        setStep('stripe-redirect');
+        if (result.sessionId && result.checkoutUrl) {
+          setStripeSessionId(result.sessionId);
+          setStripeCheckoutUrl(result.checkoutUrl);
+          setStep('stripe-redirect');
+        } else {
+          throw new Error('Invalid Stripe response');
+        }
       } catch (error) {
         console.error('Stripe initiation failed:', error);
         setStep('error');
+        setErrorMessage(error.message || 'Failed to initiate Stripe checkout. Please try again.');
       }
       return;
     }
 
     // Standard payment flow (card/PayPal)
     setStep('processing');
+    setErrorMessage('');
 
     try {
       // Step 1: Initiate purchase
@@ -264,6 +296,10 @@ export default function SecureCheckout({
       };
 
       const initiateResult = await initiatePurchase.mutateAsync(purchaseData);
+
+      if (!initiateResult.paymentId) {
+        throw new Error('Failed to initiate purchase. Please try again.');
+      }
 
       // Step 2: Complete purchase (simulating payment gateway confirmation)
       const confirmationData = {
@@ -282,6 +318,7 @@ export default function SecureCheckout({
     } catch (error) {
       console.error('Payment failed:', error);
       setStep('error');
+      setErrorMessage(error.message || 'Payment processing failed. Please try again.');
     }
   };
 
@@ -289,6 +326,12 @@ export default function SecureCheckout({
     setStep('form');
     setStripeSessionId(null);
     setStripeCheckoutUrl(null);
+    setErrorMessage('');
+    // Clear mutations
+    initiatePurchase.reset();
+    completePurchase.reset();
+    initiateStripe.reset();
+    simulatePayment.reset();
   };
 
   // Loading State
@@ -393,7 +436,7 @@ export default function SecureCheckout({
             Payment Failed
           </h3>
           <p className="text-red-600 dark:text-red-500 mb-4">
-            There was an issue processing your payment. Please try again.
+            {errorMessage || 'There was an issue processing your payment. Please try again.'}
           </p>
           <div className="flex gap-3 justify-center">
             <button

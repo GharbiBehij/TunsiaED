@@ -7,6 +7,9 @@ import {
   INSTRUCTOR_KEYS,
   ADMIN_KEYS,
   COURSE_KEYS,
+  CHAPTER_KEYS,
+  LESSON_KEYS,
+  QUIZ_KEYS,
   PAYMENT_KEYS,
   CERTIFICATE_KEYS,
   ENROLLMENT_KEYS,
@@ -141,6 +144,8 @@ export const MUTATION_EFFECTS = {
       COURSE_KEYS.instructor(),
       COURSE_KEYS.system(),
       COURSE_KEYS.categories(),
+      CHAPTER_KEYS.all(),
+      LESSON_KEYS.all(),
       INSTRUCTOR_KEYS.dashboard(),
       ADMIN_KEYS.dashboard(),
       ADMIN_KEYS.coursePerformance(),
@@ -155,6 +160,133 @@ export const MUTATION_EFFECTS = {
   },
 
   // ====================================================================
+  // CHAPTER MUTATIONS
+  // ====================================================================
+  createChapter: {
+    reactQuery: [
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  updateChapter: {
+    reactQuery: [
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  deleteChapter: {
+    reactQuery: [
+      CHAPTER_KEYS.all(),
+      LESSON_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  // ====================================================================
+  // LESSON MUTATIONS
+  // ====================================================================
+  createLesson: {
+    reactQuery: [
+      LESSON_KEYS.all(),
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  updateLesson: {
+    reactQuery: [
+      LESSON_KEYS.all(),
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  deleteLesson: {
+    reactQuery: [
+      LESSON_KEYS.all(),
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  // ====================================================================
+  // QUIZ MUTATIONS
+  // ====================================================================
+  createQuiz: {
+    reactQuery: [
+      QUIZ_KEYS.all(),
+      LESSON_KEYS.all(),
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  updateQuiz: {
+    reactQuery: [
+      QUIZ_KEYS.all(),
+      LESSON_KEYS.all(),
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  deleteQuiz: {
+    reactQuery: [
+      QUIZ_KEYS.all(),
+      LESSON_KEYS.all(),
+      CHAPTER_KEYS.all(),
+      COURSE_KEYS.all(),
+      INSTRUCTOR_KEYS.dashboard(),
+    ],
+    redis: [
+      'course_content_*',
+      'instructor_dashboard_*',
+    ],
+  },
+
+  // ====================================================================
   // ENROLLMENT MUTATIONS
   // ====================================================================
   createEnrollment: {
@@ -164,6 +296,27 @@ export const MUTATION_EFFECTS = {
       STUDENT_KEYS.dashboard(),
       ENROLLMENT_KEYS.all(),
       ENROLLMENT_KEYS.student(),
+      INSTRUCTOR_KEYS.dashboard(),
+      INSTRUCTOR_KEYS.coursePerformance(),
+      ADMIN_KEYS.dashboard(),
+      ADMIN_KEYS.userEngagement(),
+    ],
+    redis: [
+      'student_dashboard_*',
+      'instructor_dashboard_*',
+      'enrollment_*',
+    ],
+  },
+
+  enrollInCourse: {
+    reactQuery: [
+      STUDENT_KEYS.courses(),
+      STUDENT_KEYS.enrollments(),
+      STUDENT_KEYS.dashboard(),
+      STUDENT_KEYS.enrollmentsDetailed(),
+      ENROLLMENT_KEYS.all(),
+      ENROLLMENT_KEYS.student(),
+      COURSE_KEYS.all(),
       INSTRUCTOR_KEYS.dashboard(),
       INSTRUCTOR_KEYS.coursePerformance(),
       ADMIN_KEYS.dashboard(),

@@ -4,7 +4,7 @@ import { ProgressPermission } from '../Modules/Progress/service/ProgressPermissi
 import { progressService } from '../Modules/Progress/service/Progress.service.js';
 import { enrollmentService } from '../Modules/Enrollement/service/Enrollement.service.js';
 import { courseService } from '../Modules/Course/service/Course.service.js';
-import { cacheClient } from '../core/cache/cacheClient.js';
+import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
 
 export class UserProgressOrchestrator {
   /**
@@ -14,7 +14,7 @@ export class UserProgressOrchestrator {
    * @returns {Object} Progress DTO
    */
   async updateProgress(user, progressData) {
-    const cacheKey = `user_progress_${user.uid}_course_${progressData.courseId}`;
+    const cacheKey = REDIS_KEY_REGISTRY.userProgress(user.uid, progressData.courseId);
     
     // 1. Validate permissions
     if (!ProgressPermission.viewOwnProgress(user)) {
@@ -72,8 +72,12 @@ export class UserProgressOrchestrator {
       lastAccessedAt: updatedProgress.lastAccessedAt,
     };
 
-    // 5. Update Redis cache (invalidate old cache)
-    await cacheClient.del(cacheKey);
+    // 5. Invalidate affected cache keys
+    console.log('🗑️ [Orchestrator] Invalidating cache keys for progress update...');
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.INSTRUCTOR_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.USER_PROGRESS);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.COURSE_PROGRESS);
 
     // 6. Return final aggregated response
     return result;
@@ -86,7 +90,7 @@ export class UserProgressOrchestrator {
    * @returns {Object} Progress DTO
    */
   async getProgressByEnrollment(user, enrollmentId) {
-    const cacheKey = `user_progress_${user.uid}_enrollment_${enrollmentId}`;
+    const cacheKey = REDIS_KEY_REGISTRY.userProgressByEnrollment(user.uid, enrollmentId);
     
     // 1. Validate permissions
     if (!ProgressPermission.viewOwnProgress(user)) {
@@ -134,7 +138,7 @@ export class UserProgressOrchestrator {
     };
 
     // 5. Cache result
-    await cache.set(cacheKey, JSON.stringify(result), 300); // 5 min cache
+    await cacheClient.set(cacheKey, JSON.stringify(result), 300); // 5 min cache
 
     return result;
   }
@@ -146,10 +150,10 @@ export class UserProgressOrchestrator {
    * @returns {Object} Progress DTO
    */
   async getProgressByCourse(user, courseId) {
-    const cacheKey = `user_progress_${user.uid}_course_${courseId}`;
+    const cacheKey = REDIS_KEY_REGISTRY.userProgress(user.uid, courseId);
     
     // Check cache first
-    const cached = await cache.get(cacheKey);
+    const cached = await cacheClient.get(cacheKey);
     if (cached) {
       return JSON.parse(cached);
     }
@@ -189,7 +193,7 @@ export class UserProgressOrchestrator {
     };
 
     // 6. Cache result
-    await cache.set(cacheKey, JSON.stringify(result), 300); // 5 min cache
+    await cacheClient.set(cacheKey, JSON.stringify(result), 300); // 5 min cache
 
     return result;
   }
@@ -200,10 +204,10 @@ export class UserProgressOrchestrator {
    * @returns {Object} Progress overview DTO
    */
   async getUserProgressOverview(user) {
-    const cacheKey = `user_progress_overview_${user.uid}`;
+    const cacheKey = REDIS_KEY_REGISTRY.userProgressOverview(user.uid);
     
     // Check cache first
-    const cached = await cache.get(cacheKey);
+    const cached = await cacheClient.get(cacheKey);
     if (cached) {
       return JSON.parse(cached);
     }
@@ -258,7 +262,7 @@ export class UserProgressOrchestrator {
     };
 
     // 8. Cache result
-    await cache.set(cacheKey, JSON.stringify(result), 300); // 5 min cache
+    await cacheClient.set(cacheKey, JSON.stringify(result), 300); // 5 min cache
 
     return result;
   }

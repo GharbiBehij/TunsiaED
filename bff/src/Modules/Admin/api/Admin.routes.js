@@ -21,5 +21,19 @@ router.get('/subscriptions/plans', authenticate, requireRole('admin'), adminCont
 router.get('/subscriptions/stats', authenticate, requireRole('admin'), adminController.getSubscriptionStats);
 router.patch('/subscriptions/:planId', authenticate, requireRole('admin'), adminController.updateSubscriptionPlan);
 
+// User management routes
+router.get('/users', authenticate, requireRole('admin'), adminController.getAllUsers);
+router.patch('/users/:userId/ban', authenticate, requireRole('admin'), adminController.banUser);
+router.patch('/users/:userId/unban', authenticate, requireRole('admin'), adminController.unbanUser);
+
+// Instructor management routes
+router.patch('/instructors/:userId/approve', authenticate, requireRole('admin'), adminController.approveInstructor);
+router.patch('/instructors/:userId/decline', authenticate, requireRole('admin'), adminController.declineInstructor);
+
+// Course management routes
+router.get('/courses', authenticate, requireRole('admin'), adminController.getAllCourses);
+router.patch('/courses/:courseId/approve', authenticate, requireRole('admin'), adminController.approveCourse);
+router.patch('/courses/:courseId/reject', authenticate, requireRole('admin'), adminController.rejectCourse);
+
 export { router };
 

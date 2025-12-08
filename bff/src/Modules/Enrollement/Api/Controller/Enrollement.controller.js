@@ -11,13 +11,22 @@ export class EnrollmentController {
    * ORCHESTRATED: Enrollment + Course + Progress
    */
   async enroll(req, res) {
+    const requestId = `ENR_${Date.now()}`;
+    console.log(`📝 [${requestId}] Enrollment request:`, {
+      courseId: req.body.courseId,
+      userId: req.user?.uid
+    });
+
     try {
       const userId = req.user?.uid;
       if (!userId) {
+        console.log(`⛔ [${requestId}] Authentication required`);
         return res.status(401).json({ error: 'Authentication required' });
       }
 
+      console.log(`🔄 [${requestId}] Calling enrollment orchestrator...`);
       const result = await enrollmentOrchestrator.enroll(userId, req.body);
+      console.log(`✅ [${requestId}] Enrollment created:`, result.enrollmentId);
       res.status(201).json(result);
     } catch (error) {
       res.status(400).json({ error: error.message || 'Failed to enroll' });

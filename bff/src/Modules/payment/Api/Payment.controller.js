@@ -4,7 +4,7 @@ import { paymentService } from '../service/Payment.service.js';
 import { coursePurchaseOrchestrator } from '../../../orchestrators/CoursePurchase.orchestrator.js';
 import { userRepository } from '../../User/repository/User.repository.js';
 import { stripeService } from '../service/StripeService.js';
-import emailService from '../../../utils/EmailService.js';
+import emailService from '../../../utils/EmailService.js'; // Emails via SMTP adapter
 import { courseService } from '../../Course/service/Course.service.js';
 
 export class PaymentController {
@@ -124,19 +124,28 @@ export class PaymentController {
    * Cross-module: Payment + Course + Enrollment modules
    */
   async initiatePurchase(req, res) {
+    const requestId = `INIT_${Date.now()}`;
+    console.log(`🚀 [${requestId}] Purchase initiation request:`, {
+      courseId: req.body.courseId,
+      paymentType: req.body.paymentType
+    });
     try {
       const userId = req.user?.uid;
       if (!userId) {
+        console.log(`⛔ [${requestId}] Authentication required`);
         return res.status(401).json({ error: 'Authentication required' });
       }
+      console.log(`👤 [${requestId}] User authenticated:`, userId);
 
       const user = await userRepository.findByUid(userId);
       const purchaseData = req.body; // { courseId, paymentType, subscriptionType, paymentMethod }
 
       // Use orchestrator for cross-module purchase initiation
       const paymentData = await coursePurchaseOrchestrator.initiatePurchase(user, purchaseData);
+      console.log(`✅ [${requestId}] Payment initiated successfully:`, paymentData.id);
       res.status(201).json(paymentData);
     } catch (error) {
+      console.log(`❌ [${requestId}] Payment initiation failed:`, error.message);
       if (error.message.includes('not found') || error.message.includes('already enrolled')) {
         return res.status(400).json({ error: error.message });
       }
@@ -232,13 +241,19 @@ export class PaymentController {
    * @param {Object} req.body - { courseId, amount, note, firstName, lastName, email, phone }
    */
   async initiateStripePayment(req, res) {
+    const requestId = `REQ_${Date.now()}`;
+    console.log(`🚀 [${requestId}] Stripe payment initiation started`);
+    
     try {
       const userId = req.user?.uid;
       if (!userId) {
+        console.log(`⛔ [${requestId}] Authentication required`);
         return res.status(401).json({ error: 'Authentication required' });
       }
 
+      console.log(`👤 [${requestId}] User ID:`, userId);
       const user = await userRepository.findByUid(userId);
+      console.log(`✅ [${requestId}] User found:`, user.email);
       const { courseId, amount, note, firstName, lastName, email, phone } = req.body;
 
       // Step 1: Create internal payment record first
@@ -309,18 +324,48 @@ export class PaymentController {
    * Sends email notification to user on success/failure
    */
   async handleStripeWebhook(req, res) {
-    try {
-      console.log('Stripe webhook received:', req.body);
+    const webhookId = `WHK_${Date.now()}`;
+    console.log(`🔔 [${webhookId}] Stripe webhook received:`, {
+      eventType: req.body?.type,
+      eventId: req.body?.id,
+      timestamp: new Date().toISOString()
+    });
 
+    try {
       // Process and verify webhook data
+      console.log(`📋 [${webhookId}] Processing webhook data...`);
       const webhookResult = stripeService.processWebhook(req.body);
+      console.log(`✅ [${webhookId}] Webhook processed:`, {
+        success: webhookResult.success,
+        orderId: webhookResult.orderId,
+        transactionId: webhookResult.transactionId
+      });
 
       // Get internal payment by order_id (which is our paymentId)
+      console.log(`🔍 [${webhookId}] Looking up payment:`, webhookResult.orderId);
       const payment = await paymentService.getPaymentById(webhookResult.orderId);
       
       if (!payment) {
-        console.error('Payment not found for Stripe webhook:', webhookResult.orderId);
+        console.error(`❌ [${webhookId}] Payment not found:`, webhookResult.orderId);
         return res.status(404).json({ error: 'Payment not found' });
+      }
+      console.log(`✅ [${webhookId}] Payment found:`, {
+        paymentId: payment.id,
+        status: payment.status,
+        userId: payment.userId,
+        courseId: payment.courseId
+      });
+
+      // ═══════════════════════════════════════════════════════
+      // IDEMPOTENCY CHECK: Prevent duplicate processing
+      // ═══════════════════════════════════════════════════════
+      if (payment.status === 'completed') {
+        console.log(`⚠️  [${webhookId}] Idempotency check: Payment already completed:`, {
+          paymentId: webhookResult.orderId,
+          status: payment.status,
+          message: 'Duplicate webhook ignored'
+        });
+        return res.status(200).json({ received: true, message: 'Already processed' });
       }
 
       // Get user and course info for email
@@ -329,17 +374,25 @@ export class PaymentController {
       const courseTitle = course?.title || 'Course Purchase';
 
       if (webhookResult.success) {
+        console.log(`💰 [${webhookId}] Payment successful - initiating purchase completion...`);
+        
         // Payment successful - complete the purchase using orchestrator
         const confirmationData = {
           paymentId: payment.id,
           gatewayTransactionId: String(webhookResult.transactionId),
           paymentGateway: 'Stripe',
         };
+        console.log(`🔄 [${webhookId}] Calling orchestrator with:`, confirmationData);
 
-        await coursePurchaseOrchestrator.completePurchase(user, confirmationData);
+        const orchestratorResult = await coursePurchaseOrchestrator.completePurchase(user, confirmationData);
+        console.log(`✅ [${webhookId}] Orchestrator completed:`, {
+          transactionId: orchestratorResult.transaction?.transactionId,
+          enrollmentId: orchestratorResult.enrollment?.enrollmentId
+        });
 
-        // Send success email
-        await emailService.sendPaymentSuccessEmail({
+        // Send success email via SMTP adapter (push notification sent via event bus)
+        console.log(`📧 [${webhookId}] Sending success email to:`, user.email);
+        const emailResult = await emailService.sendPaymentSuccessEmail({
           email: user.email,
           firstName: user.firstName || webhookResult.customer?.firstName || 'Customer',
           lastName: user.lastName || webhookResult.customer?.lastName || '',
@@ -348,16 +401,21 @@ export class PaymentController {
           transactionId: String(webhookResult.transactionId),
           paymentMethod: 'Stripe',
         });
+        console.log(`${emailResult?.success !== false ? '✅' : '❌'} [${webhookId}] Email sent:`, emailResult?.success !== false ? 'success' : emailResult?.error);
 
-        console.log('Stripe payment completed successfully:', webhookResult.orderId);
+        console.log(`🎉 [${webhookId}] Stripe payment completed successfully:`, webhookResult.orderId);
       } else {
+        console.log(`❌ [${webhookId}] Payment failed - updating status...`);
+        
         // Payment failed - update payment status
         await paymentService.updatePayment(payment.id, {
           status: 'failed',
           failureReason: 'Payment declined by Stripe',
         });
+        console.log(`✅ [${webhookId}] Payment status updated to failed`);
 
-        // Send failure email
+        // Send failure email via SMTP adapter (push notification sent via event bus)
+        console.log(`📧 [${webhookId}] Sending failure email to:`, user.email);
         await emailService.sendPaymentFailedEmail({
           email: user.email,
           firstName: user.firstName || webhookResult.customer?.firstName || 'Customer',
@@ -367,13 +425,18 @@ export class PaymentController {
           reason: 'Payment was declined or cancelled',
         });
 
-        console.log('Stripe payment failed:', webhookResult.orderId);
+        console.log(`❌ [${webhookId}] Stripe payment failed:`, webhookResult.orderId);
       }
 
       // Always respond 200 to Stripe
+      console.log(`✅ [${webhookId}] Webhook processing complete - responding to Stripe`);
       res.status(200).json({ received: true });
     } catch (error) {
-      console.error('Stripe webhook error:', error);
+      console.error(`💥 [${webhookId}] Stripe webhook error:`, {
+        error: error.message,
+        stack: error.stack,
+        orderId: req.body?.data?.object?.client_reference_id
+      });
       // Still respond 200 to avoid Stripe retries
       res.status(200).json({ received: true, error: error.message });
     }
@@ -441,7 +504,8 @@ export class PaymentController {
       if (simulateSuccess) {
         // Simulate successful payment
         // Step 1: Create payment
-        const payment = await paymentService.createPayment(userId, {
+        const payment = await paymentService.createPaymentInternal({
+          userId,
           courseId,
           amount,
           paymentType: 'course_purchase',
@@ -455,10 +519,9 @@ export class PaymentController {
           gatewayTransactionId: transactionId,
           paymentGateway: 'simulation',
         };
-
         const result = await coursePurchaseOrchestrator.completePurchase(user, confirmationData);
 
-        // Step 3: Send success email
+        // Step 3: Send success email via SMTP adapter
         await emailService.sendPaymentSuccessEmail({
           email: user.email,
           firstName: user.firstName || 'Customer',
@@ -479,7 +542,8 @@ export class PaymentController {
       } else {
         // Simulate failed payment
         // Create payment with failed status
-        const payment = await paymentService.createPayment(userId, {
+        const payment = await paymentService.createPaymentInternal({
+          userId,
           courseId,
           amount,
           paymentType: 'course_purchase',
@@ -487,7 +551,7 @@ export class PaymentController {
           status: 'failed',
         });
 
-        // Send failure email
+        // Send failure email via SMTP adapter
         await emailService.sendPaymentFailedEmail({
           email: user.email,
           firstName: user.firstName || 'Customer',

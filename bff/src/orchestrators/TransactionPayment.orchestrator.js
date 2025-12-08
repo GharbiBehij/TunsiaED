@@ -4,6 +4,7 @@
 import { transactionService } from '../Modules/Transaction/service/Transaction.service.js';
 import { paymentService } from '../Modules/payment/service/Payment.service.js';
 import { TransactionPermission } from '../Modules/Transaction/service/TransactionPermission.js';
+import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
 
 export class TransactionPaymentOrchestrator {
   // ====================================================================
@@ -49,7 +50,14 @@ export class TransactionPaymentOrchestrator {
       transactionId: transaction.transactionId,
     });
 
-    // 5. Return clean DTO
+    // 5. Invalidate affected cache keys
+    console.log('🗑️ [Orchestrator] Invalidating cache keys for transaction creation...');
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.INSTRUCTOR_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.TRANSACTION);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.PAYMENT);
+
+    // 6. Return clean DTO
     return {
       transactionId: transaction.transactionId,
       paymentId: transaction.paymentId,
@@ -95,7 +103,14 @@ export class TransactionPaymentOrchestrator {
       });
     }
 
-    // 4. Return clean DTO
+    // 4. Invalidate affected cache keys
+    console.log('🗑️ [Orchestrator] Invalidating cache keys for transaction update...');
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.INSTRUCTOR_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.TRANSACTION);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.PAYMENT);
+
+    // 5. Return clean DTO
     return {
       transactionId: transaction.transactionId,
       paymentId: transaction.paymentId,
@@ -187,7 +202,14 @@ export class TransactionPaymentOrchestrator {
       status: 'refunded',
     });
 
-    // 6. Return clean DTO
+    // 6. Invalidate affected cache keys
+    console.log('🗑️ [Orchestrator] Invalidating cache keys for refund processing...');
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.INSTRUCTOR_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.TRANSACTION);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.PAYMENT);
+
+    // 7. Return clean DTO
     return {
       originalTransactionId: transactionId,
       refundTransactionId: refundTransaction.transactionId,

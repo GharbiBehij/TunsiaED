@@ -18,12 +18,16 @@ export class StudentDashboardOrchestrator {
    * @returns {Object} Dashboard DTO
    */
   async getDashboardData(user) {
+    console.log('📊 [StudentDash] getDashboardData called:', user.uid);
     const cacheKey = `student_dashboard_${user.uid}`;
     
     // 1. Validate permissions
+    console.log('🔐 [StudentDash] Validating permissions...');
     if (!StudentPermission.getStats(user)) {
+      console.error('⛔ [StudentDash] Unauthorized');
       throw new Error('Unauthorized');
     }
+    console.log('✅ [StudentDash] Permissions validated');
 
     // 2. Read cache (optional)
     const cached = await cacheClient.get(cacheKey);

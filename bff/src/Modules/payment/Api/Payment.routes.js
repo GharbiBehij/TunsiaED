@@ -3,14 +3,15 @@ import { Router } from 'express';
 import { authenticate } from '../../../middlewares/auth.middleware.js';
 import { requireRole } from '../../../middlewares/Role.middleware.js';
 import { paymentController } from './Payment.controller.js';
+import { subscriptionController } from './Subscription.controller.js';
 
 const router = Router();
 
 // DIRECT SERVICE ROUTES - Single module operations
 router.post('/', authenticate, paymentController.createPayment);
 router.get('/my-payments', authenticate, paymentController.getUserPayments);
-router.get('/course/:courseId', paymentController.getCoursePayments);
-router.get('/status/:status', paymentController.getPaymentsByStatus);
+router.get('/course/:courseId', authenticate, requireRole('admin', 'instructor'), paymentController.getCoursePayments);
+router.get('/status/:status', authenticate, requireRole('admin'), paymentController.getPaymentsByStatus);
 router.get('/:paymentId', authenticate, paymentController.getPaymentById);
 router.put('/:paymentId', authenticate, requireRole('admin'), paymentController.updatePayment);
 
@@ -40,7 +41,6 @@ router.get('/paymee/status/:token', authenticate, paymentController.getStripePay
 router.post('/simulate', authenticate, paymentController.simulatePayment);
 
 // SUBSCRIPTION PLANS (PUBLIC - for subscription page)
-import { subscriptionController } from './Subscription.controller.js';
 router.get('/subscriptions/plans', subscriptionController.getSubscriptionPlans);
 router.get('/subscriptions/plans/:planId', subscriptionController.getSubscriptionPlanById);
 

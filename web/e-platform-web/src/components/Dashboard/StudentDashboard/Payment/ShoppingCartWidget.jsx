@@ -3,6 +3,7 @@
 // Receives cart items from dashboard data or context
 
 import React, { useState, useMemo } from 'react';
+import PromoCodeService from '../../../../services/PromoCodeService';
 
 const TAX_RATE = 0.08; // 8% tax rate
 
@@ -64,27 +65,67 @@ export default function ShoppingCartWidget({
 }) {
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
+  const [promoDiscount, setPromoDiscount] = useState(0);
+  const [promoError, setPromoError] = useState('');
+  const [isValidatingPromo, setIsValidatingPromo] = useState(false);
 
   // Calculate totals
-  const { subtotal, tax, total } = useMemo(() => {
+  const { subtotal, tax, total, finalTotal } = useMemo(() => {
     const items = data || [];
     const calculatedSubtotal = items.reduce((sum, item) => sum + Number(item.price || 0), 0);
-    const calculatedTax = calculatedSubtotal * TAX_RATE;
+    const discountedSubtotal = calculatedSubtotal - promoDiscount;
+    const calculatedTax = discountedSubtotal * TAX_RATE;
     const calculatedTotal = calculatedSubtotal + calculatedTax;
+    const calculatedFinalTotal = discountedSubtotal + calculatedTax;
     return {
       subtotal: calculatedSubtotal,
       tax: calculatedTax,
       total: calculatedTotal,
+      finalTotal: calculatedFinalTotal,
     };
-  }, [data]);
+  }, [data, promoDiscount]);
 
   const formatCurrency = (amount) => `$${Number(amount).toFixed(2)}`;
 
-  const handleApplyPromo = () => {
-    if (promoCode.trim()) {
-      // TODO: Validate promo code with backend
-      setPromoApplied(true);
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    
+    setIsValidatingPromo(true);
+    setPromoError('');
+    
+    try {
+      // Get first course ID for course-specific promos
+      const courseId = data && data.length > 0 ? data[0].courseId : null;
+      
+      const result = await PromoCodeService.validatePromoCode(
+        promoCode.trim(),
+        subtotal,
+        courseId
+      );
+      
+      if (result.valid) {
+        setPromoApplied(true);
+        setPromoDiscount(result.discount || 0);
+        setPromoError('');
+      } else {
+        setPromoError(result.error || 'Invalid promo code');
+        setPromoApplied(false);
+        setPromoDiscount(0);
+      }
+    } catch (error) {
+      setPromoError(error.message || 'Failed to validate promo code');
+      setPromoApplied(false);
+      setPromoDiscount(0);
+    } finally {
+      setIsValidatingPromo(false);
     }
+  };
+
+  const handleRemovePromo = () => {
+    setPromoCode('');
+    setPromoApplied(false);
+    setPromoDiscount(0);
+    setPromoError('');
   };
 
   const handleCheckout = () => {
@@ -92,8 +133,9 @@ export default function ShoppingCartWidget({
       onCheckout({
         items: data,
         subtotal,
+        discount: promoDiscount,
         tax,
-        total,
+        total: finalTotal,
         promoCode: promoApplied ? promoCode : null,
       });
     }
@@ -186,15 +228,34 @@ export default function ShoppingCartWidget({
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
                 disabled={promoApplied}
+                onKeyPress={(e) => e.key === 'Enter' && handleApplyPromo()}
               />
-              <button
-                className="px-4 h-9 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-300 dark:hover:bg-slate-600 transition disabled:opacity-50"
-                onClick={handleApplyPromo}
-                disabled={promoApplied || !promoCode.trim()}
-              >
-                {promoApplied ? 'Applied' : 'Apply'}
-              </button>
+              {promoApplied ? (
+                <button
+                  className="px-4 h-9 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600 transition"
+                  onClick={handleRemovePromo}
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  className="px-4 h-9 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition disabled:opacity-50"
+                  onClick={handleApplyPromo}
+                  disabled={!promoCode.trim() || isValidatingPromo}
+                >
+                  {isValidatingPromo ? 'Checking...' : 'Apply'}
+                </button>
+              )}
             </div>
+            {promoError && (
+              <p className="text-red-500 text-xs mt-1">{promoError}</p>
+            )}
+            {promoApplied && promoDiscount > 0 && (
+              <p className="text-green-600 dark:text-green-400 text-xs mt-1 flex items-center gap-1">
+                <span className="material-symbols-outlined text-sm">check_circle</span>
+                Promo code applied! You save {formatCurrency(promoDiscount)}
+              </p>
+            )}
           </div>
 
           {/* Totals */}
@@ -203,13 +264,19 @@ export default function ShoppingCartWidget({
               <span className="text-slate-500 dark:text-slate-400">Subtotal</span>
               <span className="text-slate-900 dark:text-white font-medium">{formatCurrency(subtotal)}</span>
             </div>
+            {promoDiscount > 0 && (
+              <div className="flex justify-between text-green-600 dark:text-green-400">
+                <span>Discount</span>
+                <span className="font-medium">-{formatCurrency(promoDiscount)}</span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-slate-500 dark:text-slate-400">Tax ({TAX_RATE * 100}%)</span>
               <span className="text-slate-900 dark:text-white font-medium">{formatCurrency(tax)}</span>
             </div>
             <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-700">
               <span className="text-slate-900 dark:text-white font-bold">Total</span>
-              <span className="text-slate-900 dark:text-white font-bold">{formatCurrency(total)}</span>
+              <span className="text-slate-900 dark:text-white font-bold">{formatCurrency(finalTotal)}</span>
             </div>
           </div>
 

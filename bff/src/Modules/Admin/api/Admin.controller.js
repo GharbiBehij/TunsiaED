@@ -196,6 +196,162 @@ export const updateSubscriptionPlan = async (req, res) => {
   }
 };
 
+/**
+ * Get all users (admin only)
+ */
+export const getAllUsers = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { page, limit, role } = req.query;
+    const options = { page: parseInt(page) || 1, limit: parseInt(limit) || 20, role };
+    
+    const users = await adminService.getAllUsers(user, options);
+    res.json(users);
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Ban user (admin only)
+ */
+export const banUser = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { userId: targetUserId } = req.params;
+    
+    await adminService.banUser(user, targetUserId);
+    res.json({ message: 'User banned successfully' });
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Unban user (admin only)
+ */
+export const unbanUser = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { userId: targetUserId } = req.params;
+    
+    await adminService.unbanUser(user, targetUserId);
+    res.json({ message: 'User unbanned successfully' });
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Approve instructor application (admin only)
+ */
+export const approveInstructor = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { userId: targetUserId } = req.params;
+    
+    await adminService.approveInstructor(user, targetUserId);
+    res.json({ message: 'Instructor approved successfully' });
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Decline instructor application (admin only)
+ */
+export const declineInstructor = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { userId: targetUserId } = req.params;
+    const { reason } = req.body;
+    
+    await adminService.declineInstructor(user, targetUserId, reason);
+    res.json({ message: 'Instructor application declined' });
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Get all courses (admin only)
+ */
+export const getAllCourses = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { page, limit, status } = req.query;
+    const options = { page: parseInt(page) || 1, limit: parseInt(limit) || 20, status };
+    
+    const courses = await adminService.getAllCourses(user, options);
+    res.json(courses);
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Approve course (admin only)
+ */
+export const approveCourse = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { courseId } = req.params;
+    
+    await adminService.approveCourse(user, courseId);
+    res.json({ message: 'Course approved successfully' });
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
+/**
+ * Reject course (admin only)
+ */
+export const rejectCourse = async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const user = await userRepository.findByUid(userId);
+    const { courseId } = req.params;
+    const { reason } = req.body;
+    
+    await adminService.rejectCourse(user, courseId, reason);
+    res.json({ message: 'Course rejected successfully' });
+  } catch (err) {
+    if (err.message === 'Unauthorized') {
+      return res.status(403).json({ error: err.message });
+    }
+    res.status(500).json({ error: err.message });
+  }
+};
+
 export const adminController = {
   // All single module operations (Admin module)
   getStats,
@@ -208,4 +364,12 @@ export const adminController = {
   getSubscriptionPlans,
   getSubscriptionStats,
   updateSubscriptionPlan,
+  getAllUsers,
+  banUser,
+  unbanUser,
+  approveInstructor,
+  declineInstructor,
+  getAllCourses,
+  approveCourse,
+  rejectCourse,
 };

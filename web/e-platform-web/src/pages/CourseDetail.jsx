@@ -5,6 +5,7 @@ import { useCourseById } from '../hooks/Course/useCourse';
 import { useChaptersByCourse, useLessonsByCourse } from '../hooks/useChapters';
 import { useAuth } from '../context/AuthContext';
 import { useInitiatePurchase } from '../hooks/Payment/usePayment';
+import { useEnrollInCourse } from '../hooks/Enrollment/useEnrollment';
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
@@ -14,6 +15,7 @@ export default function CourseDetailPage() {
   const { data: chapters = [], isLoading: chaptersLoading } = useChaptersByCourse(courseId);
   const { data: lessons = [], isLoading: lessonsLoading } = useLessonsByCourse(courseId);
   const initiatePurchase = useInitiatePurchase();
+  const enrollInCourse = useEnrollInCourse();
   const [enrollmentMethod, setEnrollmentMethod] = useState(null); // 'purchase' | 'subscription'
   const [expandedChapters, setExpandedChapters] = useState({});
 
@@ -26,10 +28,11 @@ export default function CourseDetailPage() {
 
   // Group lessons by chapter
   const lessonsByChapter = lessons.reduce((acc, lesson) => {
-    if (!acc[lesson.chapterId]) {
-      acc[lesson.chapterId] = [];
+    const key = lesson.chapterId;
+    if (!acc[key]) {
+      acc[key] = [];
     }
-    acc[lesson.chapterId].push(lesson);
+    acc[key].push(lesson);
     return acc;
   }, {});
 
@@ -58,20 +61,7 @@ export default function CourseDetailPage() {
       if (isFree) {
         // Free course - enroll directly without payment
         try {
-          const API_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
-          const response = await fetch(`${API_URL}/api/v1/enrollment/enroll`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${user.token || localStorage.getItem('token')}`,
-            },
-            body: JSON.stringify({ courseId }),
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to enroll');
-          }
+          await enrollInCourse.mutateAsync({ courseId });
 
           // Success - redirect to course dashboard or show success message
           alert('Successfully enrolled! You can now access the course.');
@@ -234,14 +224,15 @@ export default function CourseDetailPage() {
                     {chapters
                       .sort((a, b) => a.order - b.order)
                       .map((chapter, index) => {
-                        const chapterLessons = (lessonsByChapter[chapter.id] || []).sort((a, b) => a.order - b.order);
-                        const isExpanded = expandedChapters[chapter.id];
+                        const chapterId = chapter.chapterId;
+                        const chapterLessons = (lessonsByChapter[chapterId] || []).sort((a, b) => a.order - b.order);
+                        const isExpanded = expandedChapters[chapterId];
                         
                         return (
-                          <div key={chapter.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                          <div key={chapterId} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
                             {/* Chapter Header */}
                             <button
-                              onClick={() => toggleChapter(chapter.id)}
+                              onClick={() => toggleChapter(chapterId)}
                               className="w-full flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
                             >
                               <div className="flex items-center gap-3">
@@ -263,7 +254,7 @@ export default function CourseDetailPage() {
                               <div className="bg-white dark:bg-gray-800">
                                 {chapterLessons.map((lesson, lessonIndex) => (
                                   <div
-                                    key={lesson.id}
+                                    key={lesson.lessonId}
                                     className="flex items-center gap-3 p-4 border-t border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition"
                                   >
                                     <span className="material-symbols-outlined text-primary text-sm">
@@ -274,9 +265,9 @@ export default function CourseDetailPage() {
                                       <p className="text-sm font-medium text-gray-900 dark:text-white">
                                         {lessonIndex + 1}. {lesson.title}
                                       </p>
-                                      {lesson.duration && (
+                                      {lesson.durationMinutes && (
                                         <p className="text-xs text-gray-500 dark:text-gray-400">
-                                          {lesson.duration} min
+                                          {lesson.durationMinutes} min
                                         </p>
                                       )}
                                     </div>

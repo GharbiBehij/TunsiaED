@@ -30,20 +30,33 @@ export class EnrollmentOrchestrator {
    * @param {Object} data - { courseId, paymentId? }
    */
   async enroll(userId, data) {
+    console.log('📋 [EnrollmentOrch] enroll called:', {
+      userId,
+      courseId: data.courseId,
+      paymentId: data.paymentId
+    });
+
     // 1. Check if user is already enrolled (Enrollment service)
+    console.log('🔍 [EnrollmentOrch] Checking enrollment status...');
     const alreadyEnrolled = await enrollmentService.checkUserEnrollment(userId, data.courseId);
     if (alreadyEnrolled) {
+      console.error('⛔ [EnrollmentOrch] User already enrolled');
       throw new Error('You are already enrolled in this course');
     }
+    console.log('✅ [EnrollmentOrch] No existing enrollment found');
 
     // 2. Validate course exists and is published (Course service - returns mapped model)
+    console.log('🔍 [EnrollmentOrch] Validating course...');
     const course = await courseService.getCourseById(data.courseId);
     if (!course) {
+      console.error('❌ [EnrollmentOrch] Course not found:', data.courseId);
       throw new Error('Course not found');
     }
     if (course.isPublished === false) {
+      console.error('⛔ [EnrollmentOrch] Course not published');
       throw new Error('This course is not available yet');
     }
+    console.log('✅ [EnrollmentOrch] Course validated:', course.title);
     if (course.price > 0 && !data.paymentId) {
       throw new Error('Payment required for this course');
     }

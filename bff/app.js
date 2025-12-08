@@ -14,6 +14,7 @@ import { router as adminRouter } from './src/Modules/Admin/api/Admin.routes.js';
 import { router as instructorRouter } from './src/Modules/Instructor/api/Instructor.routes.js';
 import { router as studentRouter } from './src/Modules/Student/api/Student.routes.js';
 import { router as progressRouter } from './src/Modules/Progress/api/Progress.routes.js';
+import { registerShoppingCartRoutes } from './src/Modules/ShoppinCart/index.js';
 import { initializeFirebaseNotifications } from './src/events/index.js';
 import { seedSystemData } from './src/systemCourses/seedSystemCourses.js';
 
@@ -91,6 +92,7 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/instructor', instructorRouter);
 app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
+registerShoppingCartRoutes(app); // Promo code routes
 
 // 6️ Global error handler
 app.use((err, req, res, next) => {

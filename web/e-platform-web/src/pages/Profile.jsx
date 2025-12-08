@@ -1,15 +1,74 @@
 // src/pages/Profile.jsx
 import { useAuth } from '../context/AuthContext';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useUserProfile, useUpdateProfile } from '../hooks';
 
 export default function Profile() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
+  const { data: profileData, isLoading: profileLoading, isError, error, refetch } = useUserProfile();
+  const updateProfile = useUpdateProfile();
+  
   const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    birthPlace: '',
+    birthDate: '',
+    bio: '',
+    level: '',
+  });
 
-  if (isLoading) {
+  // Sync form data when profile loads
+  useEffect(() => {
+    if (profileData) {
+      setFormData({
+        name: profileData.name || '',
+        phone: profileData.phone || '',
+        birthPlace: profileData.birthPlace || '',
+        birthDate: profileData.birthDate || '',
+        bio: profileData.bio || '',
+        level: profileData.level || '',
+      });
+    }
+  }, [profileData]);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await updateProfile.mutateAsync(formData);
+      setIsEditing(false);
+      refetch(); // Refresh profile data
+    } catch (err) {
+      console.error('Failed to update profile:', err);
+    }
+  };
+
+  const handleCancel = () => {
+    // Reset form data to current profile
+    if (profileData) {
+      setFormData({
+        name: profileData.name || '',
+        phone: profileData.phone || '',
+        birthPlace: profileData.birthPlace || '',
+        birthDate: profileData.birthDate || '',
+        bio: profileData.bio || '',
+        level: profileData.level || '',
+      });
+    }
+    setIsEditing(false);
+  };
+
+  if (authLoading || profileLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-xl">Loading profile...</p>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-xl">Loading profile...</p>
+        </div>
       </div>
     );
   }
@@ -22,7 +81,25 @@ export default function Profile() {
     );
   }
 
-  const { profile = {}, email, uid } = user;
+  if (isError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-xl text-red-600 mb-4">Failed to load profile</p>
+          <p className="text-gray-600 mb-4">{error?.message || 'Unknown error'}</p>
+          <button
+            onClick={() => refetch()}
+            className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary/90"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const profile = profileData || {};
+  const email = user.email;
 
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark py-12 px-4">
@@ -62,13 +139,26 @@ export default function Profile() {
           {/* Profile Details */}
           <div className="p-8 space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
+              {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Full Name
                 </label>
-                <p className="text-lg">{profile.name || 'Not set'}</p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="name"
+                    value={formData.name}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Enter your full name"
+                  />
+                ) : (
+                  <p className="text-lg">{profile.name || 'Not set'}</p>
+                )}
               </div>
 
+              {/* Email Address - Read-only */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Email Address
@@ -76,27 +166,87 @@ export default function Profile() {
                 <p className="text-lg">{email}</p>
               </div>
 
+              {/* Phone Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Phone Number
                 </label>
-                <p className="text-lg">{profile.phone || 'Not set'}</p>
+                {isEditing ? (
+                  <input
+                    type="tel"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Enter phone number"
+                  />
+                ) : (
+                  <p className="text-lg">{profile.phone || 'Not set'}</p>
+                )}
               </div>
 
+              {/* Place of Birth */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Place of Birth
                 </label>
-                <p className="text-lg">{profile.birthPlace || 'Not set'}</p>
+                {isEditing ? (
+                  <input
+                    type="text"
+                    name="birthPlace"
+                    value={formData.birthPlace}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent"
+                    placeholder="Enter place of birth"
+                  />
+                ) : (
+                  <p className="text-lg">{profile.birthPlace || 'Not set'}</p>
+                )}
               </div>
 
+              {/* Birth Date */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Birth Date
                 </label>
-                <p className="text-lg">{profile.birthDate || 'Not set'}</p>
+                {isEditing ? (
+                  <input
+                    type="date"
+                    name="birthDate"
+                    value={formData.birthDate}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
+                ) : (
+                  <p className="text-lg">
+                    {profile.birthDate ? new Date(profile.birthDate).toLocaleDateString() : 'Not set'}
+                  </p>
+                )}
               </div>
 
+              {/* Learning Level */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Learning Level
+                </label>
+                {isEditing ? (
+                  <select
+                    name="level"
+                    value={formData.level}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent"
+                  >
+                    <option value="">Select level</option>
+                    <option value="beginner">Beginner</option>
+                    <option value="intermediate">Intermediate</option>
+                    <option value="advanced">Advanced</option>
+                  </select>
+                ) : (
+                  <p className="text-lg capitalize">{profile.level || 'Not set'}</p>
+                )}
+              </div>
+
+              {/* Account Created - Read-only */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Account Created
@@ -107,18 +257,89 @@ export default function Profile() {
               </div>
             </div>
 
+            {/* Bio Section - Full Width */}
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Bio
+              </label>
+              {isEditing ? (
+                <textarea
+                  name="bio"
+                  value={formData.bio}
+                  onChange={handleInputChange}
+                  rows={4}
+                  maxLength={500}
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+                  placeholder="Tell us about yourself (max 500 characters)"
+                />
+              ) : (
+                <p className="text-lg whitespace-pre-wrap">
+                  {profile.bio || 'No bio added yet'}
+                </p>
+              )}
+              {isEditing && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {formData.bio.length}/500 characters
+                </p>
+              )}
+            </div>
+
             {/* Action Buttons */}
             <div className="flex justify-center gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-8 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition"
-              >
-                Edit Profile
-              </button>
-              <button className="px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                Change Password
-              </button>
+              {isEditing ? (
+                <>
+                  <button
+                    onClick={handleSave}
+                    disabled={updateProfile.isPending}
+                    className="px-8 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    {updateProfile.isPending ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        Saving...
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
+                  </button>
+                  <button
+                    onClick={handleCancel}
+                    disabled={updateProfile.isPending}
+                    className="px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="px-8 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition"
+                  >
+                    Edit Profile
+                  </button>
+                  <button className="px-8 py-3 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                    Change Password
+                  </button>
+                </>
+              )}
             </div>
+
+            {/* Update Success/Error Message */}
+            {updateProfile.isSuccess && !isEditing && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 border border-green-300 dark:border-green-700 rounded-lg text-center">
+                <p className="text-green-700 dark:text-green-300 font-medium">
+                  Profile updated successfully!
+                </p>
+              </div>
+            )}
+            {updateProfile.isError && (
+              <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg text-center">
+                <p className="text-red-700 dark:text-red-300 font-medium">
+                  {updateProfile.error?.message || 'Failed to update profile. Please try again.'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

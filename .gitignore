@@ -8,10 +8,29 @@
 .env.test.local
 .env.production.local
 *.env
+!.env.example
+bff/.env
+web/e-platform-web/.env
+mobile/e_platform_mobile/.env
+
+# Firebase & Cloud Credentials
 firebase-credentials.json
 *service-account*.json
 *serviceAccountKey*.json
 *firebase-adminsdk*.json
+*firebase-config*.json
+
+# API Keys & Secrets
+*private-key*.json
+*client-secret*.json
+*.pem
+*.key
+*.cert
+*.p12
+
+# Stripe Keys (extra safety)
+*stripe-secret*.txt
+*stripe_secret*.txt
 
 # ============================================
 # Documentation

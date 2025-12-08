@@ -6,7 +6,7 @@ import Stripe from 'stripe';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16',
+  apiVersion: '2025-11-17',
 });
 
 // Stripe Configuration
@@ -46,6 +46,12 @@ class StripeService {
    * @returns {Promise<Object>} Stripe response with sessionId and checkoutUrl
    */
   async initiatePayment(paymentData) {
+    console.log('🔵 [StripeService] initiatePayment called:', {
+      amount: paymentData.amount,
+      orderId: paymentData.orderId,
+      email: paymentData.email
+    });
+    
     const { 
       amount, 
       note, 
@@ -67,6 +73,7 @@ class StripeService {
 
     try {
       // Create Stripe Checkout Session
+      console.log('🔵 [StripeService] Creating Stripe checkout session...');
       const session = await this.stripe.checkout.sessions.create({
         payment_method_types: ['card'],
         line_items: [
@@ -103,6 +110,10 @@ class StripeService {
       });
 
       // Return payment data in Paymee-compatible format
+      console.log('✅ [StripeService] Stripe session created successfully:', {
+        sessionId: session.id,
+        checkoutUrl: session.url
+      });
       return {
         success: true,
         token: session.id, // Use sessionId as token for consistency
@@ -113,7 +124,11 @@ class StripeService {
         currency: currency,
       };
     } catch (error) {
-      console.error('Stripe initiation error:', error);
+      console.error('❌ [StripeService] Stripe initiation error:', {
+        error: error.message,
+        type: error.type,
+        code: error.code
+      });
       
       // Detect API errors
       if (error.type === 'StripeConnectionError') {
@@ -181,6 +196,32 @@ class StripeService {
       console.error('Stripe webhook verification failed:', error);
       throw new Error(`Webhook signature verification failed: ${error.message}`);
     }
+  }
+
+  /**
+   * Process webhook data from Stripe
+   * Simplified version that expects pre-parsed webhook body
+   * Mirrors Paymee's processWebhook interface
+   * @param {Object} webhookBody - Webhook request body (already parsed)
+   * @returns {Object} Normalized payment data
+   */
+  processWebhook(webhookBody) {
+    console.log('🔵 [StripeService] processWebhook called:', {
+      eventType: webhookBody?.type,
+      eventId: webhookBody?.id
+    });
+    
+    // For Stripe, the webhook body is already the event object
+    // Extract the actual event data
+    const event = webhookBody;
+    
+    const result = this.processWebhookEvent(event);
+    console.log('✅ [StripeService] Webhook processed:', {
+      success: result.success,
+      status: result.status,
+      orderId: result.orderId
+    });
+    return result;
   }
 
   /**

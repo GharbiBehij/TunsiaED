@@ -6,19 +6,28 @@ import { enrollmentService } from '../Modules/Enrollement/service/Enrollement.se
 import { courseService } from '../Modules/Course/service/Course.service.js';
 import { userService } from '../Modules/User/service/User.service.js';
 import { eventBus } from '../events/eventBus.js';
+import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
 
 export class CoursePurchaseOrchestrator {
   /**
    * Initiate purchase (course or subscription)
    * @param {Object} user - Authenticated user
    * @param {Object} purchaseData - { courseId?, planId?, paymentType, paymentMethod }
-   * @returns {Object} Payment DTO
+   * @returns {Promise<Object>} Payment DTO
    */
   async initiatePurchase(user, purchaseData) {
+    console.log('🔄 [Orchestrator] initiatePurchase called:', {
+      userId: user.uid,
+      courseId: purchaseData.courseId,
+      planId: purchaseData.planId,
+      paymentType: purchaseData.paymentType
+    });
+    
     let itemTitle, itemPrice, itemCurrency, itemId;
 
     // Handle subscription purchase
     if (purchaseData.planId) {
+      console.log('📋 [Orchestrator] Processing subscription purchase...');
       const { adminService } = await import('../Modules/Admin/service/Admin.service.js');
       const plan = await adminService.getSubscriptionPlanByIdPublic(purchaseData.planId);
       if (!plan) {
@@ -31,17 +40,23 @@ export class CoursePurchaseOrchestrator {
     }
     // Handle course purchase
     else if (purchaseData.courseId) {
+      console.log('📚 [Orchestrator] Processing course purchase:', purchaseData.courseId);
       const course = await courseService.getCourseByIdInternal(purchaseData.courseId);
       if (!course) {
+        console.error('❌ [Orchestrator] Course not found:', purchaseData.courseId);
         throw new Error('Course not found');
       }
+      console.log('✅ [Orchestrator] Course found:', course.title);
 
       // Check if already enrolled
+      console.log('🔍 [Orchestrator] Checking enrollment status...');
       const enrollments = await enrollmentService.getUserEnrollments(user.uid);
       const alreadyEnrolled = enrollments.some(e => e.courseId === purchaseData.courseId);
       if (alreadyEnrolled) {
+        console.error('⛔ [Orchestrator] User already enrolled in course');
         throw new Error('Already enrolled in this course');
       }
+      console.log('✅ [Orchestrator] Enrollment check passed');
 
       itemTitle = course.title;
       itemPrice = course.price || 0;
@@ -52,6 +67,11 @@ export class CoursePurchaseOrchestrator {
     }
 
     // Create payment using payment service (internal)
+    console.log('💾 [Orchestrator] Creating payment record:', {
+      amount: itemPrice,
+      currency: itemCurrency,
+      courseTitle: itemTitle
+    });
     const payment = await paymentService.createPaymentInternal({
       userId: user.uid,
       courseId: purchaseData.courseId || null,
@@ -64,8 +84,10 @@ export class CoursePurchaseOrchestrator {
       paymentMethod: purchaseData.paymentMethod || null,
       status: 'pending',
     });
+    console.log('✅ [Orchestrator] Payment record created:', payment.paymentId);
 
     // 4. Return clean DTO
+    console.log('✅ [Orchestrator] initiatePurchase completed successfully');
     return {
       paymentId: payment.paymentId,
       amount: payment.amount,
@@ -82,24 +104,70 @@ export class CoursePurchaseOrchestrator {
    * Called after payment confirmation (webhook or frontend)
    * @param {Object} user - Authenticated user
    * @param {Object} confirmationData - { paymentId, gatewayTransactionId, paymentGateway }
-   * @returns {Object} Purchase completion DTO
+   * @returns {Promise<Object>} Purchase completion DTO
    */
   async completePurchase(user, confirmationData) {
+    console.log('🔄 [Orchestrator] completePurchase called:', {
+      userId: user.uid,
+      paymentId: confirmationData.paymentId,
+      gatewayTransactionId: confirmationData.gatewayTransactionId
+    });
+    
     // 1. Get payment details (Payment service)
+    console.log('🔍 [Orchestrator] Fetching payment details...');
     const payment = await paymentService.getPaymentById(confirmationData.paymentId);
     if (!payment) {
+      console.error('❌ [Orchestrator] Payment not found:', confirmationData.paymentId);
       throw new Error('Payment not found');
     }
+    console.log('✅ [Orchestrator] Payment found:', {
+      paymentId: payment.paymentId,
+      status: payment.status,
+      amount: payment.amount
+    });
 
     if (payment.userId !== user.uid) {
       throw new Error('Unauthorized: Payment does not belong to this user');
     }
 
+    // Idempotency: If already completed, check if enrollment exists
     if (payment.status === 'completed') {
-      throw new Error('Payment already completed');
+      console.log('⚠️  [Orchestrator] Idempotency check: Payment already completed:', {
+        paymentId: payment.paymentId,
+        status: payment.status
+      });
+      
+      // Get existing transaction and enrollment
+      let transaction = null;
+      if (payment.transactionId) {
+        transaction = await transactionService.getTransactionById(payment.transactionId);
+      }
+      
+      let enrollment = null;
+      if (payment.courseId && payment.paymentType !== 'subscription') {
+        const enrollments = await enrollmentService.getUserEnrollments(user.uid);
+        enrollment = enrollments.find(e => e.courseId === payment.courseId);
+      }
+      
+      // Return existing data (idempotent response)
+      return {
+        success: true,
+        transaction: transaction ? {
+          transactionId: transaction.transactionId,
+          amount: transaction.amount,
+          status: transaction.status,
+        } : null,
+        enrollment: enrollment ? {
+          enrollmentId: enrollment.enrollmentId,
+          courseId: enrollment.courseId,
+          courseTitle: enrollment.courseTitle,
+        } : null,
+        message: 'Payment already completed (idempotent)',
+      };
     }
 
     // 2. Create transaction using transaction service (internal)
+    console.log('💳 [Orchestrator] Creating transaction record...');
     const transaction = await transactionService.createTransactionInternal({
       paymentId: payment.paymentId,
       userId: user.uid,
@@ -112,25 +180,34 @@ export class CoursePurchaseOrchestrator {
       paymentGateway: confirmationData.paymentGateway || null,
       description: `Purchase of ${payment.courseTitle}`,
     });
+    console.log('✅ [Orchestrator] Transaction created:', transaction.transactionId);
 
     // 3. Update payment status (Payment service - internal)
+    console.log('💾 [Orchestrator] Updating payment status to completed...');
     await paymentService.updatePaymentInternal(payment.paymentId, {
       status: 'completed',
       transactionId: transaction.transactionId,
     });
+    console.log('✅ [Orchestrator] Payment status updated to completed');
 
     // 4. Create enrollment only for course purchases (skip for subscriptions)
     let enrollment = null;
     if (payment.courseId && payment.paymentType !== 'subscription') {
+      console.log('📝 [Orchestrator] Creating enrollment for course:', payment.courseId);
       enrollment = await enrollmentService.createEnrollmentInternal(user.uid, {
         courseId: payment.courseId,
         courseTitle: payment.courseTitle,
         paymentId: payment.paymentId,
       });
+      console.log('✅ [Orchestrator] Enrollment created:', enrollment.enrollmentId);
+    } else {
+      console.log('⏭️  [Orchestrator] Skipping enrollment (subscription or no courseId)');
     }
     // For subscriptions, enrollment is handled separately by subscription service
 
-    // 5. Emit events for notifications (non-blocking)
+    // 5. Emit events for Firebase push notifications (non-blocking, mobile/web alerts)
+    console.log('📡 [Orchestrator] Emitting events for push notifications...');
+    // Note: Emails are sent directly in payment controllers via SMTP adapter
     eventBus.emit('payment.completed', {
       userId: user.uid,
       courseTitle: payment.courseTitle,
@@ -141,6 +218,7 @@ export class CoursePurchaseOrchestrator {
 
     // Emit enrollment event only for course purchases
     if (enrollment) {
+      console.log('📡 [Orchestrator] Emitting enrollment.created event');
       eventBus.emit('enrollment.created', {
         studentId: user.uid,
         instructorId: payment.instructorId || null,
@@ -151,6 +229,7 @@ export class CoursePurchaseOrchestrator {
 
     // Emit subscription event for subscription purchases
     if (payment.paymentType === 'subscription' && payment.planId) {
+      console.log('📡 [Orchestrator] Emitting subscription.activated event');
       eventBus.emit('subscription.activated', {
         userId: user.uid,
         planId: payment.planId,
@@ -158,6 +237,7 @@ export class CoursePurchaseOrchestrator {
       });
 
       // 5. Update user's subscription status in Firestore
+      console.log('💾 [Orchestrator] Updating user subscription status...');
       await userService.updateSubscriptionStatusInternal(user.uid, {
         hasActiveSubscription: true,
         activePlanId: payment.planId,
@@ -165,7 +245,14 @@ export class CoursePurchaseOrchestrator {
       });
     }
 
-    // 6. Return clean DTO
+    // 6. Invalidate affected cache keys
+    console.log('🗑️ [Orchestrator] Invalidating cache keys for enrollment creation...');
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.INSTRUCTOR_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.ENROLLMENT);
+
+    // 7. Return clean DTO
+    console.log('✅ [Orchestrator] completePurchase finished successfully');
     return {
       success: true,
       transaction: {
@@ -187,7 +274,7 @@ export class CoursePurchaseOrchestrator {
    * Get purchase status
    * @param {Object} user - Authenticated user
    * @param {string} paymentId - Payment ID
-   * @returns {Object} Purchase status DTO
+   * @returns {Promise<Object>} Purchase status DTO
    */
   async getPurchaseStatus(user, paymentId) {
     // 1. Get payment (Payment service)

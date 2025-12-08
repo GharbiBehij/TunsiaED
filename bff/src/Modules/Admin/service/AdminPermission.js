@@ -14,5 +14,6 @@ export const AdminPermission = {
   getSubscriptions: (user) => isAdmin(user),
   manageSubscriptions: (user) => isAdmin(user),
   manageUsers: (user) => isAdmin(user),
+  manageCourses: (user) => isAdmin(user),
 };
 

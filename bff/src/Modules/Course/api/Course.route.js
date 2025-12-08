@@ -19,7 +19,7 @@ router.get('/instructor/my-courses', authenticate, requireRole('instructor'), co
 // Dynamic route LAST to avoid matching other paths
 router.get('/:courseId', courseController.getCourseById);
 
-// UPDATE and DELETE routes
+// UPDATE and DELETE routes (ownership verified in controller)
 router.put('/:courseId', authenticate, requireRole('admin', 'instructor'), courseController.updateCourse);
 router.delete('/:courseId', authenticate, requireRole('admin', 'instructor'), courseController.deleteCourse);
 

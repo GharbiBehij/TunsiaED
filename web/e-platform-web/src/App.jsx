@@ -16,6 +16,7 @@ import SubscriptionPage from './pages/SubscriptionPage';
 import CreateCourse from './pages/Instructor/CreateCourse';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
+import PaymentPage from './pages/Payment/PaymentPage';
 
 // Dashboards
 import AdminDashboard from './pages/Admin/AdminDashboard';
@@ -40,28 +41,39 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
+          {/* Payment Route - Protected, requires authentication */}
+          <Route path="/payment/:paymentId" element={<ProtectedRoute roles={['student', 'instructor', 'admin']}><PaymentPage /></ProtectedRoute>} />
+
           {/* Course Content Routes - Protected by enrollment OR subscription */}
-          { /*<Route path="/courses/:courseId/learn" element={<CourseAccessRoute><CoursePlayer /></CourseAccessRoute>} />}
-          {<Route path="/courses/:courseId/lessons/:lessonId" element={<CourseAccessRoute><LessonView /></CourseAccessRoute>} />}
+          {/* <Route path="/courses/:courseId/learn" element={<CourseAccessRoute><CoursePlayer /></CourseAccessRoute>} /> */}
+          {/* <Route path="/courses/:courseId/lessons/:lessonId" element={<CourseAccessRoute><LessonView /></CourseAccessRoute>} /> */}
 
           {/* Subscription Protected Routes - Premium content requiring active subscription */}
           {/* Example premium routes - uncomment and add premium pages as needed */}
-          { /*<Route path="/premium/resources" element={<SubscriptionProtectedRoute><PremiumResources /></SubscriptionProtectedRoute>} /> }
-          { <Route path="/premium/masterclasses" element={<SubscriptionProtectedRoute><Masterclasses /></SubscriptionProtectedRoute>} />}
-          { <Route path="/premium/community" element={<SubscriptionProtectedRoute><PremiumCommunity /></SubscriptionProtectedRoute>} />}
+          {/* <Route path="/premium/resources" element={<SubscriptionProtectedRoute><PremiumResources /></SubscriptionProtectedRoute>} /> */}
+          {/* <Route path="/premium/masterclasses" element={<SubscriptionProtectedRoute><Masterclasses /></SubscriptionProtectedRoute>} /> */}
+          {/* <Route path="/premium/community" element={<SubscriptionProtectedRoute><PremiumCommunity /></SubscriptionProtectedRoute>} /> */}
 
           {/* Protected Dashboard Routes */}
           <Route element={<ProtectedRoute roles={['student', 'instructor', 'admin']}><MainLayout /></ProtectedRoute>}>
 
-            {/* Student Dashboard */}
+            {/* Student Dashboard - Multiple path aliases for backward compatibility */}
             <Route 
               path="/dashboard/student" 
+              element={<ProtectedRoute roles={['student']}><StudentDashboard /></ProtectedRoute>} 
+            />
+            <Route 
+              path="/pages/student/studentdashboard" 
               element={<ProtectedRoute roles={['student']}><StudentDashboard /></ProtectedRoute>} 
             />
 
             {/* Instructor Dashboard */}
             <Route 
               path="/dashboard/instructor" 
+              element={<ProtectedRoute roles={['instructor']}><InstructorDashboard /></ProtectedRoute>} 
+            />
+            <Route 
+              path="/pages/Instructor/Instructordashboard" 
               element={<ProtectedRoute roles={['instructor']}><InstructorDashboard /></ProtectedRoute>} 
             />
             <Route 
@@ -72,6 +84,10 @@ function App() {
             {/* Admin Dashboard */}
             <Route 
               path="/dashboard/admin" 
+              element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} 
+            />
+            <Route 
+              path="/pages/admin/Admindashboard" 
               element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} 
             />
           </Route>

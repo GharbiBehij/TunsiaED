@@ -19,7 +19,7 @@ export class CourseContentOrchestrator {
   /**
    * Get course and validate it exists
    * @param {string} courseId - Course ID
-   * @returns {Object} Course model
+   * @returns {{Promise<Object>}} Course model
    */
   async _getCourseOrThrow(courseId) {
     const course = await courseService.getCourseByIdInternal(courseId);
@@ -33,7 +33,7 @@ export class CourseContentOrchestrator {
    * Get chapter and validate it belongs to course
    * @param {string} chapterId - Chapter ID
    * @param {string} courseId - Course ID
-   * @returns {Object} Chapter model
+   * @returns {{Promise<Object>}} Chapter model
    */
   async _getChapterOrThrow(chapterId, courseId) {
     const chapter = await chapterService.getChapterByIdInternal(chapterId);
@@ -70,7 +70,7 @@ export class CourseContentOrchestrator {
    * @param {string} courseId - Course ID
    * @param {Object} user - Authenticated user
    * @param {Object} data - Chapter data
-   * @returns {Object} Chapter DTO
+   * @returns {{Promise<Object>}} Chapter DTO
    */
   async createChapter(courseId, user, data) {
     // 1. Validate course exists (Course service)
@@ -91,7 +91,7 @@ export class CourseContentOrchestrator {
    * @param {string} chapterId - Chapter ID
    * @param {Object} user - Authenticated user
    * @param {Object} data - Update data
-   * @returns {Object} Chapter DTO
+   * @returns {{Promise<Object>}} Chapter DTO
    */
   async updateChapter(chapterId, user, data) {
     // 1. Get existing chapter (Chapter service)
@@ -149,7 +149,7 @@ export class CourseContentOrchestrator {
    * @param {string} chapterId - Chapter ID
    * @param {Object} user - Authenticated user
    * @param {Object} data - Lesson data
-   * @returns {Object} Lesson DTO
+   * @returns {{Promise<Object>}} Lesson DTO
    */
   async createLesson(courseId, chapterId, user, data) {
     // 1. Validate course exists (Course service)

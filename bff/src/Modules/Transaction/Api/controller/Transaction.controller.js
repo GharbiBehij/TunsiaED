@@ -21,6 +21,18 @@ export class TransactionController {
       res.status(400).json({ error: error.message });
     }
   }
+  async deletetransaction(req, res) {
+    try {
+      const { transactionId } = req.params;
+      await transactionService.deleteTransaction(transactionId);
+      res.status(200).json({ message: 'Transaction deleted successfully' });
+    } catch (error) {
+      if (error.message === 'Unauthorized') {
+        return res.status(403).json({ error: error.message });
+      }
+      res.status(400).json({ error: error.message });
+    }
+  }
 
   async getTransactionById(req, res) {
     try {

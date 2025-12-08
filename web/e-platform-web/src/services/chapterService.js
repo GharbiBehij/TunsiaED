@@ -22,6 +22,62 @@ class ChapterService {
     if (!res.ok) throw new Error('Failed to fetch chapter');
     return res.json();
   }
+
+  /**
+   * Creates a new chapter
+   * @param {Object} chapterData - Chapter creation data
+   * @param {string} token - Authentication token
+   * @returns {Promise<Object>} Created chapter data
+   */
+  static async createChapter(chapterData, token) {
+    const res = await fetch(`${API_URL}/api/v1/chapter`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(chapterData),
+    });
+    if (!res.ok) throw new Error('Failed to create chapter');
+    return res.json();
+  }
+
+  /**
+   * Updates an existing chapter
+   * @param {string} chapterId - The ID of the chapter to update
+   * @param {Object} chapterData - Updated chapter data
+   * @param {string} token - Authentication token
+   * @returns {Promise<Object>} Updated chapter data
+   */
+  static async updateChapter(chapterId, chapterData, token) {
+    const res = await fetch(`${API_URL}/api/v1/chapter/${chapterId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(chapterData),
+    });
+    if (!res.ok) throw new Error('Failed to update chapter');
+    return res.json();
+  }
+
+  /**
+   * Deletes a chapter
+   * @param {string} chapterId - The ID of the chapter to delete
+   * @param {string} token - Authentication token
+   * @returns {Promise<Object>} Deletion confirmation
+   */
+  static async deleteChapter(chapterId, token) {
+    const res = await fetch(`${API_URL}/api/v1/chapter/${chapterId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error('Failed to delete chapter');
+    return res.json();
+  }
 }
 
 export default ChapterService;

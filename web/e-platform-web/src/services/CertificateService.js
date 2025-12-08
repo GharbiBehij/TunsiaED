@@ -43,35 +43,44 @@ class CertificateService {
 
   /**
    * Fetches a specific certificate by ID
-   * DIRECT: Public endpoint, no auth required
+   * DIRECT: Requires authentication (ownership verified)
+   * @param {string} token - Authentication token
    * @param {string} certificateId - The certificate ID
    * @returns {Promise<Object>} Certificate data
    */
-  static async getCertificateById(certificateId) {
-    const res = await fetch(`${API_URL}/api/v1/certificate/${certificateId}`);
+  static async getCertificateById(token, certificateId) {
+    const res = await fetch(`${API_URL}/api/v1/certificate/${certificateId}`, {
+      headers: getAuthHeaders(token)
+    });
     if (!res.ok) throw new Error('Failed to fetch certificate');
     return res.json();
   }
 
   /**
    * Fetches certificates for a specific course
-   * DIRECT: Public endpoint
+   * DIRECT: Requires admin or instructor role
+   * @param {string} token - Authentication token
    * @param {string} courseId - The course ID
    * @returns {Promise<Array>} List of certificates for the course
    */
-  static async getCourseCertificates(courseId) {
-    const res = await fetch(`${API_URL}/api/v1/certificate/course/${courseId}`);
+  static async getCourseCertificates(token, courseId) {
+    const res = await fetch(`${API_URL}/api/v1/certificate/course/${courseId}`, {
+      headers: getAuthHeaders(token)
+    });
     if (!res.ok) throw new Error('Failed to fetch course certificates');
     return res.json();
   }
 
   /**
    * Fetches all certificates (admin)
-   * DIRECT: Single module operation
+   * DIRECT: Requires admin role
+   * @param {string} token - Authentication token
    * @returns {Promise<Array>} List of all certificates
    */
-  static async getAllCertificates() {
-    const res = await fetch(`${API_URL}/api/v1/certificate`);
+  static async getAllCertificates(token) {
+    const res = await fetch(`${API_URL}/api/v1/certificate`, {
+      headers: getAuthHeaders(token)
+    });
     if (!res.ok) throw new Error('Failed to fetch all certificates');
     return res.json();
   }

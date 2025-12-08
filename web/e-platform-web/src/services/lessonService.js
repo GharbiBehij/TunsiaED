@@ -33,6 +33,62 @@ class LessonService {
     if (!res.ok) throw new Error('Failed to fetch lesson');
     return res.json();
   }
+
+  /**
+   * Creates a new lesson
+   * @param {Object} lessonData - Lesson creation data
+   * @param {string} token - Authentication token
+   * @returns {Promise<Object>} Created lesson data
+   */
+  static async createLesson(lessonData, token) {
+    const res = await fetch(`${API_URL}/api/v1/lesson`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(lessonData),
+    });
+    if (!res.ok) throw new Error('Failed to create lesson');
+    return res.json();
+  }
+
+  /**
+   * Updates an existing lesson
+   * @param {string} lessonId - The ID of the lesson to update
+   * @param {Object} lessonData - Updated lesson data
+   * @param {string} token - Authentication token
+   * @returns {Promise<Object>} Updated lesson data
+   */
+  static async updateLesson(lessonId, lessonData, token) {
+    const res = await fetch(`${API_URL}/api/v1/lesson/${lessonId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(lessonData),
+    });
+    if (!res.ok) throw new Error('Failed to update lesson');
+    return res.json();
+  }
+
+  /**
+   * Deletes a lesson
+   * @param {string} lessonId - The ID of the lesson to delete
+   * @param {string} token - Authentication token
+   * @returns {Promise<Object>} Deletion confirmation
+   */
+  static async deleteLesson(lessonId, token) {
+    const res = await fetch(`${API_URL}/api/v1/lesson/${lessonId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) throw new Error('Failed to delete lesson');
+    return res.json();
+  }
 }
 
 export default LessonService;

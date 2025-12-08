@@ -1,5 +1,7 @@
 // Firebase Notification Emitter
-// Listens to event bus and sends Firebase notifications
+// Listens to event bus and sends Firebase Cloud Messaging (FCM) push notifications
+// These are in-app/mobile notifications, NOT emails
+// Emails are handled separately by EmailService via SMTP adapter
 
 import eventBus from '../eventBus.js';
 import { FirebaseMessagingAdapter } from '../../adapters/firebaseAdapter.js';
@@ -28,12 +30,12 @@ async function sendNotificationSafe(userId, payload) {
  * Subscribes to business events and sends push notifications
  */
 export function initializeFirebaseNotifications() {
-  // Payment completed - notify user
+  // Payment completed - send push notification (email sent separately via SMTP in controller)
   eventBus.on('payment.completed', async (data) => {
     const { userId, courseTitle, amount, transactionId } = data;
     
     await sendNotificationSafe(userId, {
-      title: ' Payment Successful',
+      title: '🎉 Payment Successful',
       body: `Your payment of ${amount} TND for "${courseTitle}" has been confirmed.`,
       data: {
         type: 'payment_success',
@@ -41,35 +43,35 @@ export function initializeFirebaseNotifications() {
         courseTitle,
       },
     });
-    console.log(`Payment notification sent to user ${userId}`);
+    console.log(`🔔 Push notification sent to user ${userId}`);
   });
 
-  // Payment failed - notify user
+  // Payment failed - send push notification (email sent separately via SMTP in controller)
   eventBus.on('payment.failed', async (data) => {
     const { userId, courseTitle, reason } = data;
     
     try {
       await FirebaseMessagingAdapter.sendToDevice(userId, {
-        title: ' Payment Failed',
+        title: '❌ Payment Failed',
         body: `Payment for "${courseTitle}" was unsuccessful. ${reason || 'Please try again.'}`,
         data: {
           type: 'payment_failed',
           courseTitle,
         },
       });
-      console.log(`Payment failure notification sent to user ${userId}`);
+      console.log(`🔔 Push notification sent to user ${userId}`);
     } catch (error) {
       console.error('Failed to send payment failure notification:', error);
     }
   });
 
-  // Enrollment created - notify student and instructor
+  // Enrollment created - send push notifications to student and instructor
   eventBus.on('enrollment.created', async (data) => {
     const { studentId, instructorId, courseTitle, courseThumbnail } = data;
     
-    // Notify student
+    // Notify student via push notification
     await sendNotificationSafe(studentId, {
-      title: ' Enrollment Confirmed',
+      title: '🎓 Enrollment Confirmed',
       body: `You're now enrolled in "${courseTitle}". Start learning today!`,
       data: {
         type: 'enrollment_created',
@@ -78,9 +80,9 @@ export function initializeFirebaseNotifications() {
       imageUrl: courseThumbnail,
     });
 
-    // Notify instructor (safely skips system instructor)
+    // Notify instructor via push notification (safely skips system instructor)
     await sendNotificationSafe(instructorId, {
-      title: ' New Student Enrolled',
+      title: '👥 New Student Enrolled',
       body: `A new student enrolled in your course "${courseTitle}"`,
       data: {
         type: 'student_enrolled',
@@ -88,7 +90,7 @@ export function initializeFirebaseNotifications() {
       },
     });
     
-    console.log(`Enrollment notifications sent for course ${courseTitle}`);
+    console.log(`🔔 Push notifications sent for enrollment: ${courseTitle}`);
   });
 
   // Certificate granted - notify student

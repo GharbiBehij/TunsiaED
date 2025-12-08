@@ -1,72 +1,20 @@
 // EmailService - Handles sending transactional emails
-// Uses Nodemailer with SMTP (Gmail, SendGrid, or custom SMTP)
+// Uses SMTPAdapter for email operations (centralized email adapter)
 
-import nodemailer from 'nodemailer';
+import { SMTPAdapter } from '../adapters/smtpAdapter.js';
 
 /**
- * EmailService - Service for sending transactional emails
- * Supports payment confirmations, enrollment notifications, etc.
+ * EmailService - High-level service for transactional emails
+ * Delegates email sending to SMTPAdapter for consistency
  */
 class EmailService {
   constructor() {
-    this.transporter = null;
-    this.fromEmail = process.env.EMAIL_FROM || 'noreply@tunisiaed.com';
-    this.fromName = process.env.EMAIL_FROM_NAME || 'TunisiaED';
-    this.initialized = false;
+    // Initialize SMTP adapter
+    SMTPAdapter.initialize(process.env.EMAIL_PROVIDER || 'gmail');
   }
 
   /**
-   * Initialize the email transporter
-   * Supports Gmail, SendGrid, or custom SMTP
-   */
-  initialize() {
-    if (this.initialized) return;
-
-    const emailProvider = process.env.EMAIL_PROVIDER || 'gmail';
-
-    try {
-      if (emailProvider === 'gmail') {
-        // Gmail SMTP configuration
-        this.transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASSWORD, // Use App Password, not regular password
-          },
-        });
-      } else if (emailProvider === 'sendgrid') {
-        // SendGrid SMTP configuration
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.sendgrid.net',
-          port: 587,
-          secure: false,
-          auth: {
-            user: 'apikey',
-            pass: process.env.SENDGRID_API_KEY,
-          },
-        });
-      } else {
-        // Custom SMTP configuration
-        this.transporter = nodemailer.createTransport({
-          host: process.env.SMTP_HOST,
-          port: parseInt(process.env.SMTP_PORT || '587'),
-          secure: process.env.SMTP_SECURE === 'true',
-          auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-          },
-        });
-      }
-
-      this.initialized = true;
-      console.log(`Email service initialized with provider: ${emailProvider}`);
-    } catch (error) {
-      console.error('Failed to initialize email service:', error);
-    }
-  }
-
-  /**
-   * Send an email
+   * Send an email using SMTP adapter
    * @param {Object} options - Email options
    * @param {string} options.to - Recipient email
    * @param {string} options.subject - Email subject
@@ -74,28 +22,18 @@ class EmailService {
    * @param {string} options.text - Plain text content (optional)
    */
   async sendEmail({ to, subject, html, text }) {
-    if (!this.initialized) {
-      this.initialize();
-    }
-
-    if (!this.transporter) {
-      console.warn('Email transporter not configured. Email not sent.');
-      return { success: false, error: 'Email service not configured' };
-    }
-
     try {
-      const info = await this.transporter.sendMail({
-        from: `"${this.fromName}" <${this.fromEmail}>`,
+      const result = await SMTPAdapter.sendEmail({
         to,
         subject,
-        text: text || this.htmlToText(html),
         html,
+        text: text || this.htmlToText(html),
       });
 
-      console.log(`Email sent successfully to ${to}: ${info.messageId}`);
-      return { success: true, messageId: info.messageId };
+      console.log(`📧 Email sent to ${to}: ${subject}`);
+      return result;
     } catch (error) {
-      console.error(`Failed to send email to ${to}:`, error);
+      console.error(`❌ Failed to send email to ${to}:`, error);
       return { success: false, error: error.message };
     }
   }

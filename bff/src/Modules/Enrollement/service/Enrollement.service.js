@@ -72,7 +72,7 @@ export class EnrollmentService {
    * DIRECT: Single module operation
    */
   async updateEnrollmentProgress(enrollmentId, progressData) {
-    await enrollmentRepository.updateEnrollmentProgress(enrollmentId, progressData);
+    return await enrollmentRepository.updateEnrollmentProgress(enrollmentId, progressData);
   }
 
   /**
@@ -80,7 +80,7 @@ export class EnrollmentService {
    * DIRECT: Single module operation
    */
   async markEnrollmentAsCompleted(enrollmentId) {
-    await enrollmentRepository.markEnrollmentAsCompleted(enrollmentId);
+    return await enrollmentRepository.markEnrollmentAsCompleted(enrollmentId);
   }
 
   // ====================================================================
@@ -121,7 +121,7 @@ export class EnrollmentService {
    * @param {Object} progressData
    */
   async updateEnrollmentProgressInternal(enrollmentId, progressData) {
-    await enrollmentRepository.updateEnrollmentProgress(enrollmentId, progressData);
+    return await enrollmentRepository.updateEnrollmentProgress(enrollmentId, progressData);
   }
 
   /**
@@ -129,7 +129,7 @@ export class EnrollmentService {
    * @param {string} enrollmentId
    */
   async markEnrollmentAsCompletedInternal(enrollmentId) {
-    await enrollmentRepository.markEnrollmentAsCompleted(enrollmentId);
+    return await enrollmentRepository.markEnrollmentAsCompleted(enrollmentId);
   }
 }
 

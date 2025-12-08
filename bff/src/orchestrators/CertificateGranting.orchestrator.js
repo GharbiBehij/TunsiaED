@@ -5,6 +5,7 @@ import { certificateService } from '../Modules/Certificate/service/Certificate.s
 import { progressService } from '../Modules/Progress/service/Progress.service.js';
 import { enrollmentService } from '../Modules/Enrollement/service/Enrollement.service.js';
 import { courseService } from '../Modules/Course/service/Course.service.js';
+import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
 
 export class CertificateGrantingOrchestrator {
   /**
@@ -60,7 +61,12 @@ export class CertificateGrantingOrchestrator {
       }
     );
 
-    // 7. Return clean DTO
+    // 7. Invalidate Redis cache for affected dashboards
+    console.log('🗑️ [Orchestrator] Invalidating cache keys for certificate granting...');
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_LEARNING_OVERVIEW);
+
+    // 8. Return clean DTO
     return {
       certificateId: certificate.certificateId,
       userId: certificate.userId,
@@ -78,7 +84,13 @@ export class CertificateGrantingOrchestrator {
    * @returns {Object} Eligibility DTO
    */
   async checkCertificateEligibility(user, courseId) {
+    console.log('🔍 [CertificateOrch] checkEligibility called:', {
+      userId: user.uid,
+      courseId
+    });
+
     // 1. Get enrollment (Enrollment service)
+    console.log('📋 [CertificateOrch] Fetching enrollment...');
     const enrollments = await enrollmentService.getUserEnrollments(user.uid);
     const enrollment = enrollments.find(e => e.courseId === courseId);
     if (!enrollment) {

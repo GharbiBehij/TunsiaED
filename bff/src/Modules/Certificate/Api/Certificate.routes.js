@@ -6,20 +6,25 @@ import { certificateController } from './Certificate.controller.js';
 const router = Router();
 
 // DIRECT SERVICE ROUTES - Single module operations
-// Authenticated user can issue certificate for themselves (guarded in service).
-router.post('/', authenticate, certificateController.issueCertificate);
+// IMPORTANT: Specific routes must come BEFORE parameterized routes
 
-// Authenticated user: own certificates.
+// Admin-only aggregate endpoints - MUST be first
+router.get('/', authenticate, requireRole('admin'), certificateController.getAllCertificates);
+
+// Authenticated user: own certificates - MUST come before /:certificateId
 router.get('/me', authenticate, certificateController.getMyCertificates);
 
-// Public read of a specific certificate (you can tighten this later).
-router.get('/:certificateId', certificateController.getCertificateById);
+// List certificates by course - MUST come before /:certificateId
+router.get('/course/:courseId', authenticate, requireRole('admin', 'instructor'), certificateController.getCourseCertificates);
 
-// Public list by course (e.g., for admin dashboards).
-router.get('/course/:courseId', certificateController.getCourseCertificates);
+// Authenticated user can issue certificate for themselves (guarded in service)
+router.post('/', authenticate, certificateController.issueCertificate);
 
-// Admin-style aggregate endpoints.
-router.get('/', certificateController.getAllCertificates);
+// Authenticated read of a specific certificate (ownership verified in controller)
+// MUST come AFTER specific routes like /me, /course/:courseId
+router.get('/:certificateId', authenticate, certificateController.getCertificateById);
+
+// Admin-only update/delete
 router.put('/:certificateId', authenticate, requireRole('admin'), certificateController.updateCertificate);
 router.delete('/:certificateId', authenticate, requireRole('admin'), certificateController.revokeCertificate);
 
