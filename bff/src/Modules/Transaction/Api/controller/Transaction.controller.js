@@ -21,7 +21,7 @@ export class TransactionController {
       res.status(400).json({ error: error.message });
     }
   }
-  async deletetransaction(req, res) {
+  async deleteTransaction(req, res) {
     try {
       const { transactionId } = req.params;
       await transactionService.deleteTransaction(transactionId);
