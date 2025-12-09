@@ -113,18 +113,19 @@ export const AuthProvider = ({ children }) => {
 
   const loginWithGoogle = async () => {
     console.log("🔵 Google login started...");
-    
+
     localStorage.setItem('googleAuthInProgress', 'true');
     localStorage.setItem('redirectAfterAuth', location.pathname);
-    
-    setIsLoading(true);
 
+    // Don't set loading state for redirects since the page will unload
     try {
       await loginWithGoogleLib();
       console.log("✅ Google redirect initiated");
+      // The page will redirect, so this code won't execute
     } catch (err) {
       console.error("❌ Google login failed:", err);
       localStorage.removeItem('googleAuthInProgress');
+      // Only set loading to false if there's an immediate error
       setIsLoading(false);
       throw err;
     }
@@ -147,26 +148,58 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     async function handleRedirectResult() {
       try {
+        console.log('🔄 Checking for Google redirect result...');
         const result = await getRedirectResult(auth);
-        
+
         if (result && result.user) {
           console.log('✅ Google sign-in successful via redirect:', result.user.email);
-          
+          console.log('🔍 Google user data:', {
+            uid: result.user.uid,
+            email: result.user.email,
+            displayName: result.user.displayName,
+            photoURL: result.user.photoURL,
+            providerData: result.user.providerData
+          });
+
           const wasGoogleAuth = localStorage.getItem('googleAuthInProgress');
           if (wasGoogleAuth) {
             console.log('🔄 Detected Google auth redirect, will navigate after profile loads');
             setAuthAction("google-redirect");
             localStorage.removeItem('googleAuthInProgress');
           }
+        } else {
+          console.log('ℹ️ No Google redirect result found (this is normal for regular page loads)');
         }
       } catch (error) {
         console.error('❌ Google redirect error:', error);
+
+        // Handle specific Firebase auth errors
+        if (error.code === 'auth/popup-closed-by-user') {
+          console.log('ℹ️ User closed Google sign-in popup');
+        } else if (error.code === 'auth/cancelled-popup-request') {
+          console.log('ℹ️ Google sign-in was cancelled');
+        } else if (error.code === 'auth/popup-blocked') {
+          console.log('ℹ️ Google sign-in popup was blocked by browser');
+        } else if (error.code === 'auth/redirect-cancelled-by-user') {
+          console.log('ℹ️ Google redirect was cancelled by user');
+        } else {
+          console.error('❌ Unexpected Google auth error:', {
+            code: error.code,
+            message: error.message,
+            customData: error.customData
+          });
+        }
+
         localStorage.removeItem('googleAuthInProgress');
+        setIsLoading(false);
+
+        // Navigate back to login on error
+        navigate('/login', { replace: true });
       }
     }
-    
+
     handleRedirectResult();
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -180,6 +213,9 @@ export const AuthProvider = ({ children }) => {
         setIsLoading(false);
         return;
       }
+
+      // Set loading state when processing auth
+      setIsLoading(true);
 
       const idToken = await firebaseUser.getIdToken();
       
@@ -214,6 +250,19 @@ export const AuthProvider = ({ children }) => {
 
       let profile = await fetchProfileViaBff(idToken, onboardPayload);
 
+      // If we just onboarded a user, force refresh the token to get updated custom claims
+      let finalToken = idToken;
+      if (profile && storedProfile) {
+        console.log('🔄 Forcing token refresh after onboarding to get custom claims');
+        try {
+          finalToken = await firebaseUser.getIdToken(true); // forceRefresh = true
+          console.log('✅ Token refreshed with custom claims');
+        } catch (refreshError) {
+          console.warn('⚠️ Failed to refresh token after onboarding:', refreshError);
+          // Continue with original token
+        }
+      }
+
       if (!profile) {
         profile = {
           name: onboardPayload.name,
@@ -232,13 +281,19 @@ export const AuthProvider = ({ children }) => {
       const fullUser = {
         uid: firebaseUser.uid,
         email: firebaseUser.email,
-        profile,
+        profile: {
+          ...profile,
+          // Ensure role flags are properly set
+          isAdmin: profile.isAdmin === true,
+          isInstructor: profile.isInstructor === true || profile.role === 'instructor',
+          isStudent: profile.isStudent === true || profile.role === 'student' || (!profile.isAdmin && !profile.isInstructor),
+        },
       };
 
       setUser(fullUser);
-      setToken(idToken);
+      setToken(finalToken);
       localStorage.setItem("user", JSON.stringify(fullUser));
-      localStorage.setItem("token", idToken);
+      localStorage.setItem("token", finalToken);
 
       if (authAction === "login" || authAction === "signup" || authAction === "google-redirect") {
         console.log('✅ Auth complete, navigating...');
@@ -276,10 +331,11 @@ export const AuthProvider = ({ children }) => {
         isLoading,
         isAuthenticated: !!user,
         isAdmin: user?.profile?.isAdmin === true,
-        isInstructor: user?.profile?.isInstructor === true,
+        isInstructor: user?.profile?.isInstructor === true || user?.profile?.role === 'instructor',
         isStudent:
           user?.profile?.isStudent === true ||
-          (!user?.profile?.isAdmin && !user?.profile?.isInstructor),
+          user?.profile?.role === 'student' ||
+          (!user?.profile?.isAdmin && !user?.profile?.isInstructor && user?.profile?.role !== 'instructor'),
         hasActiveSubscription: user?.profile?.hasActiveSubscription === true,
         activePlanId: user?.profile?.activePlanId || null,
 

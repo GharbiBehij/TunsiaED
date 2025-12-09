@@ -84,12 +84,12 @@ export class CoursePurchaseOrchestrator {
       paymentMethod: purchaseData.paymentMethod || null,
       status: 'pending',
     });
-    console.log('✅ [Orchestrator] Payment record created:', payment.paymentId);
+    console.log('✅ [Orchestrator] Payment record created:', payment.id);
 
     // 4. Return clean DTO
     console.log('✅ [Orchestrator] initiatePurchase completed successfully');
     return {
-      paymentId: payment.paymentId,
+      paymentId: payment.id,
       amount: payment.amount,
       currency: payment.currency,
       courseId: payment.courseId,
@@ -97,6 +97,54 @@ export class CoursePurchaseOrchestrator {
       courseTitle: payment.courseTitle,
       status: payment.status,
     };
+  }
+
+  /**
+   * Initiate Stripe Checkout
+   * Orchestrates Stripe checkout session creation
+   * @param {Object} user - Authenticated user
+   * @param {string} paymentId - Internal payment ID
+   * @param {Object} customerData - { firstName, lastName, email, phone, note }
+   * @returns {Promise<Object>} Stripe checkout data
+   */
+  async initiateStripeCheckout(user, paymentId, customerData) {
+    console.log('🔄 [Orchestrator] initiateStripeCheckout called:', {
+      userId: user.uid,
+      paymentId,
+      email: customerData.email
+    });
+
+    // 1. Get payment details
+    const payment = await paymentService.getPaymentById(paymentId);
+    if (!payment) {
+      throw new Error('Payment not found');
+    }
+
+    if (payment.userId !== user.uid) {
+      throw new Error('Unauthorized: Payment does not belong to this user');
+    }
+
+    // 2. Initiate Stripe checkout via Payment Service
+    console.log('💳 [Orchestrator] Initiating Stripe checkout session...');
+    const stripeResult = await paymentService.initiateStripePayment(user.uid, {
+      courseId: payment.courseId,
+      amount: payment.amount,
+      paymentType: payment.paymentType,
+      currency: payment.currency || 'usd',
+    }, {
+      note: customerData.note || `Course Purchase: ${payment.courseTitle}`,
+      firstName: customerData.firstName || user.firstName || 'Customer',
+      lastName: customerData.lastName || user.lastName || 'User',
+      email: customerData.email || user.email,
+      phone: customerData.phone || user.phone || '+21600000000',
+    });
+
+    console.log('✅ [Orchestrator] Stripe checkout session created:', stripeResult.sessionId);
+
+    // 3. Invalidate relevant caches
+    await cacheClient.invalidate(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD(user.uid));
+
+    return stripeResult;
   }
 
   /**
@@ -268,6 +316,127 @@ export class CoursePurchaseOrchestrator {
       } : null,
       hasActiveSubscription: payment.paymentType === 'subscription' && payment.planId ? true : undefined,
     };
+  }
+
+  /**
+   * Process Stripe Webhook
+   * Orchestrates webhook verification and purchase completion
+   * Flow: Verify Webhook → Process Webhook → Complete Purchase
+   * @param {string} payload - Raw webhook payload
+   * @param {string} signature - Stripe signature header
+   * @returns {Promise<Object>} Webhook processing result
+   */
+  async processStripeWebhook(payload, signature) {
+    console.log('🔔 [Orchestrator] processStripeWebhook called');
+
+    // 1. Verify webhook signature (Payment Service → Stripe Service)
+    console.log('🔐 [Orchestrator] Verifying webhook signature...');
+    const event = await paymentService.verifyStripeWebhook(payload, signature);
+    console.log('✅ [Orchestrator] Webhook signature verified:', {
+      eventType: event.type,
+      eventId: event.id
+    });
+
+    // 2. Process webhook data (Payment Service → Stripe Service)
+    console.log('📋 [Orchestrator] Processing webhook data...');
+    const webhookResult = await paymentService.processStripeWebhook(event);
+    console.log('✅ [Orchestrator] Webhook processed:', {
+      success: webhookResult.success,
+      orderId: webhookResult.orderId,
+      transactionId: webhookResult.transactionId
+    });
+
+    // 3. Return webhook result for controller to handle completion
+    return {
+      verified: true,
+      event,
+      webhookResult,
+    };
+  }
+
+  /**
+   * Handle Webhook Completion
+   * Orchestrates the complete webhook flow including purchase completion and notifications
+   * Flow: Verify Payment → Complete Purchase → Send Emails → Return Result
+   * @param {Object} webhookResult - Processed webhook result
+   * @param {Object} payment - Payment record
+   * @returns {Promise<Object>} Completion result
+   */
+  async handleWebhookCompletion(webhookResult, payment) {
+    console.log('🔄 [Orchestrator] handleWebhookCompletion called:', {
+      orderId: webhookResult.orderId,
+      success: webhookResult.success
+    });
+
+    // 1. Get user and course info
+    const user = await userService.findByUid(payment.userId);
+    const course = await courseService.getCourseByIdInternal(payment.courseId);
+    const courseTitle = course?.title || payment.courseTitle || 'Course Purchase';
+
+    if (webhookResult.success) {
+      console.log('💰 [Orchestrator] Payment successful - completing purchase...');
+
+      // 2. Complete the purchase (transaction + enrollment)
+      const confirmationData = {
+        paymentId: payment.id,
+        gatewayTransactionId: String(webhookResult.transactionId),
+        paymentGateway: 'Stripe',
+      };
+
+      const orchestratorResult = await this.completePurchase(user, confirmationData);
+      console.log('✅ [Orchestrator] Purchase completed:', {
+        transactionId: orchestratorResult.transaction?.transactionId,
+        enrollmentId: orchestratorResult.enrollment?.enrollmentId
+      });
+
+      // 3. Send success email (imported dynamically to avoid circular deps)
+      const emailService = (await import('../utils/EmailService.js')).default;
+      console.log('📧 [Orchestrator] Sending success email to:', user.email);
+      const emailResult = await emailService.sendPaymentSuccessEmail({
+        email: user.email,
+        firstName: user.firstName || webhookResult.customer?.firstName || 'Customer',
+        lastName: user.lastName || webhookResult.customer?.lastName || '',
+        courseTitle,
+        amount: webhookResult.amount,
+        transactionId: String(webhookResult.transactionId),
+        paymentMethod: 'Stripe',
+      });
+      console.log(`${emailResult?.success !== false ? '✅' : '❌'} [Orchestrator] Email sent:`, 
+        emailResult?.success !== false ? 'success' : emailResult?.error);
+
+      return {
+        success: true,
+        message: 'Payment completed successfully',
+        transaction: orchestratorResult.transaction,
+        enrollment: orchestratorResult.enrollment,
+      };
+    } else {
+      console.log('❌ [Orchestrator] Payment failed - updating status...');
+
+      // 2. Update payment status to failed
+      await paymentService.updatePaymentInternal(payment.id, {
+        status: 'failed',
+        failureReason: 'Payment declined by Stripe',
+      });
+      console.log('✅ [Orchestrator] Payment status updated to failed');
+
+      // 3. Send failure email
+      const emailService = (await import('../utils/EmailService.js')).default;
+      console.log('📧 [Orchestrator] Sending failure email to:', user.email);
+      await emailService.sendPaymentFailedEmail({
+        email: user.email,
+        firstName: user.firstName || webhookResult.customer?.firstName || 'Customer',
+        lastName: user.lastName || webhookResult.customer?.lastName || '',
+        courseTitle,
+        amount: payment.amount,
+        reason: 'Payment was declined or cancelled',
+      });
+
+      return {
+        success: false,
+        message: 'Payment failed',
+      };
+    }
   }
 
   /**

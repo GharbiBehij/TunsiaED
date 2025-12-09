@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import helmet from 'helmet';
 import { userRoutes } from './src/Modules/User/api/Routes/User.routes.js';
 import { router as courseRouter } from './src/Modules/Course/api/Course.route.js';
 import { router as paymentRouter } from './src/Modules/payment/Api/Payment.routes.js';
@@ -17,6 +18,7 @@ import { router as progressRouter } from './src/Modules/Progress/api/Progress.ro
 import { registerShoppingCartRoutes } from './src/Modules/ShoppinCart/index.js';
 import { initializeFirebaseNotifications } from './src/events/index.js';
 import { seedSystemData } from './src/systemCourses/seedSystemCourses.js';
+import { createRateLimiters } from './src/middlewares/rateLimiter.js';
 
 const app = express();
 
@@ -26,6 +28,22 @@ console.log('✅ Event system initialized');
 
 // Seed system courses (only inserts if not already present)
 seedSystemData().catch(err => console.warn('⚠️  System data seeding failed:', err.message));
+
+// Security: Helmet for security headers
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for now (can enable later)
+  crossOriginEmbedderPolicy: false // Allow embedding
+}));
+
+// Security: HTTPS redirect in production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      return res.redirect(`https://${req.header('host')}${req.url}`);
+    }
+    next();
+  });
+}
 
 // Allowed origins
 const allowedOrigins = [
@@ -63,11 +81,22 @@ app.options('*', cors({
   allowedHeaders: ['Content-Type','Authorization']
 }));
 
+// 3 Raw body for Stripe webhook (MUST be before express.json())
+app.use('/api/v1/payment/stripe/webhook', 
+  express.raw({ type: 'application/json' })
+);
+
 // 3 Parse JSON
 app.use(express.json());
 
 // 3.5 Request logging
 app.use(morgan('combined'));
+
+// 3.6 Rate limiting (must be after body parsing)
+const rateLimiters = createRateLimiters();
+app.use('/api/v1/payment', rateLimiters.payment);
+app.use('/api/v1/enrollment', rateLimiters.enrollment);
+app.use('/api/v1', rateLimiters.general);
 
 // 4️ Health check
 app.get('/', (req, res) => {

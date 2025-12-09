@@ -141,9 +141,9 @@ export default function SubscriptionPage() {
     setSelectedPlan(planId);
 
     try {
-      const result = await initiateSubscription.mutateAsync(planId);
+      const result = await PaymentService.mutateAsync(planId);
       // Redirect to payment page
-      navigate(`/payment/${result.paymentId}`);
+      
     } catch (error) {
       console.error('Failed to initiate subscription:', error);
       alert('Failed to start subscription. Please try again.');

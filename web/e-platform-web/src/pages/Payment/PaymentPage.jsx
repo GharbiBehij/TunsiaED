@@ -61,13 +61,15 @@ export default function PaymentPage() {
 
   // Handle successful payment
   const handleSuccess = (result) => {
-    // Navigate to success page or dashboard
-    navigate('/dashboard/student', { 
+    // Navigate to student dashboard with success message
+    navigate('/pages/student/studentdashboard', { 
       state: { 
         paymentSuccess: true,
         courseId: payment?.courseId,
+        enrollmentId: result?.enrollment?.enrollmentId,
         message: 'Payment completed successfully! You can now access your course.'
-      }
+      },
+      replace: true
     });
   };
 

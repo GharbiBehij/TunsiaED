@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useCourseById } from '../hooks/Course/useCourse';
 import { useChaptersByCourse, useLessonsByCourse } from '../hooks/useChapters';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useInitiatePurchase } from '../hooks/Payment/usePayment';
 import { useEnrollInCourse } from '../hooks/Enrollment/useEnrollment';
 
@@ -11,6 +12,7 @@ export default function CourseDetailPage() {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user, isStudent, hasActiveSubscription } = useAuth();
+  const { addToCart, isInCart } = useCart();
   const { data: course, isLoading, isError } = useCourseById(courseId);
   const { data: chapters = [], isLoading: chaptersLoading } = useChaptersByCourse(courseId);
   const { data: lessons = [], isLoading: lessonsLoading } = useLessonsByCourse(courseId);
@@ -24,6 +26,13 @@ export default function CourseDetailPage() {
       ...prev,
       [chapterId]: !prev[chapterId]
     }));
+  };
+
+  const handleAddToCart = () => {
+    if (course) {
+      addToCart(course);
+      navigate('/cart');
+    }
   };
 
   // Group lessons by chapter
@@ -386,6 +395,26 @@ export default function CourseDetailPage() {
                     </button>
                   ) : (
                     <>
+                      {!isFree && (
+                        <button
+                          onClick={handleAddToCart}
+                          disabled={isInCart(courseId)}
+                          className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-secondary text-white rounded-lg font-bold hover:bg-secondary/90 transition disabled:opacity-50"
+                        >
+                          {isInCart(courseId) ? (
+                            <>
+                              <span className="material-symbols-outlined">check</span>
+                              Added to Cart
+                            </>
+                          ) : (
+                            <>
+                              <span className="material-symbols-outlined">add_shopping_cart</span>
+                              Add to Cart
+                            </>
+                          )}
+                        </button>
+                      )}
+                      
                       <button
                         onClick={() => handleEnroll('purchase')}
                         disabled={initiatePurchase.isPending}
@@ -396,10 +425,15 @@ export default function CourseDetailPage() {
                             <span className="material-symbols-outlined animate-spin">progress_activity</span>
                             Processing...
                           </>
+                        ) : isFree ? (
+                          <>
+                            <span className="material-symbols-outlined">check_circle</span>
+                            Enroll For Free
+                          </>
                         ) : (
                           <>
-                            <span className="material-symbols-outlined">shopping_cart</span>
-                            Buy Course
+                            <span className="material-symbols-outlined">payment</span>
+                            Buy Now
                           </>
                         )}
                       </button>

@@ -7,27 +7,13 @@ export default function Categories() {
   const containerRef = useRef(null);
   const { data: categoriesData = [], isLoading, error } = useCategories();
 
-  // Map categories to display objects with default images
   const categoryImages = {
-    'Web Development': 'https://lh3.googleusercontent.com/aida-public/AB6AXuCrtvTxFJd6XPiaJnrG1kA9FYyGYU_kVQ6c6SawPojprWDMg60p6QGj09urSHGtdrUAKjw5V1ZJodCqqnFraLNKoGUXQZ058SSWAajrm7bTk5SUJoWbVEjUu3zSZm7VgXo4qiYw_muTj7-M4IuxBTMVSsGNt1HGwYcVqcW6qvudBAqavkIqXzgSyoOcukfzReYKS3IS13OMPC4oHKrZKzAwHdtrCgYazxVcprG-IVfkV43wOK7Lj3_1uKsLNYGkLgLiwL3CsHcIvg',
-    'Data Science': 'https://lh3.googleusercontent.com/aida-public/AB6AXuDGRTamqgySW9c6hOEBS99yC8fIXSbYjS4P-3rcPbPafVeA4F8r7jFII2QZ63dgmjdayxvhm70VxPsSCyr5VeUHDx3-0hq30xfdicfpe-UI3uY4gqfOMmL3nJdVr7Tdal4bXeHg7sU-8_F7k-5IkTxkmVVNVWQcz4PV0cu_G0O2OgBu9mCofQGyY1FybHdHqg1fKoJaebN1bllh__n2fO476WM7O37EucGCbT6cwiBF8zB-6lj__uQwdTWPnVDiYAHHM2NHcr7bnQ',
-    'Artificial Intelligence': 'https://lh3.googleusercontent.com/aida-public/AB6AXuBxpua4AGbWdU0hiw8KsKrG2rYT_0Oqv63YGBp8dx2jpmEwsxzHPVAAhTIVLOcnDokEO4KDjK45fBV3J4vhlNjDbiILmvzYZ_4hxj3KprO5Qv-1_LWqloNejcKGuawW7okNJWx7kbzwu-QVbhcg2bPgETH4qs3e5gRFFjEreUVeE7gkD01RYjlHGWKhbx5tVKkpdy_Sk09m57ClwYXUIjuifQRDEEtqgTiRyXcebn0rGiIueShQWP0SzYCh5zLw5NNYbcQpFtkjWg',
-    'UI/UX Design': 'https://lh3.googleusercontent.com/aida-public/AB6AXuBNsTbOGTKQrwkPQx2l0BFLQjZLOjXFQ0pM4PY3OXCRO_DojxcsTJJ0u-I1eoOOLWUSnw2OiDba1OYTbxGQ68IWDdB_KPrQnjqsD9fBPKAiEdiXswJ7DiO_593lfC2BleSKHpOhea10GRa3PWUc041nvLXe2Cla5FS-0NlCwcBLo7zShcXgAQmYSKckakPCv8ZbfFFR8CIc1zc-sad66jvXMyHLnPyAZgnOWzvz6-3K74UplaJcyIn6p1TCQccnRR6POewJ67qPSw',
-    'Mobile Development': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400',
-    'Cybersecurity': 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400',
-    'DevOps': 'https://images.unsplash.com/photo-1667372393119-3d4c48d07fc9?w=400',
-    'Blockchain': 'https://images.unsplash.com/photo-1639762681485-074b7f938ba0?w=400',
-  };
+       
+  
+  }
 
   const categoryDescriptions = {
-    'Web Development': 'Build modern websites and applications.',
-    'Data Science': 'Analyze and visualize data to make informed decisions.',
-    'Artificial Intelligence': 'Explore the future of technology with AI and machine learning.',
-    'UI/UX Design': 'Create beautiful and user-friendly interfaces.',
-    'Mobile Development': 'Build native apps for iOS and Android.',
-    'Cybersecurity': 'Protect systems and networks from digital attacks.',
-    'DevOps': 'Master CI/CD pipelines and cloud infrastructure.',
-    'Blockchain': 'Understand decentralized applications and crypto.',
+
   };
 
   const categories = categoriesData.map(cat => ({

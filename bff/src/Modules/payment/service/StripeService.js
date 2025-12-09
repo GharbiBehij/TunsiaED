@@ -1,6 +1,23 @@
-// StripeService - Stripe Payment Gateway Integration
-// Handles payment initiation, webhook verification, and status checks
-// Documentation: https://stripe.com/docs/api
+/**
+ * StripeService - Stripe Payment Gateway Integration
+ * 
+ * This is the SOLE Stripe integration point for the payment module.
+ * Handles all Stripe API interactions including:
+ * - Payment initiation (Checkout Sessions)
+ * - Webhook verification and processing
+ * - Payment status checks
+ * - Refund operations
+ * 
+ * Architecture:
+ * - PaymentService → StripeService → Stripe API
+ * - This service abstracts Stripe-specific logic from business logic
+ * 
+ * Documentation: https://stripe.com/docs/api
+ * API Version: 2025-11-17
+ * 
+ * @module StripeService
+ * @since 1.0.0
+ */
 
 import Stripe from 'stripe';
 

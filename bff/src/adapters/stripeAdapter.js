@@ -6,11 +6,11 @@ import Stripe from 'stripe';
 
 // Initialize Stripe with secret key from environment
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2023-10-16', // Use latest stable API version
+  apiVersion: '2025-11-17', // Use latest stable API version
 });
 
 const STRIPE_CONFIG = {
-  currency: 'usd', // Can be changed to 'eur', 'gbp', etc.
+  currency: process.env.STRIPE_CURRENCY || 'usd', // Can be changed to 'eur', 'gbp', etc.
   successUrl: process.env.STRIPE_SUCCESS_URL || 'https://tunisiaed-811f6.web.app/payment/success',
   cancelUrl: process.env.STRIPE_CANCEL_URL || 'https://tunisiaed-811f6.web.app/payment/cancel',
   webhookSecret: process.env.STRIPE_WEBHOOK_SECRET, // For webhook signature verification

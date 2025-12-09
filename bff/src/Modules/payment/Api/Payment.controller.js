@@ -3,9 +3,6 @@
 import { paymentService } from '../service/Payment.service.js';
 import { coursePurchaseOrchestrator } from '../../../orchestrators/CoursePurchase.orchestrator.js';
 import { userRepository } from '../../User/repository/User.repository.js';
-import { stripeService } from '../service/StripeService.js';
-import emailService from '../../../utils/EmailService.js'; // Emails via SMTP adapter
-import { courseService } from '../../Course/service/Course.service.js';
 
 export class PaymentController {
   /**
@@ -54,9 +51,8 @@ export class PaymentController {
     try {
       const { paymentId } = req.params;
       const data = req.body;
-      const transactionId = data.status === 'completed' ? req.body.transactionId : undefined;
       
-      const result = await paymentService.updatePayment(paymentId, data, transactionId);
+      const result = await paymentService.updatePayment(paymentId, req.user, data);
       
       if (!result) {
         return res.status(404).json({ error: 'Payment not found' });
@@ -238,7 +234,8 @@ export class PaymentController {
   /**
    * Initiate Stripe payment
    * Creates a payment record and returns Stripe Checkout URL
-   * @param {Object} req.body - { courseId, amount, note, firstName, lastName, email, phone }
+   * Uses orchestrator for proper flow: Controller → Orchestrator → Service → Stripe
+   * @param {Object} req.body - { paymentId, note, firstName, lastName, email, phone }
    */
   async initiateStripePayment(req, res) {
     const requestId = `REQ_${Date.now()}`;
@@ -254,63 +251,23 @@ export class PaymentController {
       console.log(`👤 [${requestId}] User ID:`, userId);
       const user = await userRepository.findByUid(userId);
       console.log(`✅ [${requestId}] User found:`, user.email);
-      const { courseId, amount, note, firstName, lastName, email, phone } = req.body;
+      const { paymentId, note, firstName, lastName, email, phone } = req.body;
 
-      // Step 1: Create internal payment record first
-      const internalPayment = await paymentService.createPayment(userId, {
-        courseId,
-        amount,
-        paymentType: 'course_purchase',
-        paymentMethod: 'stripe',
-        status: 'pending',
-      });
-
-      // Step 2: Initiate Stripe payment
-      let stripeResult;
-      try {
-        stripeResult = await stripeService.initiatePayment({
-          amount,
-          note: note || `Course Purchase: ${courseId}`,
-          firstName: firstName || user.firstName || 'Customer',
-          lastName: lastName || user.lastName || 'User',
-          email: email || user.email,
-          phone: phone || user.phone || '+21600000000',
-          orderId: internalPayment.id, // Link to our internal payment ID
-        });
-      } catch (stripeError) {
-        // Stripe is down or unavailable
-        if (stripeError.message.includes('STRIPE_SERVER_DOWN') || stripeError.message.includes('STRIPE_SERVER_ERROR')) {
-          // Update payment status to indicate gateway issue
-          await paymentService.updatePayment(internalPayment.id, {
-            status: 'failed',
-            failureReason: 'Payment gateway temporarily unavailable',
-          });
-          
-          return res.status(503).json({
-            error: 'Payment gateway temporarily unavailable',
-            message: 'Our payment system is currently under maintenance. Please try again in a few minutes or use the simulation option for testing.',
-            paymentId: internalPayment.id,
-            canSimulate: process.env.NODE_ENV !== 'production',
-          });
-        }
-        
-        // Other errors - rethrow
-        throw stripeError;
+      if (!paymentId) {
+        return res.status(400).json({ error: 'paymentId is required' });
       }
 
-      // Step 3: Update internal payment with Stripe session ID
-      await paymentService.updatePayment(internalPayment.id, {
-        stripeSessionId: stripeResult.sessionId,
-        checkoutUrl: stripeResult.checkoutUrl,
+      // Use orchestrator for Stripe checkout session creation
+      const result = await coursePurchaseOrchestrator.initiateStripeCheckout(user, paymentId, {
+        note: note || 'Course Purchase',
+        firstName: firstName || user.firstName || 'Customer',
+        lastName: lastName || user.lastName || 'User',
+        email: email || user.email,
+        phone: phone || user.phone || '+21600000000',
       });
 
-      res.status(201).json({
-        success: true,
-        paymentId: internalPayment.id,
-        sessionId: stripeResult.sessionId,
-        checkoutUrl: stripeResult.checkoutUrl,
-        amount: stripeResult.amount,
-      });
+      console.log(`✅ [${requestId}] Stripe payment initiated successfully:`, result.paymentId);
+      res.status(201).json(result);
     } catch (error) {
       console.error('Stripe initiation error:', error);
       res.status(400).json({ error: error.message });
@@ -326,16 +283,28 @@ export class PaymentController {
   async handleStripeWebhook(req, res) {
     const webhookId = `WHK_${Date.now()}`;
     console.log(`🔔 [${webhookId}] Stripe webhook received:`, {
-      eventType: req.body?.type,
-      eventId: req.body?.id,
+      hasSignature: !!req.headers['stripe-signature'],
       timestamp: new Date().toISOString()
     });
 
     try {
-      // Process and verify webhook data
-      console.log(`📋 [${webhookId}] Processing webhook data...`);
-      const webhookResult = stripeService.processWebhook(req.body);
-      console.log(`✅ [${webhookId}] Webhook processed:`, {
+      // Verify webhook signature first
+      const signature = req.headers['stripe-signature'];
+      if (!signature) {
+        console.error(`❌ [${webhookId}] Missing Stripe signature`);
+        return res.status(400).json({ error: 'Missing signature' });
+      }
+
+      // req.body is raw buffer from express.raw() middleware
+      const payload = req.body.toString('utf8');
+      
+      // Process webhook through orchestrator (handles verification + processing)
+      console.log(`🔄 [${webhookId}] Processing webhook through orchestrator...`);
+      const { verified, event, webhookResult } = await coursePurchaseOrchestrator.processStripeWebhook(payload, signature);
+      
+      console.log(`✅ [${webhookId}] Orchestrator webhook processing complete:`, {
+        verified,
+        eventType: event.type,
         success: webhookResult.success,
         orderId: webhookResult.orderId,
         transactionId: webhookResult.transactionId
@@ -368,63 +337,13 @@ export class PaymentController {
         return res.status(200).json({ received: true, message: 'Already processed' });
       }
 
-      // Get user and course info for email
-      const user = await userRepository.findByUid(payment.userId);
-      const course = await courseService.getCourseById(payment.courseId);
-      const courseTitle = course?.title || 'Course Purchase';
-
-      if (webhookResult.success) {
-        console.log(`💰 [${webhookId}] Payment successful - initiating purchase completion...`);
-        
-        // Payment successful - complete the purchase using orchestrator
-        const confirmationData = {
-          paymentId: payment.id,
-          gatewayTransactionId: String(webhookResult.transactionId),
-          paymentGateway: 'Stripe',
-        };
-        console.log(`🔄 [${webhookId}] Calling orchestrator with:`, confirmationData);
-
-        const orchestratorResult = await coursePurchaseOrchestrator.completePurchase(user, confirmationData);
-        console.log(`✅ [${webhookId}] Orchestrator completed:`, {
-          transactionId: orchestratorResult.transaction?.transactionId,
-          enrollmentId: orchestratorResult.enrollment?.enrollmentId
-        });
-
-        // Send success email via SMTP adapter (push notification sent via event bus)
-        console.log(`📧 [${webhookId}] Sending success email to:`, user.email);
-        const emailResult = await emailService.sendPaymentSuccessEmail({
-          email: user.email,
-          firstName: user.firstName || webhookResult.customer?.firstName || 'Customer',
-          lastName: user.lastName || webhookResult.customer?.lastName || '',
-          courseTitle,
-          amount: webhookResult.amount,
-          transactionId: String(webhookResult.transactionId),
-          paymentMethod: 'Stripe',
-        });
-        console.log(`${emailResult?.success !== false ? '✅' : '❌'} [${webhookId}] Email sent:`, emailResult?.success !== false ? 'success' : emailResult?.error);
-
+      // Handle completion through orchestrator (handles user lookup, course lookup, emails)
+      console.log(`🔄 [${webhookId}] Delegating to orchestrator for completion...`);
+      const completionResult = await coursePurchaseOrchestrator.handleWebhookCompletion(webhookResult, payment);
+      
+      if (completionResult.success) {
         console.log(`🎉 [${webhookId}] Stripe payment completed successfully:`, webhookResult.orderId);
       } else {
-        console.log(`❌ [${webhookId}] Payment failed - updating status...`);
-        
-        // Payment failed - update payment status
-        await paymentService.updatePayment(payment.id, {
-          status: 'failed',
-          failureReason: 'Payment declined by Stripe',
-        });
-        console.log(`✅ [${webhookId}] Payment status updated to failed`);
-
-        // Send failure email via SMTP adapter (push notification sent via event bus)
-        console.log(`📧 [${webhookId}] Sending failure email to:`, user.email);
-        await emailService.sendPaymentFailedEmail({
-          email: user.email,
-          firstName: user.firstName || webhookResult.customer?.firstName || 'Customer',
-          lastName: user.lastName || webhookResult.customer?.lastName || '',
-          courseTitle,
-          amount: payment.amount,
-          reason: 'Payment was declined or cancelled',
-        });
-
         console.log(`❌ [${webhookId}] Stripe payment failed:`, webhookResult.orderId);
       }
 
@@ -434,10 +353,21 @@ export class PaymentController {
     } catch (error) {
       console.error(`💥 [${webhookId}] Stripe webhook error:`, {
         error: error.message,
-        stack: error.stack,
-        orderId: req.body?.data?.object?.client_reference_id
+        stack: error.stack
       });
-      // Still respond 200 to avoid Stripe retries
+      
+      // Signature verification failed - reject immediately
+      if (error.message.includes('signature') || error.message.includes('Webhook')) {
+        return res.status(400).json({ error: 'Invalid signature' });
+      }
+      
+      // Database or transient errors - let Stripe retry
+      if (error.message.includes('Database') || error.message.includes('timeout')) {
+        console.log(`🔄 [${webhookId}] Transient error - Stripe will retry`);
+        return res.status(500).json({ error: 'Retry later' });
+      }
+      
+      // Other errors - respond 200 to prevent endless retries
       res.status(200).json({ received: true, error: error.message });
     }
   }
@@ -455,9 +385,8 @@ export class PaymentController {
 
       const { token } = req.params;
 
-      // Find payment by Stripe session ID
-      const payments = await paymentService.getUserPayments(userId);
-      const payment = payments.find(p => p.stripeSessionId === token);
+      // Use payment service to get Stripe payment status
+      const payment = await paymentService.getStripePaymentStatus(token);
 
       if (!payment) {
         return res.status(404).json({ error: 'Payment not found' });
@@ -480,24 +409,29 @@ export class PaymentController {
    * @param {Object} req.body - { courseId, amount, simulateSuccess: true/false }
    */
   async simulatePayment(req, res) {
+
     if (process.env.NODE_ENV === 'production') {
   return res.status(403).json({ error: 'Simulation not available in production' });
 }
+console.log('🚀 [PaymentSim] Simulating payment with data:', req.body);
     try {
       const userId = req.user?.uid;
+      console.log('👤 [PaymentSim] Authenticated user ID:', userId);
       if (!userId) {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
       const user = await userRepository.findByUid(userId);
+      console.log('✅ [PaymentSim] User found:', user.email); 
       const { courseId, simulateSuccess = true } = req.body;
+      console.log('🎯 [PaymentSim] Course ID:', courseId, 'Simulate Success:', simulateSuccess);
 
       // Get course info
       const course = await courseService.getCourseById(courseId);
+      console.log('📚 [PaymentSim] Course details:', course);
       if (!course) {
         return res.status(404).json({ error: 'Course not found' });
       }
-
       const amount = course.price || 0;
       const transactionId = `SIM_${Date.now()}`;
 
@@ -512,6 +446,7 @@ export class PaymentController {
           paymentMethod: 'simulation',
           status: 'pending',
         });
+        console.log('💳 [PaymentSim] Payment created with ID:', payment.id);
 
         // Step 2: Complete purchase via orchestrator
         const confirmationData = {
@@ -524,7 +459,7 @@ export class PaymentController {
         // Step 3: Send success email via SMTP adapter
         await emailService.sendPaymentSuccessEmail({
           email: user.email,
-          firstName: user.firstName || 'Customer',
+          firstName: user.firstName || 'Student',
           lastName: user.lastName || '',
           courseTitle: course.title,
           amount,

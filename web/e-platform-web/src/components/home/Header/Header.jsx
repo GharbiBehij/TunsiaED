@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
+import { useCart } from '../../../context/CartContext';
 import UserDropdown from './UserDropdown';
 
 // Logo Component
@@ -21,8 +22,10 @@ const Logo = () => (
 // using a 'type' prop to switch between layouts.
 export default function Header({ type = 'main' }) {
   const { isAuthenticated, isLoading, isAdmin, isInstructor } = useAuth();
+  const { getCartItemCount } = useCart();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const cartItemCount = getCartItemCount();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -77,19 +80,19 @@ export default function Header({ type = 'main' }) {
             <nav className="hidden items-center gap-8 md:flex">
               <Link
                 to="/"
-                className="text-sm font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary"
+                className="text-sm font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary transition"
               >
                 Home
               </Link>
               <Link
                 to="/courses"
-                className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary"
+                className="text-sm font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary transition"
               >
                 Courses
               </Link>
               <Link
                 to="/subscription"
-                className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-primary dark:hover:text-primary"
+                className="text-sm font-medium text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary transition"
               >
                 Subscription
               </Link>
@@ -106,6 +109,18 @@ export default function Header({ type = 'main' }) {
 
         {/* Right side: Auth actions / User menu */}
         <div className="flex items-center gap-4">
+          {/* Shopping Cart Icon */}
+          {type === 'main' && (
+            <Link to="/cart" className="relative p-2 text-slate-900 dark:text-white hover:text-primary dark:hover:text-primary transition">
+              <span className="material-symbols-outlined text-2xl">shopping_cart</span>
+              {cartItemCount > 0 && (
+                <span className="absolute top-0 right-0 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">
+                  {cartItemCount > 9 ? '9+' : cartItemCount}
+                </span>
+              )}
+            </Link>
+          )}
+          
           {/* New Course Button (Instructor only, Dashboard only) */}
           {type === 'dashboard' && isInstructor && (
             <Link 
@@ -149,6 +164,9 @@ export default function Header({ type = 'main' }) {
           )}
         </div>
       </div>
+
+      {/* Mobile Menu (if needed in future) */}
+      {/* For now, mobile users can click logo to go home, then access courses from home page */}
     </header>
   );
 }

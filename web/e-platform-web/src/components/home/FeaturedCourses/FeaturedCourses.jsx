@@ -1,8 +1,11 @@
 // src/components/FeaturedCourses/FeaturedCourses.jsx
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useSystemCourses } from '../../../hooks/Course/useCourse';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function FeaturedCourses() {
+  const navigate = useNavigate();
+  const { hasActiveSubscription } = useAuth();
   const { data: courses = [], isLoading, error } = useSystemCourses();
 
   // Show first 6 system courses
@@ -62,10 +65,10 @@ export default function FeaturedCourses() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {featuredCourses.map((course) => (
-            <Link
+            <div
               key={course.id}
-              to={`/courses/${course.id}`}
-              className="group flex flex-col bg-white dark:bg-background-dark rounded-xl overflow-hidden border border-neutral-light/20 dark:border-neutral-dark/20 transition-transform hover:scale-[1.02] hover:shadow-xl"
+              className="group flex flex-col bg-white dark:bg-background-dark rounded-xl overflow-hidden border border-neutral-light/20 dark:border-neutral-dark/20 transition-transform hover:scale-[1.02] hover:shadow-xl cursor-pointer"
+              onClick={() => navigate(`/courses/${course.id}`)}
             >
               <div
                 className="w-full h-48 bg-cover bg-center transition-transform group-hover:scale-105"
@@ -107,11 +110,21 @@ export default function FeaturedCourses() {
                     </span>
                   )}
                 </div>
-                <button className="mt-4 w-full flex items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition-colors">
+                <button 
+                  className="mt-4 w-full flex items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent card click
+                    if (course.isSystemCourse && hasActiveSubscription) {
+                      navigate(`/courses/${course.id}/learn`);
+                    } else {
+                      navigate(`/courses/${course.id}`);
+                    }
+                  }}
+                >
                   View Course
                 </button>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
 

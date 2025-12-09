@@ -15,37 +15,61 @@ import Redis from 'ioredis';
  */
 export const REDIS_KEY_REGISTRY = {
   // Dashboard caches
-  INSTRUCTOR_DASHBOARD: 'instructor_dashboard_*',
-  STUDENT_DASHBOARD: 'student_dashboard_*',
-  STUDENT_LEARNING_OVERVIEW: 'student_learning_overview_*',
+  INSTRUCTOR_DASHBOARD: (userId) => `dashboard:instructor:${userId}`,
+  STUDENT_DASHBOARD: (userId) => `dashboard:student:${userId}`,
+  STUDENT_LEARNING_OVERVIEW: (userId) => `dashboard:learning:${userId}`,
 
   // Progress and enrollment caches
-  USER_PROGRESS: 'user_progress_*',
-  COURSE_PROGRESS: 'course_progress_*',
-  ENROLLMENT: 'enrollment_*',
-  USER_PROGRESS_OVERVIEW: 'user_progress_overview_*',
+  USER_PROGRESS: (userId, courseId) => `progress:user:${userId}:course:${courseId}`,
+  COURSE_PROGRESS: (courseId, userId) => `progress:course:${courseId}:user:${userId}`,
+  USER_PROGRESS_OVERVIEW: (userId) => `progress:overview:${userId}`,
+  USER_PROGRESS_BY_ENROLLMENT: (userId, enrollmentId) => `progress:user:${userId}:enrollment:${enrollmentId}`,
+  
+  // Enrollment caches
+  ENROLLMENT: (enrollmentId) => `enrollment:${enrollmentId}`,
+  USER_ENROLLMENTS: (userId) => `enrollments:user:${userId}`,
+  COURSE_ENROLLMENTS: (courseId) => `enrollments:course:${courseId}`,
+  USER_COURSE_ENROLLMENT: (userId, courseId) => `enrollment:user:${userId}:course:${courseId}`,
 
-  // Instructor analytics
-  INSTRUCTOR_REVENUE: 'instructor_revenue_*',
-  INSTRUCTOR_COURSE_STATS: 'instructor_course_stats_*',
+  // Certificate caches
+  CERTIFICATE: (certificateId) => `certificate:${certificateId}`,
+  USER_CERTIFICATES: (userId) => `certificates:user:${userId}`,
+  COURSE_CERTIFICATES: (courseId) => `certificates:course:${courseId}`,
 
   // Transaction and payment caches
-  TRANSACTION: 'transaction_*',
-  PAYMENT: 'payment_*',
+  TRANSACTION: (transactionId) => `transaction:${transactionId}`,
+  PAYMENT: (paymentId) => `payment:${paymentId}`,
+  USER_TRANSACTIONS: (userId) => `transactions:user:${userId}`,
+  USER_PAYMENTS: (userId) => `payments:user:${userId}`,
+  COURSE_PAYMENTS: (courseId) => `payments:course:${courseId}`,
 
-  // Specific key generators (for exact key lookups)
-  instructorDashboard: (userId) => `instructor_dashboard_${userId}`,
-  studentDashboard: (userId) => `student_dashboard_${userId}`,
-  studentLearningOverview: (userId) => `student_learning_overview_${userId}`,
-  userProgress: (userId, courseId) => `user_progress_${userId}_course_${courseId}`,
-  courseProgress: (courseId, userId) => `course_progress_${courseId}_${userId}`,
-  enrollment: (enrollmentId) => `enrollment_${enrollmentId}`,
-  instructorRevenue: (userId) => `instructor_revenue_${userId}`,
-  instructorCourseStats: (userId) => `instructor_course_stats_${userId}`,
-  transaction: (transactionId) => `transaction_${transactionId}`,
-  payment: (paymentId) => `payment_${paymentId}`,
-  userProgressOverview: (userId) => `user_progress_overview_${userId}`,
-  userProgressByEnrollment: (userId, enrollmentId) => `user_progress_${userId}_enrollment_${enrollmentId}`,
+  // Instructor analytics
+  INSTRUCTOR_REVENUE: (userId) => `analytics:revenue:instructor:${userId}`,
+  INSTRUCTOR_COURSE_STATS: (userId, courseId) => `analytics:course:${courseId}:instructor:${userId}`,
+  INSTRUCTOR_STUDENTS: (userId) => `analytics:students:instructor:${userId}`,
+  
+  // Course caches
+  COURSE: (courseId) => `course:${courseId}`,
+  COURSE_CONTENT: (courseId) => `content:course:${courseId}`,
+  COURSE_CHAPTERS: (courseId) => `chapters:course:${courseId}`,
+  COURSE_LESSONS: (courseId) => `lessons:course:${courseId}`,
+  
+  // Purchase flow caches
+  PURCHASE_STATUS: (paymentId) => `purchase:status:${paymentId}`,
+  STRIPE_SESSION: (sessionId) => `stripe:session:${sessionId}`,
+
+  // Pattern matchers for bulk invalidation
+  PATTERNS: {
+    INSTRUCTOR_DASHBOARD: 'dashboard:instructor:*',
+    STUDENT_DASHBOARD: 'dashboard:student:*',
+    USER_PROGRESS: 'progress:user:*',
+    ENROLLMENTS: 'enrollments:*',
+    CERTIFICATES: 'certificates:*',
+    TRANSACTIONS: 'transactions:*',
+    PAYMENTS: 'payments:*',
+    ANALYTICS: 'analytics:*',
+    COURSES: 'course:*',
+  },
 };
 
 // ====================================================================

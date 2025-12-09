@@ -14,7 +14,6 @@ export default function Courses() {
     search: ''
   });
 
-  // THIS IS THE ONLY CHANGE — use React Query hook
   const { data: courses = [], isLoading } = useAllCourses();
 
   // Filter logic (client-side)

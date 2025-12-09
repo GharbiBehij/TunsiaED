@@ -7,7 +7,7 @@ import { courseService } from '../Modules/Course/service/Course.service.js';
 import { enrollmentService } from '../Modules/Enrollement/service/Enrollement.service.js';
 import { progressService } from '../Modules/Progress/service/Progress.service.js';
 import { EnrollmentPermission } from '../Modules/Enrollement/service/EnrollmentPermission.js';
-import { cacheClient } from '../core/cache/cacheClient.js';
+import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
 
 /**
  * Permission check: Can user view course students?
@@ -88,6 +88,13 @@ export class EnrollmentOrchestrator {
       console.error('Failed to create progress record:', progressError);
       // Don't fail enrollment if progress creation fails
     }
+
+    // 5. Invalidate affected cache keys
+    console.log('🗑️ [EnrollmentOrch] Invalidating cache keys for enrollment creation...');
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.USER_ENROLLMENTS);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.COURSE_ENROLLMENTS);
+    await cacheClient.delPattern(REDIS_KEY_REGISTRY.STUDENT_LEARNING_OVERVIEW);
 
     return enrollment;
   }

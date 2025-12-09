@@ -25,6 +25,10 @@ export class PaymentRepository {
   async findPaymentsByStatus(status) {
     return await paymentDao.getPaymentsByStatus(status);
   }
+
+  async findByStripeSessionId(sessionId) {
+    return await paymentDao.findByStripeSessionId(sessionId);
+  }
 }
 
 export const paymentRepository = new PaymentRepository();

@@ -405,6 +405,15 @@ export default function SecureCheckout({
 
   // Success State
   if (step === 'success') {
+    // Clear cart on payment success
+    React.useEffect(() => {
+      const shouldClearCart = sessionStorage.getItem('clearCartOnSuccess');
+      if (shouldClearCart === 'true') {
+        sessionStorage.setItem('cartCleared', 'true');
+        sessionStorage.removeItem('clearCartOnSuccess');
+      }
+    }, []);
+
     return (
       <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-8">
         <div className="text-center">

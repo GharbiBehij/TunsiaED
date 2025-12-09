@@ -70,6 +70,19 @@ export class PaymentDao {
       .get();
     return this._snapshotToRaw(snapshot);
   }
+
+  async findByStripeSessionId(sessionId) {
+    const snapshot = await this.collection
+      .where('stripeSessionId', '==', sessionId)
+      .limit(1)
+      .get();
+    
+    if (snapshot.empty) {
+      return null;
+    }
+    
+    return this._docToRaw(snapshot.docs[0]);
+  }
 }
 
 export const paymentDao = new PaymentDao();

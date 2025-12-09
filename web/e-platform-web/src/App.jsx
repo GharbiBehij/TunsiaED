@@ -4,6 +4,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 
 // Layouts
 import MainLayout from './Layouts/MainLayout';
@@ -12,7 +13,9 @@ import MainLayout from './Layouts/MainLayout';
 import HomePage from './pages/HomePage';
 import Course from './pages/Course';
 import CourseDetailPage from './pages/CourseDetail';
+import CoursePlayer from './pages/CoursePlayer';
 import SubscriptionPage from './pages/SubscriptionPage';
+import CartPage from './pages/CartPage';
 import CreateCourse from './pages/Instructor/CreateCourse';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
@@ -32,12 +35,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Routes>
+        <CartProvider>
+          <Routes>
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
-          <Route path="/course" element={<Course />} />
+          <Route path="/courses" element={<Course />} />
           <Route path="/courses/:courseId" element={<CourseDetailPage />} />
           <Route path="/subscription" element={<SubscriptionPage />} />
+          <Route path="/cart" element={<CartPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
 
@@ -45,7 +50,7 @@ function App() {
           <Route path="/payment/:paymentId" element={<ProtectedRoute roles={['student', 'instructor', 'admin']}><PaymentPage /></ProtectedRoute>} />
 
           {/* Course Content Routes - Protected by enrollment OR subscription */}
-          {/* <Route path="/courses/:courseId/learn" element={<CourseAccessRoute><CoursePlayer /></CourseAccessRoute>} /> */}
+          <Route path="/courses/:courseId/learn" element={<CourseAccessRoute><CoursePlayer /></CourseAccessRoute>} />
           {/* <Route path="/courses/:courseId/lessons/:lessonId" element={<CourseAccessRoute><LessonView /></CourseAccessRoute>} /> */}
 
           {/* Subscription Protected Routes - Premium content requiring active subscription */}
@@ -95,6 +100,7 @@ function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </CartProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

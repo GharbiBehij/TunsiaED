@@ -4,8 +4,11 @@ import { db } from '../../../../config/firebase.js';
 class StudentDao {
 
   // ===============================
-  // 1. GET USER ENROLLMENTS + COURSES
+  // 1. GET USER ENROLLMENTS + COURSES (alias for findEnrollmentsByUserId)
   // ===============================
+  async getStudentEnrollments(userId) {
+    return await this.findEnrollmentsByUserId(userId);
+  }
   async findEnrollmentsByUserId(userId) {
     const snapshot = await db
       .collection("Enrollments")

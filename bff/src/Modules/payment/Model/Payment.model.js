@@ -9,7 +9,10 @@
  * @property {string} userId - User ID who made the payment
  * @property {string} courseId - Course ID being purchased
  * @property {string} courseTitle - Course title for display
- * @property {number} amount - Payment amount
+ * @property {number} amount - Payment amount (after discount)
+ * @property {number|null} originalAmount - Original amount before discount
+ * @property {string|null} promoCode - Promo code used
+ * @property {number|null} promoDiscount - Discount amount from promo code
  * @property {string} currency - Currency code (default: TND)
  * @property {string} paymentType - Type of payment (course_purchase, subscription)
  * @property {string|null} subscriptionType - Subscription type if applicable
