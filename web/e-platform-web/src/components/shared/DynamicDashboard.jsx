@@ -1,6 +1,11 @@
 // Dynamic Dashboard Component - Renders dashboards based on configuration
 import React from 'react';
-import { getDashboardConfig, WIDGET_REGISTRY } from '../../config/dashboardConfig';
+import { 
+  getDashboardConfig, 
+  getWidgetComponent,
+  hasDashboardConfig,
+  validateDashboardConfig 
+} from '../../config/dashboardConfig';
 import { useAdminDashboard } from '../../hooks/Admin/useAdmin';
 import { useInstructorDashboard } from '../../hooks/Instructor/useInstructor';
 import { useStudentDashboard } from '../../hooks/Student/useStudent';
@@ -18,6 +23,19 @@ const DASHBOARD_HOOKS = {
  * @param {string} role - Dashboard role (admin, instructor, student)
  */
 export default function DynamicDashboard({ role }) {
+  // Validate role has configuration
+  if (!hasDashboardConfig(role)) {
+    console.warn(`[DynamicDashboard] Invalid role: ${role}, falling back to student`);
+  }
+  
+  // Validate dashboard configuration in development
+  if (process.env.NODE_ENV === 'development') {
+    const validation = validateDashboardConfig(role);
+    if (!validation.valid) {
+      console.error(`[DynamicDashboard] Configuration errors for ${role}:`, validation.errors);
+    }
+  }
+  
   const config = getDashboardConfig(role);
   const useDashboard = DASHBOARD_HOOKS[role] || useStudentDashboard;
   const { data, isLoading, isError, error, refetch } = useDashboard();
@@ -29,10 +47,15 @@ export default function DynamicDashboard({ role }) {
     [config, data, isLoading, isError]
   );
 
-  // Helper to get widget component
+  // Helper to get widget component using enhanced registry
   const renderWidget = (widgetId) => {
-    const Widget = WIDGET_REGISTRY[widgetId];
-    if (!Widget) return <div>Widget not found: {widgetId}</div>;
+    const Widget = getWidgetComponent(widgetId);
+    if (!Widget) {
+      console.error(`[DynamicDashboard] Widget not found: ${widgetId}`);
+      return <div className="p-4 border-2 border-dashed border-red-500 rounded-lg text-red-600">
+        Widget not found: {widgetId}
+      </div>;
+    }
     return <Widget {...(widgetProps[widgetId] || {})} />;
   };
 

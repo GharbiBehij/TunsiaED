@@ -1,6 +1,7 @@
 // src/components/ProtectedRoute.jsx
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { getPrimaryDashboardPath } from '../../lib/dashboardRouter';
 
 export default function ProtectedRoute({ children, roles }) {
   const { isAuthenticated, isLoading, isAdmin, isInstructor, isStudent } = useAuth();
@@ -11,8 +12,11 @@ export default function ProtectedRoute({ children, roles }) {
 
   const roleMap = { admin: isAdmin, instructor: isInstructor, student: isStudent };
 
+  // If roles specified, check user has at least one required role
   if (roles && !roles.some(role => roleMap[role])) {
-    return <Navigate to="/" replace />; // fallback if role not allowed
+    // Redirect to user's primary dashboard instead of homepage
+    const redirectPath = getPrimaryDashboardPath({ isAdmin, isInstructor, isStudent });
+    return <Navigate to={redirectPath} replace />;
   }
 
   return children;

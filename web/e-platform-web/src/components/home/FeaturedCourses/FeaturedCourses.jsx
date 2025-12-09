@@ -1,5 +1,5 @@
 // src/components/FeaturedCourses/FeaturedCourses.jsx
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useSystemCourses } from '../../../hooks/Course/useCourse';
 import { useAuth } from '../../../context/AuthContext';
 

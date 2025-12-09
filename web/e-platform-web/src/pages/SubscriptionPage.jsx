@@ -141,7 +141,7 @@ export default function SubscriptionPage() {
     setSelectedPlan(planId);
 
     try {
-      const result = await PaymentService.mutateAsync(planId);
+      const result = await initiateSubscription.mutateAsync(planId);
       // Redirect to payment page
       
     } catch (error) {

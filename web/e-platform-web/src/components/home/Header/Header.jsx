@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { useCart } from '../../../context/CartContext';
+import { getDashboardTitle } from '../../../lib/dashboardRouter';
 import UserDropdown from './UserDropdown';
 
 // Logo Component
@@ -21,7 +22,7 @@ const Logo = () => (
 // This component combines the logic of the main Header and the DashboardHeader
 // using a 'type' prop to switch between layouts.
 export default function Header({ type = 'main' }) {
-  const { isAuthenticated, isLoading, isAdmin, isInstructor } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, isInstructor,isStudent } = useAuth();
   const { getCartItemCount } = useCart();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -40,12 +41,8 @@ export default function Header({ type = 'main' }) {
     }
   }, [isDropdownOpen]);
 
-  // Role-based dashboard title
-  const getDashboardTitle = () => {
-    if (isAdmin) return "Admin Dashboard";
-    if (isInstructor) return "Instructor Dashboard";
-    return "My Learning Dashboard";
-  };
+  // Role-based dashboard title using centralized utility
+  const dashboardTitle = getDashboardTitle({ isAdmin, isInstructor, isStudent });
 
   // Loading skeleton
   if (isLoading) {
@@ -102,7 +99,7 @@ export default function Header({ type = 'main' }) {
           {/* Dashboard title (for dashboard) */}
           {type === 'dashboard' && (
             <h2 className="text-2xl font-bold text-slate-900 dark:text-white">
-              {getDashboardTitle()}
+              {dashboardTitle}
             </h2>
           )}
         </div>

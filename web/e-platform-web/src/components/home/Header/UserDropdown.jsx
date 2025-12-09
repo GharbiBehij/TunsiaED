@@ -1,22 +1,18 @@
 // UserDropdown.jsx
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext'; // Assuming this path is correct for the user
+import { useAuth } from '../../../context/AuthContext';
+import { getPrimaryDashboardPath } from '../../../lib/dashboardRouter';
 
 // Helper component for role-based dashboard link
 function DashboardLink({ onClose }) {
   const { isAdmin, isInstructor, isStudent } = useAuth();
   
-  const getDashboardPath = () => {
-    if (isAdmin) return '/dashboard/admin';
-    if (isInstructor) return '/dashboard/instructor';
-    if (isStudent) return '/dashboard/student';
-    return '/dashboard/student'; // Default to student
-  };
+  const dashboardPath = getPrimaryDashboardPath({ isAdmin, isInstructor, isStudent });
 
   return (
     <Link
-      to={getDashboardPath()}
+      to={dashboardPath}
       className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
       onClick={onClose}
     >
