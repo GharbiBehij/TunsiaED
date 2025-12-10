@@ -10,6 +10,7 @@ import { useEnrollInCourse } from '../hooks/Enrollment/useEnrollment';
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
+  console.log('📋 [CourseDetail] courseId from params:', courseId);
   const navigate = useNavigate();
   const { isAuthenticated, user, isStudent, hasActiveSubscription } = useAuth();
   const { addToCart, isInCart } = useCart();
@@ -88,6 +89,8 @@ export default function CourseDetailPage() {
             paymentType: 'course_purchase',
             paymentMethod: 'stripe', // Default to Stripe
           });
+          console.log('💳 [CourseDetail] Purchase initiated:', result);
+          console.log('💳 [CourseDetail] Navigating to payment:', result.paymentId);
           
           // Redirect to payment page with payment ID
           navigate(`/payment/${result.paymentId}`);

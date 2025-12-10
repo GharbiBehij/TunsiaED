@@ -66,9 +66,9 @@ export default function FeaturedCourses() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {featuredCourses.map((course) => (
             <div
-              key={course.id}
+              key={course.courseId}
               className="group flex flex-col bg-white dark:bg-background-dark rounded-xl overflow-hidden border border-neutral-light/20 dark:border-neutral-dark/20 transition-transform hover:scale-[1.02] hover:shadow-xl cursor-pointer"
-              onClick={() => navigate(`/courses/${course.id}`)}
+              onClick={() => navigate(`/courses/${course.courseId}`)}
             >
               <div
                 className="w-full h-48 bg-cover bg-center transition-transform group-hover:scale-105"

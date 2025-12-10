@@ -13,6 +13,8 @@ export const useSubscriptionPlans = () => {
     queryFn: SubscriptionService.getSubscriptionPlans,
     staleTime: 30 * 60 * 1000, // Cache for 30 minutes (plans rarely change)
     gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+    refetchOnMount: false, // Don't refetch on component mount if data is still fresh
+    refetchOnReconnect: false, // Don't refetch on reconnect if data is still fresh
   });
 };
 

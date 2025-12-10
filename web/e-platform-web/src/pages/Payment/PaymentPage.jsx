@@ -12,21 +12,23 @@ import { useAuth } from '../../context/AuthContext';
  */
 export default function PaymentPage() {
   const { paymentId } = useParams();
+  console.log('💳 [PaymentPage] paymentId from params:', paymentId);
   const navigate = useNavigate();
   const { user } = useAuth();
   const [checkoutData, setCheckoutData] = useState(null);
 
   // Fetch payment details
   const { data: payment, isLoading, isError, error } = usePaymentById(paymentId);
+  console.log('💳 [PaymentPage] payment data:', payment);
 
   // Transform payment data to checkout format
   useEffect(() => {
-    if (payment) {
+    if (payment && user) {
       // Verify payment belongs to current user
-      if (payment.userId !== user?.userId) {
+        if (payment.userId && payment.userId !== user?.uid) {
         navigate('/');
         return;
-      }
+}
 
       // Check if already completed
       if (payment.status === 'completed') {
@@ -36,7 +38,7 @@ export default function PaymentPage() {
 
       // Transform to checkout data format
       const data = {
-        paymentId: payment.id,
+        paymentId: payment.paymentId,
         courseId: payment.courseId,
         paymentType: payment.paymentType || 'course_purchase',
         subscriptionType: payment.subscriptionType,
@@ -62,15 +64,15 @@ export default function PaymentPage() {
   // Handle successful payment
   const handleSuccess = (result) => {
     // Navigate to student dashboard with success message
-    navigate('/pages/student/studentdashboard', { 
-      state: { 
-        paymentSuccess: true,
-        courseId: payment?.courseId,
-        enrollmentId: result?.enrollment?.enrollmentId,
-        message: 'Payment completed successfully! You can now access your course.'
-      },
-      replace: true
-    });
+navigate('/dashboard/student', { 
+  state: { 
+    paymentSuccess: true,
+    courseId: payment?.courseId,
+    enrollmentId: result?.enrollment?.enrollmentId,
+    message: 'Payment completed successfully! You can now access your course.',
+  },
+  replace: true,
+});
   };
 
   // Handle cancel
