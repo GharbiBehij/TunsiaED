@@ -1,7 +1,7 @@
 // src/pages/Payment/PaymentPage.jsx
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { usePaymentById, useCompletePurchase } from '../../hooks/Payment/usePayment';
+import { usePaymentById } from '../../hooks/Payment/usePayment';
 import SecureCheckout from '../../components/Dashboard/StudentDashboard/Payment/SecureCheckout';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,13 +32,13 @@ export default function PaymentPage() {
 
       // Check if already completed
       if (payment.status === 'completed') {
-        navigate('/pages/student/studentdashboard');
+        navigate('/dashboard/student');
         return;
       }
 
       // Transform to checkout data format
       const data = {
-        paymentId: payment.paymentId,
+        paymentId: payment.paymentId, // pass paymentId down
         courseId: payment.courseId,
         paymentType: payment.paymentType || 'course_purchase',
         subscriptionType: payment.subscriptionType,
@@ -63,8 +63,7 @@ export default function PaymentPage() {
 
   // Handle successful payment
   const handleSuccess = (result) => {
-    // Navigate to student dashboard with success message
-    navigate('/pages/student/studentdashboard', { 
+    navigate('/dashboard/student', { 
       state: { 
         paymentSuccess: true,
         courseId: payment?.courseId,

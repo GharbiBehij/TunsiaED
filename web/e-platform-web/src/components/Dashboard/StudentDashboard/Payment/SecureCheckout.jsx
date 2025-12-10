@@ -4,7 +4,7 @@
 // Payment methods: 'card' | 'paypal' | 'stripe' (International gateway)
 // Test mode: Uses simulation endpoint for testing when payment gateway is unavailable
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   useInitiatePurchase, 
   useCompletePurchase, 
@@ -15,12 +15,6 @@ import {
 
 /**
  * PaymentMethodCard - Selectable payment method option
- * @param {string} method - Payment method ID
- * @param {string} label - Display label
- * @param {string} icon - Material symbol icon name
- * @param {string} description - Optional description text
- * @param {boolean} selected - Whether this method is selected
- * @param {Function} onSelect - Callback when selected
  */
 const PaymentMethodCard = ({ method, label, icon, description, selected, onSelect }) => (
   <button
@@ -67,20 +61,16 @@ const StripeCheckout = ({ checkoutUrl }) => {
     </div>
   );
 };
+
 /**
  * SecureCheckout - Payment form widget
- * @param {Object} data - Checkout data { items, courseId, subtotal, tax, total, paymentType }
- * @param {boolean} isLoading - Loading state from dashboard
- * @param {boolean} isError - Error state from dashboard
- * @param {boolean} testMode - Enable test mode for simulation (default: false)
- * @param {Function} onSuccess - Callback on successful payment
- * @param {Function} onCancel - Callback when user cancels checkout
+ * @param {Object} data - Checkout data { paymentId, items, courseId, subtotal, tax, total, paymentType }
  */
 export default function SecureCheckout({ 
   data = {}, 
   isLoading = false,   
   isError = false, 
-  testMode = false,// Enable test mode when payment gateway is unavailable
+  testMode = false, // Enable test mode when payment gateway is unavailable
   onSuccess,
   onCancel
 }) {
@@ -149,8 +139,9 @@ export default function SecureCheckout({
     }
   }, [stripeStatus, onSuccess]);
 
-  // Extract checkout data
+  // Extract checkout data, including paymentId from parent
   const { 
+    paymentId,
     items = [], 
     courseId, 
     subtotal = 0, 
@@ -240,7 +231,7 @@ export default function SecureCheckout({
         
         const result = await simulatePayment.mutateAsync({
           courseId: courseId || items[0]?.courseId,
-          simulateSuccess: simulateSuccess,
+          simulateSuccess,
         });
 
         if (result.success) {
@@ -267,13 +258,14 @@ export default function SecureCheckout({
         setErrorMessage('');
         
         const stripeData = {
+          paymentId, // use paymentId from data
           courseId: courseId || items[0]?.courseId,
           amount: total,
           note: items.length > 0 ? `Course: ${items[0]?.title}` : 'Course Purchase',
           firstName: firstName || 'Customer',
           lastName: lastName || 'User',
           email: email || '',
-          phone: phone,
+          phone,
         };
 
         const result = await initiateStripe.mutateAsync(stripeData);
@@ -300,6 +292,7 @@ export default function SecureCheckout({
     try {
       // Step 1: Initiate purchase
       const purchaseData = {
+        paymentId, // use paymentId from data
         courseId: courseId || items[0]?.courseId,
         paymentType,
         subscriptionType,
@@ -315,7 +308,7 @@ export default function SecureCheckout({
       // Step 2: Complete purchase (simulating payment gateway confirmation)
       const confirmationData = {
         paymentId: initiateResult.paymentId,
-        gatewayTransactionId: `TXN_${Date.now()}`, // In real app, this comes from payment gateway
+        gatewayTransactionId: `TXN_${Date.now()}`,
         paymentGateway: paymentMethod,
       };
 
@@ -626,7 +619,6 @@ export default function SecureCheckout({
         {/* Card Details (only for card payment) */}
         {paymentMethod === 'card' && (
           <div className="space-y-4">
-            {/* Cardholder Name */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Cardholder Name
@@ -641,7 +633,6 @@ export default function SecureCheckout({
               />
             </div>
 
-            {/* Card Number */}
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Card Number
@@ -656,7 +647,6 @@ export default function SecureCheckout({
               />
             </div>
 
-            {/* Expiry & CVV */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">

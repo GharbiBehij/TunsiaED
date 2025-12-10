@@ -73,21 +73,38 @@ export const PaymentMapper = {
     return entities.map(entity => this.toModel(entity.paymentId || entity.id, entity)).filter(Boolean);
   },
 
-  validateCreate(data) {
-    const requiredFields = ['userId', 'courseId', 'courseTitle', 'amount'];
-    
-    for (const field of requiredFields) {
-      if (!data[field] && data[field] !== 0) {
-        const error = new Error(`${field} is required`);
-        error.status = 400;
-        throw error;
-      }
-    }
+ validateCreate(data) {
+  // Always required
+  if (!data.userId) {
+    const error = new Error('userId is required');
+    error.status = 400;
+    throw error;
+  }
+  if (!data.courseTitle) {
+    const error = new Error('courseTitle is required');
+    error.status = 400;
+    throw error;
+  }
+  if (typeof data.amount !== 'number' || data.amount < 0) {
+    const error = new Error('Amount must be a non-negative number');
+    error.status = 400;
+    throw error;
+  }
 
-    if (typeof data.amount !== 'number' || data.amount < 0) {
-      const error = new Error('Amount must be a non-negative number');
-      error.status = 400;
-      throw error;
-    }
-  },
+  const paymentType = data.paymentType || (data.planId ? 'subscription' : 'course_purchase');
+
+  // Course purchase: require courseId
+  if (paymentType === 'course_purchase' && !data.courseId) {
+    const error = new Error('courseId is required for course purchases');
+    error.status = 400;
+    throw error;
+  }
+
+  // Subscription: require planId
+  if (paymentType === 'subscription' && !data.planId) {
+    const error = new Error('planId is required for subscriptions');
+    error.status = 400;
+    throw error;
+  }
+},
 };
