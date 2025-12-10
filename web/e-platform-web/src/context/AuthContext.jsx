@@ -11,6 +11,7 @@ const API_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.
 
 // ✅ Validation schema for localStorage data
 const PendingProfileSchema = z.object({
+  email: firebaseUser.email,
   name: z.string().max(100),
   role: z.enum(['student', 'instructor']),
   phone: z.string().max(20).nullable().optional(),

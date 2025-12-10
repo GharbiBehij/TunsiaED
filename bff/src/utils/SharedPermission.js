@@ -15,7 +15,12 @@ export function isInstructor(user) {
   return user?.isInstructor === true;
 }
 export function isStudent(user) {
-  return user?.isStudent === true;
+  if (!user) return false;
+  return (
+    user.isStudent === true ||              // top-level flag
+    user.role === 'student' ||              // role field, if you have it
+    user.roleFlags?.isStudent === true      // nested flags, if you use them
+  );
 }
 /**
  * Check if user owns a course (is the instructor of the course)

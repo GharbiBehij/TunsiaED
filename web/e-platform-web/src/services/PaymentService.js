@@ -127,10 +127,15 @@ class PaymentService {
   /**
    * Fetches payments for a specific course
    * @param {string} courseId - The ID of the course
+   * @param {string} token - Authentication token (requires admin or instructor role)
    * @returns {Promise<Array>} List of payments for the course
    */
-  static async getCoursePayments(courseId) {
-    const res = await fetch(`${API_URL}/api/v1/payment/course/${courseId}`);
+  static async getCoursePayments(courseId, token) {
+    const res = await fetch(`${API_URL}/api/v1/payment/course/${courseId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
     if (!res.ok) throw new Error('Failed to fetch course payments');
     return res.json();
   }
@@ -138,10 +143,15 @@ class PaymentService {
   /**
    * Fetches payments by status
    * @param {string} status - Payment status (e.g., 'pending', 'completed')
+   * @param {string} token - Authentication token (requires admin role)
    * @returns {Promise<Array>} List of payments with the specified status
    */
-  static async getPaymentsByStatus(status) {
-    const res = await fetch(`${API_URL}/api/v1/payment/status/${status}`);
+  static async getPaymentsByStatus(status, token) {
+    const res = await fetch(`${API_URL}/api/v1/payment/status/${status}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
     if (!res.ok) throw new Error('Failed to fetch payments by status');
     return res.json();
   }

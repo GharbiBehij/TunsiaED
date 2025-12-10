@@ -29,6 +29,7 @@ class TransactionService {
     const res = await fetch(`${API_URL}/api/v1/transaction/my-transactions`, {
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
     if (!res.ok) throw new Error('Failed to fetch user transactions');
@@ -45,6 +46,7 @@ class TransactionService {
     const res = await fetch(`${API_URL}/api/v1/transaction/${transactionId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
     if (!res.ok) throw new Error('Failed to fetch transaction');
@@ -61,6 +63,7 @@ class TransactionService {
     const res = await fetch(`${API_URL}/api/v1/transaction/payment/${paymentId}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
     if (!res.ok) throw new Error('Failed to fetch transactions by payment');
@@ -70,10 +73,16 @@ class TransactionService {
   /**
    * Fetches transactions for a specific course
    * @param {string} courseId - The ID of the course
+   * @param {string} token - Authentication token (requires admin or instructor role)
    * @returns {Promise<Array>} List of transactions for the course
    */
-  static async getCourseTransactions(courseId) {
-    const res = await fetch(`${API_URL}/api/v1/transaction/course/${courseId}`);
+  static async getCourseTransactions(courseId, token) {
+    const res = await fetch(`${API_URL}/api/v1/transaction/course/${courseId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
     if (!res.ok) throw new Error('Failed to fetch course transactions');
     return res.json();
   }
@@ -83,12 +92,17 @@ class TransactionService {
    * @param {string} status - Transaction status (e.g., 'pending', 'completed')
    * @returns {Promise<Array>} List of transactions with the specified status
    */
-  static async getTransactionsByStatus(status) {
-    const res = await fetch(`${API_URL}/api/v1/transaction/status/${status}`);
+  static async getTransactionsByStatus(status,token) {
+    const res = await fetch(`${API_URL}/api/v1/transaction/status/${status}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
     if (!res.ok) throw new Error('Failed to fetch transactions by status');
     return res.json();
   }
-
   /**
    * Updates an existing transaction
    * @param {string} transactionId - The ID of the transaction to update
