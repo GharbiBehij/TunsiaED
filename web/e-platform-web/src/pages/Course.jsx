@@ -1,6 +1,5 @@
 // src/pages/Courses.jsx
 import { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
 import { useAllCourses } from '../hooks/Course/useCourse';
 import CourseList from '../components/Courses/CourseList';
 import CourseFilters from '../components/Courses/CourseFilters';

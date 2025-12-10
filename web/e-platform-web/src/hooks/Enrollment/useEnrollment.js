@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import EnrollmentService from '../../services/EnrollmentService';
 import { useAuth } from '../../context/AuthContext';
-import { ENROLLMENT_KEYS, STUDENT_KEYS, COURSE_KEYS } from '../../core/query/queryKeys';
+import { ENROLLMENT_KEYS } from '../../core/query/queryKeys';
 import { getAffectedQueryKeys } from '../../core/query/mutationEffectMap';
 
 /**

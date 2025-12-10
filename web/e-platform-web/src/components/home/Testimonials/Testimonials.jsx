@@ -42,7 +42,7 @@ export default function Testimonials() {
                   <div className="flex items-center mt-6 gap-4">
                     <img
                       src={t.img}
-                      alt={`Photo of ${t.name}`}
+                      alt={t.name}
                       className="size-12 rounded-full object-cover ring-2 ring-primary/20"
                     />
                     <div>

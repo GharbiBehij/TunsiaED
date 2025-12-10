@@ -144,8 +144,6 @@ export default function SecureCheckout({
     paymentId,
     items = [], 
     courseId, 
-    subtotal = 0, 
-    tax = 0, 
     total = 0, 
     paymentType = 'course_purchase',
     subscriptionType, // 'monthly' | 'yearly' (only for subscription)
@@ -212,12 +210,7 @@ export default function SecureCheckout({
     return true;
   };
 
-  // Handle Stripe completion (called after return from Stripe)
-  const handleStripeComplete = () => {
-    setStep('processing');
-    // Start polling for payment status
-    refetchStripeStatus();
-  };
+
 
   // Handle form submission
   const handleSubmit = async (e) => {

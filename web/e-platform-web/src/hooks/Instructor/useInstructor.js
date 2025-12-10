@@ -1,6 +1,6 @@
 // Centralized Instructor Actor React Query hooks
 // Organized into DIRECT (single module) and ORCHESTRATED (cross-module) hooks
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import InstructorService from '../../services/InstructorService';
 import { useAuth } from '../../context/AuthContext';
 import { INSTRUCTOR_KEYS } from '../../core/query/queryKeys';

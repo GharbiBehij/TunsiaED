@@ -28,7 +28,6 @@ import StudentDashboard from './pages/Student/StudentDashboard';
 
 // Route Protection Components
 import ProtectedRoute from './components/shared/ProtectedRoute'; // Requires authentication + specific roles
-import SubscriptionProtectedRoute from './components/shared/SubscriptionProtectedRoute'; // Requires active subscription
 import CourseAccessRoute from './components/shared/CourseAccessRoute'; // Grants access based on enrollment, subscription, or free course
 
 function App() {

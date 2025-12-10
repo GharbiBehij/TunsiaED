@@ -7,7 +7,7 @@ export default function ActivePromotions({ data: promotions = [], isLoading }) {
     <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm p-6">
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-bold text-gray-900 dark:text-white">Active Promotions</h3>
-        <a className="text-sm font-medium text-primary hover:underline" href="#">View All</a>
+        <button type="button" className="text-sm font-medium text-primary hover:underline">View All</button>
       </div>
       <div className="space-y-4">
         {promotions.map((promo) => (

@@ -52,7 +52,7 @@ export default function ActivityFeed({
         </div>
 
         <div className="flow-root">
-          <ul className="-mb-8" role="list">
+          <ul className="-mb-8">
             {activities.map((item, index) => {
               const { bg, text } = getColorClasses(item.color);
               const isLast = index === activities.length - 1;
@@ -83,47 +83,47 @@ export default function ActivityFeed({
                           {item.type === 'message' ? (
                             <>
                               You received a new message from{' '}
-                              <a
+                              <button
+                                type="button"
                                 className="font-medium text-[#111418] hover:underline"
-                                href="#"
                               >
                                 {item.user}
-                              </a>
+                              </button>
                               .
                             </>
                           ) : item.type === 'rating' ? (
                             <>
-                              <a
+                              <button
+                                type="button"
                                 className="font-medium text-[#111418] hover:underline"
-                                href="#"
                               >
                                 {item.user}
-                              </a>{' '}
+                              </button>{' '}
                               left a 5-star rating on{' '}
-                              <a
+                              <button
+                                type="button"
                                 className="font-medium text-[#111418] hover:underline"
-                                href="#"
                               >
                                 {item.target}
-                              </a>
+                              </button>
                               .
                             </>
                           ) : (
                             <>
                               New student{' '}
-                              <a
+                              <button
+                                type="button"
                                 className="font-medium text-[#111418] hover:underline"
-                                href="#"
                               >
                                 {item.user}
-                              </a>{' '}
+                              </button>{' '}
                               {item.action}{' '}
-                              <a
+                              <button
+                                type="button"
                                 className="font-medium text-[#111418] hover:underline"
-                                href="#"
                               >
                                 {item.target}
-                              </a>
+                              </button>
                               .
                             </>
                           )}

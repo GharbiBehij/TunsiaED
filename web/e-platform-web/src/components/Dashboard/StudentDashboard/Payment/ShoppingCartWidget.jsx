@@ -70,7 +70,7 @@ export default function ShoppingCartWidget({
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
 
   // Calculate totals
-  const { subtotal, tax, total, finalTotal } = useMemo(() => {
+  const { subtotal, tax, finalTotal } = useMemo(() => {
     const items = data || [];
     const calculatedSubtotal = items.reduce((sum, item) => sum + Number(item.price || 0), 0);
     const discountedSubtotal = calculatedSubtotal - promoDiscount;

@@ -11,7 +11,7 @@ const TAX_RATE = 0.08; // 8% tax
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { cartItems, removeFromCart, incrementQuantity, decrementQuantity, clearCart, getCartTotal } = useCart();
   const initiatePurchase = useInitiatePurchase();
   

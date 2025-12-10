@@ -12,7 +12,7 @@ export default function CourseDetailPage() {
   const { courseId } = useParams();
   console.log('📋 [CourseDetail] courseId from params:', courseId);
   const navigate = useNavigate();
-  const { isAuthenticated, user, isStudent, hasActiveSubscription } = useAuth();
+  const { isAuthenticated, isStudent, hasActiveSubscription } = useAuth();
   const { addToCart, isInCart } = useCart();
   const { data: course, isLoading, isError } = useCourseById(courseId);
   const { data: chapters = [], isLoading: chaptersLoading } = useChaptersByCourse(courseId);
