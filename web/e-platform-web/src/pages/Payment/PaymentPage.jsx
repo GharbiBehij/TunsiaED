@@ -25,14 +25,14 @@ export default function PaymentPage() {
   useEffect(() => {
     if (payment && user) {
       // Verify payment belongs to current user
-        if (payment.userId && payment.userId !== user?.uid) {
+      if (payment.userId && user.uid && payment.userId !== user.uid) {
         navigate('/');
         return;
-}
+      }
 
       // Check if already completed
       if (payment.status === 'completed') {
-        navigate('/dashboard/student');
+        navigate('/pages/student/studentdashboard');
         return;
       }
 
@@ -64,15 +64,15 @@ export default function PaymentPage() {
   // Handle successful payment
   const handleSuccess = (result) => {
     // Navigate to student dashboard with success message
-navigate('/dashboard/student', { 
-  state: { 
-    paymentSuccess: true,
-    courseId: payment?.courseId,
-    enrollmentId: result?.enrollment?.enrollmentId,
-    message: 'Payment completed successfully! You can now access your course.',
-  },
-  replace: true,
-});
+    navigate('/pages/student/studentdashboard', { 
+      state: { 
+        paymentSuccess: true,
+        courseId: payment?.courseId,
+        enrollmentId: result?.enrollment?.enrollmentId,
+        message: 'Payment completed successfully! You can now access your course.',
+      },
+      replace: true,
+    });
   };
 
   // Handle cancel

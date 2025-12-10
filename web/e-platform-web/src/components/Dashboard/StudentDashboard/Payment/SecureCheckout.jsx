@@ -214,8 +214,8 @@ export default function SecureCheckout({
       );
     }
     if (paymentMethod === 'stripe') {
-      // Phone is optional for Stripe
-      return true;
+      // Require courseId or items for Stripe
+      return (courseId || (items && items.length > 0)) && total > 0;
     }
     // For PayPal, just need to be selected
     return true;

@@ -32,7 +32,6 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [authAction, setAuthAction] = useState(null);
 
-
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -173,23 +172,6 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         console.error('❌ Google redirect error:', error);
 
-        // Handle specific Firebase auth errors
-        if (error.code === 'auth/popup-closed-by-user') {
-          console.log('ℹ️ User closed Google sign-in popup');
-        } else if (error.code === 'auth/cancelled-popup-request') {
-          console.log('ℹ️ Google sign-in was cancelled');
-        } else if (error.code === 'auth/popup-blocked') {
-          console.log('ℹ️ Google sign-in popup was blocked by browser');
-        } else if (error.code === 'auth/redirect-cancelled-by-user') {
-          console.log('ℹ️ Google redirect was cancelled by user');
-        } else {
-          console.error('❌ Unexpected Google auth error:', {
-            code: error.code,
-            message: error.message,
-            customData: error.customData
-          });
-        }
-
         localStorage.removeItem('googleAuthInProgress');
         setIsLoading(false);
 
@@ -310,11 +292,22 @@ export const AuthProvider = ({ children }) => {
         setAuthAction(null);
       }
 
+      // 🔁 Fallback: logged in user on /login but no authAction → still redirect away
+      if (firebaseUser && location.pathname === '/login' && !authAction) {
+        const redirectPath = localStorage.getItem('redirectAfterAuth');
+        localStorage.removeItem('redirectAfterAuth');
+        const targetPath =
+          redirectPath && redirectPath !== '/login' && redirectPath !== '/signup'
+            ? redirectPath
+            : '/';
+        navigate(targetPath, { replace: true });
+      }
+
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [navigate, authAction]);
+  }, [navigate, authAction, location.pathname]);
 
   useEffect(() => {
     const keepAlive = setInterval(() => {
