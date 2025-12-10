@@ -122,7 +122,7 @@ app.use('/api/v1/instructor', instructorRouter);
 app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
 app.use('/api/v1/shopping-cart', registerShoppingCartRoutes); // Promo code routes
-app.use('/api/v1'/'payment', paymentRouter);
+app.use('/api/v1/payment', paymentRouter);
   // Promo code routes
 
 // 6️ Global error handler
