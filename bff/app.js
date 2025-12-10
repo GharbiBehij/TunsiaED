@@ -19,6 +19,7 @@ import { registerShoppingCartRoutes } from './src/Modules/ShoppinCart/index.js';
 import { initializeFirebaseNotifications } from './src/events/index.js';
 import { seedSystemData } from './src/systemCourses/seedSystemCourses.js';
 import { createRateLimiters } from './src/middlewares/rateLimiter.js';
+import { paymentController } from './src/Modules/payment/Api/Payment.controller.js';
 
 const app = express();
 
@@ -123,6 +124,7 @@ app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
 app.use('/api/v1/shopping-cart', registerShoppingCartRoutes); // Promo code routes
 app.use('/api/v1/payment', paymentRouter);
+app.post('/stripe/webhook',paymentController.handleStripeWebhook);
   // Promo code routes
 
 // 6️ Global error handler
