@@ -90,10 +90,17 @@ export default function CourseDetailPage() {
             paymentMethod: 'stripe', // Default to Stripe
           });
           console.log('💳 [CourseDetail] Purchase initiated:', result);
-          console.log('💳 [CourseDetail] Navigating to payment:', result.paymentId);
           
+          // Validate paymentId before navigation
+          const paymentId = result.paymentId;
+          if (!paymentId) {
+            console.error('❌ [CourseDetail] Missing paymentId from initiatePurchase result:', result);
+            throw new Error('Payment ID not returned from server');
+          }
+          
+          console.log('💳 [CourseDetail] Navigating to payment:', paymentId);
           // Redirect to payment page with payment ID
-          navigate(`/payment/${result.paymentId}`);
+          navigate(`/payment/${paymentId}`);
         } catch (error) {
           console.error('Failed to initiate purchase:', error);
           alert('Failed to start enrollment. Please try again.');

@@ -25,7 +25,14 @@ class PaymentService {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.error || 'Failed to initiate purchase');
     }
-    return res.json();
+    const raw = await res.json();
+    // Normalize: ensure paymentId field exists
+    const normalized = {
+      ...raw,
+      paymentId: raw.paymentId || raw.id || raw._id,
+    };
+    console.log('💳 [PaymentService] initiatePurchase response normalized:', normalized);
+    return normalized;
   }
 
   /**
@@ -47,7 +54,15 @@ class PaymentService {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.error || 'Failed to complete purchase');
     }
-    return res.json();
+    const raw = await res.json();
+    // Normalize any payment references
+    if (raw.payment) {
+      raw.payment = {
+        ...raw.payment,
+        paymentId: raw.payment.paymentId || raw.payment.id || raw.payment._id,
+      };
+    }
+    return raw;
   }
 
   /**
@@ -212,7 +227,13 @@ class PaymentService {
       throw new Error(responseData.error || 'Failed to initiate Stripe payment');
     }
     
-    return responseData;
+    // Normalize: ensure paymentId field exists
+    const normalized = {
+      ...responseData,
+      paymentId: responseData.paymentId || responseData.id || responseData._id,
+    };
+    console.log('💳 [PaymentService] initiateStripePayment response normalized:', normalized);
+    return normalized;
   }
 
   // Backward compatibility alias
@@ -237,7 +258,12 @@ class PaymentService {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.error || 'Failed to get Stripe payment status');
     }
-    return res.json();
+    const raw = await res.json();
+    // Normalize: ensure paymentId field exists
+    return {
+      ...raw,
+      paymentId: raw.paymentId || raw.id || raw._id,
+    };
   }
 
   // Backward compatibility alias
@@ -269,7 +295,18 @@ class PaymentService {
       const errorData = await res.json().catch(() => ({}));
       throw new Error(errorData.error || 'Failed to simulate payment');
     }
-    return res.json();
+    const raw = await res.json();
+    // Normalize: ensure paymentId field exists
+    if (raw.payment) {
+      raw.payment = {
+        ...raw.payment,
+        paymentId: raw.payment.paymentId || raw.payment.id || raw.payment._id,
+      };
+    }
+    return {
+      ...raw,
+      paymentId: raw.paymentId || raw.id || raw._id,
+    };
   }
 }
 

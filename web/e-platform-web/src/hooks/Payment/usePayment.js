@@ -40,7 +40,16 @@ export function usePaymentById(paymentId) {
   
   return useQuery({
     queryKey: PAYMENT_KEYS.byId(paymentId),
-    queryFn: () => PaymentService.getPaymentById(paymentId, token),
+    queryFn: async () => {
+      const raw = await PaymentService.getPaymentById(paymentId, token);
+      // Normalize: ensure paymentId field exists
+      const normalized = {
+        ...raw,
+        paymentId: raw.paymentId || raw.id || raw._id,
+      };
+      console.log('💳 [usePaymentById] Payment data normalized:', normalized);
+      return normalized;
+    },
     staleTime: 1 * 60 * 1000, // 1 minute
     enabled: !!token && !!paymentId,
   });

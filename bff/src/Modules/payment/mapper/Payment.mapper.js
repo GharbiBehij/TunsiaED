@@ -44,6 +44,7 @@ export const PaymentMapper = {
 
     return {
       paymentId,
+      id: paymentId, // Alias for backward compatibility
       userId: entity.userId,
       courseId: entity.courseId,
       courseTitle: entity.courseTitle,
@@ -57,6 +58,8 @@ export const PaymentMapper = {
       paymentMethod: entity.paymentMethod,
       status: entity.status,
       transactionId: entity.transactionId,
+      stripeSessionId: entity.stripeSessionId || null,
+      checkoutUrl: entity.checkoutUrl || null,
       createdAt: entity.createdAt?.toDate?.() 
         ? entity.createdAt.toDate().toISOString() 
         : entity.createdAt,

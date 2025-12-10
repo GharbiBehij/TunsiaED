@@ -84,12 +84,12 @@ export class CoursePurchaseOrchestrator {
       paymentMethod: purchaseData.paymentMethod || null,
       status: 'pending',
     });
-    console.log('✅ [Orchestrator] Payment record created:', payment.id);
+    console.log('✅ [Orchestrator] Payment record created:', payment.paymentId);
 
     // 4. Return clean DTO
     console.log('✅ [Orchestrator] initiatePurchase completed successfully');
-    return {
-      paymentId: payment.id,
+    const responseDto = {
+      paymentId: payment.paymentId,
       amount: payment.amount,
       currency: payment.currency,
       courseId: payment.courseId,
@@ -97,6 +97,8 @@ export class CoursePurchaseOrchestrator {
       courseTitle: payment.courseTitle,
       status: payment.status,
     };
+    console.log('✅ [Orchestrator] Returning DTO with paymentId:', responseDto.paymentId);
+    return responseDto;
   }
 
   /**
@@ -378,7 +380,7 @@ export class CoursePurchaseOrchestrator {
 
       // 2. Complete the purchase (transaction + enrollment)
       const confirmationData = {
-        paymentId: payment.id,
+        paymentId: payment.paymentId,
         gatewayTransactionId: String(webhookResult.transactionId),
         paymentGateway: 'Stripe',
       };
@@ -414,7 +416,7 @@ export class CoursePurchaseOrchestrator {
       console.log('❌ [Orchestrator] Payment failed - updating status...');
 
       // 2. Update payment status to failed
-      await paymentService.updatePaymentInternal(payment.id, {
+      await paymentService.updatePaymentInternal(payment.paymentId, {
         status: 'failed',
         failureReason: 'Payment declined by Stripe',
       });
