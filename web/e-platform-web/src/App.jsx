@@ -20,6 +20,7 @@ import CreateCourse from './pages/Instructor/CreateCourse';
 import Login from './pages/Auth/Login';
 import Signup from './pages/Auth/Signup';
 import PaymentPage from './pages/Payment/PaymentPage';
+import PaymentResultPage from './pages/PaymentResultPage';
 
 // Dashboards
 import AdminDashboard from './pages/Admin/AdminDashboard';
