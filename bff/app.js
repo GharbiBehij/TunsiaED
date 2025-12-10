@@ -121,7 +121,9 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/instructor', instructorRouter);
 app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
-registerShoppingCartRoutes(app); // Promo code routes
+app.use('/api/v1/shopping-cart', registerShoppingCartRoutes); // Promo code routes
+app.use('/api/v1'/'payment', paymentRouter);
+  // Promo code routes
 
 // 6️ Global error handler
 app.use((err, req, res, next) => {

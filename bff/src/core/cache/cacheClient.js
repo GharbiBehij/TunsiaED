@@ -171,6 +171,14 @@ export const cacheClient = {
   },
 
   /**
+   * Invalidate cache key (alias for del)
+   * @param {string} key - Cache key
+   */
+  async invalidate(key) {
+    return this.del(key);
+  },
+
+  /**
    * Delete multiple keys matching a pattern
    * @param {string} pattern - Redis key pattern (e.g., 'student_dashboard_*')
    */
