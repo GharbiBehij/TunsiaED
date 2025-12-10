@@ -13,7 +13,7 @@
  * - This service abstracts Stripe-specific logic from business logic
  * 
  * Documentation: https://stripe.com/docs/api
- * API Version: 2025-11-17
+ * API Version: 2024-11-20.acacia
  * 
  * @module StripeService
  * @since 1.0.0
@@ -23,7 +23,7 @@ import Stripe from 'stripe';
 
 // Initialize Stripe
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-11-17',
+  apiVersion: '2024-11-20.acacia', // Latest Stripe API version (December 2024)
 });
 
 // Stripe Configuration
