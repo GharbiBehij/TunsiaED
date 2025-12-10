@@ -83,7 +83,10 @@ const PlanCard = ({ plan, isPopular, isProcessing, onSubscribe, isStudent, isAut
       )}
       <div className="flex flex-col gap-3">
         {plan.features && plan.features.map((feature, index) => (
-          <div key={index} className="text-sm font-normal leading-normal flex gap-3 items-center text-[#111418] dark:text-gray-300">
+          <div
+            key={index}
+            className="text-sm font-normal leading-normal flex gap-3 items-center text-[#111418] dark:text-gray-300"
+          >
             <span className="material-symbols-outlined text-primary text-xl">check_circle</span>
             {feature}
           </div>
@@ -142,11 +145,17 @@ export default function SubscriptionPage() {
 
     try {
       const result = await initiateSubscription.mutateAsync(planId);
-      // Redirect to payment page
-      
+
+      // result should contain paymentId from orchestrator
+      if (!result.paymentId) {
+        throw new Error('No paymentId returned from subscription initiation');
+      }
+
+      // Redirect to common payment flow (PaymentPage → SecureCheckout → Stripe)
+      navigate(`/payment/${result.paymentId}`);
     } catch (error) {
       console.error('Failed to initiate subscription:', error);
-      alert('Failed to start subscription. Please try again.');
+      alert(error.message || 'Failed to start subscription. Please try again.');
       setSelectedPlan(null);
     }
   };

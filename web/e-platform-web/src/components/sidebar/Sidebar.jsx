@@ -23,7 +23,6 @@ const SIDEBAR_CONFIG = {
     { label: "My Courses", icon: "school", path: "/pages/Student/StudentDashboard" }, // Adjusted path for consistency with App.jsx
     { label: "Progress", icon: "bar_chart", path: "/dashboard/student/progress" },
     { label: "Certificates", icon: "award", path: "/dashboard/student/certificates" },
-    { label: "Browse Courses", icon: "search", path: "/Course" }, // Adjusted path for consistency with App.jsx
   ],
 };
 

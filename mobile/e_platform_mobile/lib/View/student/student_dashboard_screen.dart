@@ -7,6 +7,8 @@ import '../../core/utils/constants.dart';
 import '../../core/utils/utils.dart';
 import '../Auth/login_screen.dart';
 import '../Dashboard/dynamic_dashboard.dart';
+import '../payment/payment_history_screen.dart';
+import '../subscription/subscription_plans_screen.dart';
 
 class StudentDashboardScreen extends StatefulWidget {
   const StudentDashboardScreen({Key? key}) : super(key: key);
@@ -81,6 +83,30 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
     }
   }
 
+  void _handleMenuSelection(String value) {
+    switch (value) {
+      case 'payment_history':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const PaymentHistoryScreen(),
+          ),
+        );
+        break;
+      case 'subscriptions':
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const SubscriptionPlansScreen(),
+          ),
+        );
+        break;
+      case 'logout':
+        _handleSignOut();
+        break;
+    }
+  }
+
   Future<void> _handleSignOut() async {
     final authViewModel = context.read<AuthViewModel>();
     await authViewModel.signOut();
@@ -113,10 +139,41 @@ class _StudentDashboardScreenState extends State<StudentDashboardScreen>
                 onPressed: () => _loadData(forceRefresh: true),
                 tooltip: 'Refresh',
               ),
-              IconButton(
-                icon: const Icon(Icons.logout),
-                onPressed: _handleSignOut,
-                tooltip: 'Sign out',
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                onSelected: _handleMenuSelection,
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'payment_history',
+                    child: Row(
+                      children: [
+                        Icon(Icons.receipt_long),
+                        SizedBox(width: 12),
+                        Text('Payment History'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'subscriptions',
+                    child: Row(
+                      children: [
+                        Icon(Icons.card_membership),
+                        SizedBox(width: 12),
+                        Text('Subscription Plans'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout),
+                        SizedBox(width: 12),
+                        Text('Sign Out'),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
             bottom: TabBar(

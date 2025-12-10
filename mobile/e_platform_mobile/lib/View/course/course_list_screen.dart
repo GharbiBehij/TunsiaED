@@ -120,6 +120,9 @@ class _CourseListScreenState extends State<CourseListScreen> {
   }
 
   Widget _buildCourseCard(Map<String, dynamic> course) {
+    // Extract courseId with fallback (web compatibility)
+    final courseId = course['courseId'] ?? course['id'];
+    
     return Card(
       margin: const EdgeInsets.only(bottom: AppConstants.defaultPadding),
       child: InkWell(
@@ -127,7 +130,7 @@ class _CourseListScreenState extends State<CourseListScreen> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => CourseDetailScreen(courseId: course['id']),
+              builder: (_) => CourseDetailScreen(courseId: courseId),
             ),
           );
         },

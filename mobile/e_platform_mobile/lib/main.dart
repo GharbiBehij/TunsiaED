@@ -13,6 +13,7 @@ import 'ViewModel/Admin/admin_viewmodel.dart';
 import 'ViewModel/Enrollment/enrollment_viewmodel.dart';
 import 'ViewModel/Payment/payment_viewmodel.dart';
 import 'ViewModel/PromoCode/promo_code_viewmodel.dart';
+import 'ViewModel/Subscription/subscription_viewmodel.dart';
 import 'core/utils/constants.dart';
 import 'core/config/app_config.dart';
 
@@ -46,6 +47,7 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => EnrollmentViewModel()),
         ChangeNotifierProvider(create: (_) => PaymentViewModel()),
         ChangeNotifierProvider(create: (_) => PromoCodeViewModel()),
+        ChangeNotifierProvider(create: (_) => SubscriptionViewModel()),
       ],
       child: MaterialApp(
         title: AppConstants.appName,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:async';
 import '../../ViewModel/Payment/payment_viewmodel.dart';
 import '../../ViewModel/PromoCode/promo_code_viewmodel.dart';
 import '../../core/utils/constants.dart';
 import '../../core/utils/utils.dart';
 import '../PromoCode/promo_code_input_widget.dart';
+import 'stripe_webview_screen.dart';
 
 /// Payment Screen
 /// Handles course payment flow
@@ -25,18 +27,24 @@ class PaymentScreen extends StatefulWidget {
 }
 
 class _PaymentScreenState extends State<PaymentScreen> {
-  String _selectedPaymentMethod = 'card'; 
+  String _selectedPaymentMethod = 'stripe'; // Default to Stripe (matches web)
   final _cardNumberController = TextEditingController();
   final _expiryController = TextEditingController();
   final _cvvController = TextEditingController();
+  final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   double _discountAmount = 0.0;
+  bool _isTestMode = false; // Test mode for when gateway is unavailable
+  bool _simulateSuccess = true; // For test mode
+  Timer? _pollTimer; // Store timer reference for proper cleanup
 
   @override
   void dispose() {
+    _pollTimer?.cancel(); // Cancel timer if still running
     _cardNumberController.dispose();
     _expiryController.dispose();
     _cvvController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -66,12 +74,33 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ? promoViewModel.validatedPromo?['promoCode']?.toString()
         : null;
 
-    // Initiate payment
+    // Test mode - use simulation endpoint
+    if (_isTestMode) {
+      final result = await paymentViewModel.simulatePayment({
+        'courseId': widget.courseId,
+        'simulateSuccess': _simulateSuccess,
+      });
+
+      if (!mounted) return;
+
+      if (result != null && result['success'] == true) {
+        Utils.showMessage(context, 'Test payment successful! You are now enrolled.');
+        Navigator.pop(context, true);
+      } else {
+        Utils.showMessage(
+          context,
+          'Test payment failed as configured.',
+          isError: true,
+        );
+      }
+      return;
+    }
+
+    // Step 1: Initiate purchase (creates payment record)
     final purchase = await paymentViewModel.initiatePurchase({
       'courseId': widget.courseId,
       'paymentType': 'course_purchase',
       'paymentMethod': _selectedPaymentMethod,
-      'amount': _finalAmount,
       if (promoCode != null) 'promoCode': promoCode,
     });
 
@@ -98,7 +127,13 @@ class _PaymentScreenState extends State<PaymentScreen> {
       return;
     }
 
-    // Complete payment
+    // Step 2: Handle Stripe payment flow
+    if (_selectedPaymentMethod == 'stripe') {
+      await _handleStripePayment(paymentId, paymentViewModel);
+      return;
+    }
+
+    // Step 3: Standard payment flow (card/PayPal)
     final completion = await paymentViewModel.completePurchase({
       'paymentId': paymentId,
       'paymentGateway': _selectedPaymentMethod,
@@ -126,6 +161,181 @@ class _PaymentScreenState extends State<PaymentScreen> {
         isError: true,
       );
     }
+  }
+
+  Future<void> _handleStripePayment(
+    String paymentId,
+    PaymentViewModel paymentViewModel,
+  ) async {
+    try {
+      // Initiate Stripe payment with existing paymentId
+      final stripeData = {
+        'paymentId': paymentId, // Reuse existing payment record
+        'courseId': widget.courseId,
+        'amount': _finalAmount,
+        'note': 'Course: ${widget.courseTitle}',
+        'firstName': 'Customer', // Could get from user profile
+        'lastName': 'User',
+        'email': '', // Could get from user profile
+        'phone': _phoneController.text.isNotEmpty 
+            ? _phoneController.text 
+            : '+21600000000',
+      };
+
+      final result = await paymentViewModel.initiateStripePayment(stripeData);
+
+      if (result == null) {
+        if (!mounted) return;
+        Utils.showMessage(
+          context,
+          paymentViewModel.stripeError ?? 'Failed to initiate Stripe checkout',
+          isError: true,
+        );
+        return;
+      }
+
+      final checkoutUrl = result['checkoutUrl']?.toString();
+      final sessionId = result['sessionId']?.toString();
+
+      if (checkoutUrl == null || sessionId == null) {
+        if (!mounted) return;
+        Utils.showMessage(
+          context,
+          'Invalid Stripe response',
+          isError: true,
+        );
+        return;
+      }
+
+      // Open Stripe checkout in WebView
+      if (!mounted) return;
+      
+      final webViewResult = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => StripeWebViewScreen(
+            checkoutUrl: checkoutUrl,
+            sessionId: sessionId,
+            paymentId: paymentId,
+          ),
+        ),
+      );
+
+      if (!mounted) return;
+
+      // Handle WebView result
+      if (webViewResult != null && webViewResult is Map) {
+        if (webViewResult['success'] == true) {
+          // Start polling for payment status
+          await _pollStripePaymentStatus(
+            sessionId,
+            paymentId,
+            paymentViewModel,
+          );
+        } else if (webViewResult['canceled'] == true) {
+          Utils.showMessage(
+            context,
+            'Payment canceled',
+            isError: true,
+          );
+        }
+      }
+    } catch (error) {
+      if (!mounted) return;
+      Utils.showMessage(
+        context,
+        'Stripe payment error: ${error.toString()}',
+        isError: true,
+      );
+    }
+  }
+
+  Future<void> _pollStripePaymentStatus(
+    String sessionId,
+    String paymentId,
+    PaymentViewModel paymentViewModel,
+  ) async {
+    // Show loading dialog
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => WillPopScope(
+        onWillPop: () async => false,
+        child: const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Verifying payment...'),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    // Poll every 2 seconds for up to 30 seconds
+    int attempts = 0;
+    const maxAttempts = 15; // 15 attempts * 2 seconds = 30 seconds
+
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+      attempts++;
+
+      final status = await paymentViewModel.fetchStripePaymentStatus(
+        sessionId,
+        forceRefresh: true,
+      );
+
+      if (!mounted) {
+        timer.cancel();
+        _pollTimer = null;
+        return;
+      }
+
+      if (status != null) {
+        final paymentStatus = status['status']?.toString().toLowerCase();
+
+        if (paymentStatus == 'completed') {
+          timer.cancel();
+          _pollTimer = null;
+          Navigator.pop(context); // Close loading dialog
+
+          Utils.showMessage(
+            context,
+            'Payment successful! You are now enrolled.',
+          );
+          Navigator.pop(context, true); // Close payment screen with success
+          return;
+        } else if (paymentStatus == 'failed') {
+          timer.cancel();
+          _pollTimer = null;
+          Navigator.pop(context); // Close loading dialog
+
+          Utils.showMessage(
+            context,
+            'Payment failed. Please try again.',
+            isError: true,
+          );
+          return;
+        }
+      }
+
+      // Timeout after max attempts
+      if (attempts >= maxAttempts) {
+        timer.cancel();
+        _pollTimer = null;
+        Navigator.pop(context); // Close loading dialog
+
+        Utils.showMessage(
+          context,
+          'Payment verification timeout. Please check your enrollments.',
+          isError: true,
+        );
+        Navigator.pop(context, false); // Close payment screen
+      }
+    });
   }
 
   String _buildGatewayTransactionId() {
@@ -216,98 +426,206 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
               const SizedBox(height: AppConstants.largePadding),
 
-              // Payment Method
-              Text(
-                'Payment Method',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: AppConstants.defaultPadding),
-
-              RadioListTile<String>(
-                title: const Text('Credit/Debit Card'),
-                subtitle: const Text('Visa, Mastercard, Amex'),
-                value: 'card',
-                groupValue: _selectedPaymentMethod,
+              // Test Mode Toggle
+              SwitchListTile(
+                title: const Text('Test Mode'),
+                subtitle: const Text('Use simulation when payment gateway is unavailable'),
+                value: _isTestMode,
                 onChanged: (value) {
                   setState(() {
-                    _selectedPaymentMethod = value!;
+                    _isTestMode = value;
                   });
                 },
               ),
-              RadioListTile<String>(
-                title: const Text('PayPal'),
-                subtitle: const Text('Pay with PayPal account'),
-                value: 'paypal',
-                groupValue: _selectedPaymentMethod,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPaymentMethod = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: AppConstants.defaultPadding),
+              if (_isTestMode) ...[
+                const SizedBox(height: AppConstants.defaultPadding),
+                SwitchListTile(
+                  title: const Text('Simulate Success'),
+                  subtitle: const Text('Toggle to test payment failure'),
+                  value: _simulateSuccess,
+                  onChanged: (value) {
+                    setState(() {
+                      _simulateSuccess = value;
+                    });
+                  },
+                ),
+              ],
+              const SizedBox(height: AppConstants.largePadding),
 
-              // Card Details (if card selected)
-              if (_selectedPaymentMethod == 'card') ...[
-                TextFormField(
-                  controller: _cardNumberController,
-                  decoration: const InputDecoration(
-                    labelText: 'Card Number',
-                    prefixIcon: Icon(Icons.credit_card),
-                  ),
-                  keyboardType: TextInputType.number,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter card number';
-                    }
-                    if (value.length < 16) {
-                      return 'Invalid card number';
-                    }
-                    return null;
+              // Payment Method (only show if not in test mode)
+              if (!_isTestMode) ...[
+                Text(
+                  'Payment Method',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppConstants.defaultPadding),
+
+                RadioListTile<String>(
+                  title: const Text('Stripe'),
+                  subtitle: const Text('International payment gateway (Recommended)'),
+                  value: 'stripe',
+                  groupValue: _selectedPaymentMethod,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPaymentMethod = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: const Text('Credit/Debit Card'),
+                  subtitle: const Text('Visa, Mastercard, Amex'),
+                  value: 'card',
+                  groupValue: _selectedPaymentMethod,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPaymentMethod = value!;
+                    });
+                  },
+                ),
+                RadioListTile<String>(
+                  title: const Text('PayPal'),
+                  subtitle: const Text('Pay with PayPal account'),
+                  value: 'paypal',
+                  groupValue: _selectedPaymentMethod,
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedPaymentMethod = value!;
+                    });
                   },
                 ),
                 const SizedBox(height: AppConstants.defaultPadding),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _expiryController,
-                        decoration: const InputDecoration(
-                          labelText: 'Expiry (MM/YY)',
-                          prefixIcon: Icon(Icons.calendar_today),
-                        ),
-                        keyboardType: TextInputType.datetime,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Required';
-                          }
-                          return null;
-                        },
-                      ),
+              ],
+
+              // Payment Details
+              if (!_isTestMode) ...[
+                // Stripe - requires phone only
+                if (_selectedPaymentMethod == 'stripe') ...[
+                  Text(
+                    'Contact Information',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  TextFormField(
+                    controller: _phoneController,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number (optional)',
+                      prefixIcon: Icon(Icons.phone),
+                      hintText: '+216 XX XXX XXX',
                     ),
-                    const SizedBox(width: AppConstants.defaultPadding),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _cvvController,
-                        decoration: const InputDecoration(
-                          labelText: 'CVV',
-                          prefixIcon: Icon(Icons.lock_outline),
-                        ),
-                        keyboardType: TextInputType.number,
-                        obscureText: true,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Required';
-                          }
-                          if (value.length < 3) {
-                            return 'Invalid';
-                          }
-                          return null;
-                        },
-                      ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ],
-                ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.blue),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'You will be redirected to Stripe to complete your payment securely.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                // Card Details (if card selected)
+                if (_selectedPaymentMethod == 'card') ...[
+                  Text(
+                    'Card Details',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  TextFormField(
+                    controller: _cardNumberController,
+                    decoration: const InputDecoration(
+                      labelText: 'Card Number',
+                      prefixIcon: Icon(Icons.credit_card),
+                    ),
+                    keyboardType: TextInputType.number,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter card number';
+                      }
+                      if (value.length < 16) {
+                        return 'Invalid card number';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: AppConstants.defaultPadding),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _expiryController,
+                          decoration: const InputDecoration(
+                            labelText: 'Expiry (MM/YY)',
+                            prefixIcon: Icon(Icons.calendar_today),
+                          ),
+                          keyboardType: TextInputType.datetime,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Required';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: AppConstants.defaultPadding),
+                      Expanded(
+                        child: TextFormField(
+                          controller: _cvvController,
+                          decoration: const InputDecoration(
+                            labelText: 'CVV',
+                            prefixIcon: Icon(Icons.lock_outline),
+                          ),
+                          keyboardType: TextInputType.number,
+                          obscureText: true,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Required';
+                            }
+                            if (value.length < 3) {
+                              return 'Invalid';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                // PayPal info
+                if (_selectedPaymentMethod == 'paypal') ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.info_outline, color: Colors.blue),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'You will be redirected to PayPal to complete your payment.',
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ],
           ),
@@ -315,21 +633,35 @@ class _PaymentScreenState extends State<PaymentScreen> {
       ),
       bottomNavigationBar: Consumer<PaymentViewModel>(
         builder: (context, viewModel, _) {
+          String buttonText = 'Pay ${Utils.formatCurrency(_finalAmount)}';
+          if (_isTestMode) {
+            buttonText = _simulateSuccess 
+                ? 'Simulate Successful Payment' 
+                : 'Simulate Failed Payment';
+          } else if (_selectedPaymentMethod == 'stripe') {
+            buttonText = 'Continue to Stripe';
+          }
+
           return SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(AppConstants.defaultPadding),
               child: ElevatedButton(
-                onPressed: viewModel.isLoading ? null : _handlePayment,
+                onPressed: (viewModel.isLoading || viewModel.isStripeLoading) 
+                    ? null 
+                    : _handlePayment,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: viewModel.isLoading
+                child: (viewModel.isLoading || viewModel.isStripeLoading)
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : Text('Pay ${Utils.formatCurrency(_finalAmount)}'),
+                    : Text(buttonText),
               ),
             ),
           );

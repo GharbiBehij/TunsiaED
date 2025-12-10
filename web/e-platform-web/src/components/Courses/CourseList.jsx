@@ -1,5 +1,4 @@
 // src/components/Course/CourseList.jsx
-import React from 'react';
 import CourseCard from './CourseCard';
 import { useAllCourses } from '../../hooks/Course/useCourse';
 

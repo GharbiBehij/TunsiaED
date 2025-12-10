@@ -3,14 +3,18 @@ import '../../core/api/api_endpoints.dart';
 
 /// Payment Service
 /// Handles all payment-related API calls
+/// Follows exact web architecture with field normalization
 class PaymentService {
   final ApiClient _apiClient = ApiClient();
 
-  // ========== ORCHESTRATOR METHODS (Purchase Flow) ==========
+  // ====================================================================
+  // ORCHESTRATED PURCHASE FLOW (recommended for course purchases)
+  // These endpoints use the CoursePurchaseOrchestrator for atomic operations
+  // ====================================================================
 
-  /// Initiate purchase (ORCHESTRATOR)
-  /// Cross-module: Payment + Enrollment + Course modules
-  /// Creates payment with validation (checks enrollment status, course exists)
+  /// Initiate a course purchase (creates payment, validates course & enrollment)
+  /// @param purchaseData - { courseId, paymentType?, subscriptionType?, paymentMethod? }
+  /// @returns Payment initiation data { paymentId, amount, currency, courseId, courseTitle, status }
   Future<Map<String, dynamic>> initiatePurchase(
     Map<String, dynamic> purchaseData,
   ) async {
@@ -18,12 +22,21 @@ class PaymentService {
       ApiEndpoints.purchaseInitiate,
       data: purchaseData,
     );
-    return response.data;
+    
+    // Normalize: ensure paymentId field exists (web compatibility)
+    final raw = response.data;
+    final normalized = {
+      ...raw,
+      'paymentId': raw['paymentId'] ?? raw['id'] ?? raw['_id'],
+    };
+    
+    print('💳 [PaymentService] initiatePurchase response normalized: $normalized');
+    return normalized;
   }
 
-  /// Complete purchase (ORCHESTRATOR)
-  /// Cross-module: Payment + Transaction + Enrollment modules
-  /// Creates transaction and enrollment atomically
+  /// Complete a course purchase (creates transaction + enrollment after payment confirmation)
+  /// @param confirmationData - { paymentId, gatewayTransactionId?, paymentGateway? }
+  /// @returns Completion data { success, transaction, enrollment }
   Future<Map<String, dynamic>> completePurchase(
     Map<String, dynamic> confirmationData,
   ) async {
@@ -31,12 +44,22 @@ class PaymentService {
       ApiEndpoints.purchaseComplete,
       data: confirmationData,
     );
-    return response.data;
+    
+    final raw = response.data;
+    // Normalize any payment references (web compatibility)
+    if (raw['payment'] != null) {
+      final payment = raw['payment'] as Map<String, dynamic>;
+      raw['payment'] = {
+        ...payment,
+        'paymentId': payment['paymentId'] ?? payment['id'] ?? payment['_id'],
+      };
+    }
+    return raw;
   }
 
-  /// Get purchase status (ORCHESTRATOR)
-  /// Cross-module: Payment + Transaction + Enrollment modules
-  /// Returns complete purchase status (payment + transaction + enrollment)
+  /// Get purchase status (payment + transaction + enrollment status)
+  /// @param paymentId - The payment ID
+  /// @returns Status data { payment, transaction, enrollment }
   Future<Map<String, dynamic>> getPurchaseStatus(String paymentId) async {
     final response = await _apiClient.get(
       ApiEndpoints.purchaseStatus(paymentId),
@@ -44,32 +67,88 @@ class PaymentService {
     return response.data;
   }
 
-  // ========== STRIPE GATEWAY METHODS ==========
+  // ====================================================================
+  // STRIPE GATEWAY OPERATIONS (International payment gateway)
+  // Integration using Stripe Checkout
+  // ====================================================================
 
-  /// Initiate Stripe payment (GATEWAY)
-  /// Creates payment and returns Stripe Checkout URL
+  /// Initiate a Stripe payment
+  /// Returns Stripe Checkout URL for payment
+  /// @param paymentData - { paymentId, courseId, amount, note, firstName, lastName, email, phone }
+  /// @returns { paymentId, sessionId, checkoutUrl, amount, currency }
   Future<Map<String, dynamic>> initiateStripePayment(
     Map<String, dynamic> paymentData,
   ) async {
-    final response = await _apiClient.post(
-      ApiEndpoints.stripeInitiate,
-      data: paymentData,
-    );
-    return response.data; // { paymentId, sessionId, checkoutUrl, amount }
+    try {
+      final response = await _apiClient.post(
+        ApiEndpoints.stripeInitiate,
+        data: paymentData,
+      );
+      
+      final responseData = response.data;
+      
+      // Normalize: ensure paymentId field exists (web compatibility)
+      final normalized = {
+        ...responseData,
+        'paymentId': responseData['paymentId'] ?? responseData['id'] ?? responseData['_id'],
+      };
+      
+      print('💳 [PaymentService] initiateStripePayment response normalized: $normalized');
+      return normalized;
+    } catch (error) {
+      // Check for payment gateway downtime (503 Service Unavailable)
+      if (error.toString().contains('503')) {
+        throw Exception('Payment gateway temporarily unavailable. Please try test mode or try again later.');
+      }
+      rethrow;
+    }
   }
 
-  /// Get Stripe payment status by session ID (GATEWAY)
+  /// Get Stripe payment status by session ID
   /// Used after Stripe Checkout completion
+  /// @param sessionId - The Stripe session ID
+  /// @returns { paymentId, status, courseId, amount }
   Future<Map<String, dynamic>> getStripePaymentStatus(String sessionId) async {
     final response = await _apiClient.get(
       ApiEndpoints.stripeStatus(sessionId),
     );
+    
+    final raw = response.data;
+    // Normalize: ensure paymentId field exists (web compatibility)
+    return {
+      ...raw,
+      'paymentId': raw['paymentId'] ?? raw['id'] ?? raw['_id'],
+    };
+  }
+
+  // ====================================================================
+  // DIRECT PAYMENT MODULE OPERATIONS (for admin/advanced use cases)
+  // These bypass the orchestrator and work directly with the payment module
+  // ====================================================================
+
+  /// Creates a new payment (direct payment module call)
+  /// @param paymentData - Payment data
+  /// @returns Created payment data
+  Future<Map<String, dynamic>> createPayment(Map<String, dynamic> paymentData) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.payments,
+      data: paymentData,
+    );
     return response.data;
   }
 
-  // ========== DIRECT PAYMENT METHODS ==========
+  /// Fetches payments for the authenticated user
+  /// @returns List of user's payments
+  Future<List<Map<String, dynamic>>> getUserPayments() async {
+    final response = await _apiClient.get(
+      ApiEndpoints.myPayments,
+    );
+    return List<Map<String, dynamic>>.from(response.data);
+  }
 
-  /// Get payment by ID (DIRECT)
+  /// Fetches a specific payment by ID
+  /// @param paymentId - The ID of the payment
+  /// @returns Payment data
   Future<Map<String, dynamic>> getPaymentById(String paymentId) async {
     final response = await _apiClient.get(
       ApiEndpoints.paymentById(paymentId),
@@ -77,15 +156,9 @@ class PaymentService {
     return response.data;
   }
 
-  /// Get all payments for current user (DIRECT)
-  Future<List<Map<String, dynamic>>> getMyPayments() async {
-    final response = await _apiClient.get(
-      ApiEndpoints.myPayments,
-    );
-    return List<Map<String, dynamic>>.from(response.data);
-  }
-
-  /// Get payments for specific course (DIRECT)
+  /// Fetches payments for a specific course
+  /// @param courseId - The ID of the course
+  /// @returns List of payments for the course (requires admin or instructor role)
   Future<List<Map<String, dynamic>>> getCoursePayments(String courseId) async {
     final response = await _apiClient.get(
       ApiEndpoints.coursePayments(courseId),
@@ -93,7 +166,9 @@ class PaymentService {
     return List<Map<String, dynamic>>.from(response.data);
   }
 
-  /// Get payments by status (DIRECT)
+  /// Fetches payments by status
+  /// @param status - Payment status (e.g., 'pending', 'completed')
+  /// @returns List of payments with the specified status (requires admin role)
   Future<List<Map<String, dynamic>>> getPaymentsByStatus(String status) async {
     final response = await _apiClient.get(
       ApiEndpoints.paymentsByStatus(status),
@@ -101,41 +176,29 @@ class PaymentService {
     return List<Map<String, dynamic>>.from(response.data);
   }
 
-  /// Get payment status (DIRECT - legacy)
-  Future<Map<String, dynamic>> getPaymentStatus(String paymentId) async {
-    final response = await _apiClient.get(
+  /// Updates an existing payment
+  /// @param paymentId - The ID of the payment to update
+  /// @param paymentData - Updated payment data
+  /// @returns Updated payment data
+  Future<Map<String, dynamic>> updatePayment(
+    String paymentId, 
+    Map<String, dynamic> paymentData,
+  ) async {
+    final response = await _apiClient.put(
       ApiEndpoints.paymentById(paymentId),
+      data: paymentData,
     );
     return response.data;
   }
 
-  /// Get all payments for current user (DIRECT - legacy)
-  @Deprecated('Use getMyPayments() instead')
-  Future<List<Map<String, dynamic>>> getPayments() async {
-    return getMyPayments();
-  }
+  // ====================================================================
+  // PAYMENT SIMULATION (for testing when payment gateway is unavailable)
+  // ====================================================================
 
-  /// Cancel payment
-  Future<Map<String, dynamic>> cancelPayment(String paymentId) async {
-    final response = await _apiClient.patch(
-      '${ApiEndpoints.payments}/$paymentId/cancel',
-    );
-    return response.data;
-  }
-
-  /// Refund payment (admin only)
-  Future<Map<String, dynamic>> refundPayment(String paymentId) async {
-    final response = await _apiClient.post(
-      '${ApiEndpoints.payments}/$paymentId/refund',
-    );
-    return response.data;
-  }
-
-  // ========== TESTING METHODS ==========
-
-  /// Simulate payment (TESTING)
-  /// For testing when payment gateway is unavailable
+  /// Simulate a payment (for testing purposes)
   /// Creates payment, completes it, and sends email notification
+  /// @param data - { courseId, simulateSuccess: true/false }
+  /// @returns { success, message, paymentId, transactionId?, enrollment? }
   Future<Map<String, dynamic>> simulatePayment(
     Map<String, dynamic> data,
   ) async {
@@ -143,6 +206,19 @@ class PaymentService {
       ApiEndpoints.simulatePayment,
       data: data,
     );
-    return response.data; // { success, message, paymentId, transactionId?, enrollment? }
+    
+    final raw = response.data;
+    // Normalize: ensure paymentId field exists (web compatibility)
+    if (raw['payment'] != null) {
+      final payment = raw['payment'] as Map<String, dynamic>;
+      raw['payment'] = {
+        ...payment,
+        'paymentId': payment['paymentId'] ?? payment['id'] ?? payment['_id'],
+      };
+    }
+    return {
+      ...raw,
+      'paymentId': raw['paymentId'] ?? raw['id'] ?? raw['_id'],
+    };
   }
 }

@@ -116,34 +116,23 @@ export class CoursePurchaseOrchestrator {
       email: customerData.email
     });
 
-    // 1. Get payment details
-    const payment = await paymentService.getPaymentById(paymentId);
-    if (!payment) {
-      throw new Error('Payment not found');
-    }
-
-    if (payment.userId !== user.uid) {
-      throw new Error('Unauthorized: Payment does not belong to this user');
-    }
-
-    // 2. Initiate Stripe checkout via Payment Service
-    console.log('💳 [Orchestrator] Initiating Stripe checkout session...');
-    const stripeResult = await paymentService.initiateStripePayment(user.uid, {
-      courseId: payment.courseId,
-      amount: payment.amount,
-      paymentType: payment.paymentType,
-      currency: payment.currency || 'usd',
-    }, {
-      note: customerData.note || `Course Purchase: ${payment.courseTitle}`,
-      firstName: customerData.firstName || user.firstName || 'Customer',
-      lastName: customerData.lastName || user.lastName || 'User',
-      email: customerData.email || user.email,
-      phone: customerData.phone || user.phone || '+21600000000',
-    });
+    // Initiate Stripe checkout for existing payment record
+    console.log('💳 [Orchestrator] Initiating Stripe checkout session for existing payment...');
+    const stripeResult = await paymentService.initiateStripePaymentForExistingPayment(
+      user.uid,
+      paymentId,
+      {
+        note: customerData.note || `Course Purchase`,
+        firstName: customerData.firstName || user.firstName || 'Customer',
+        lastName: customerData.lastName || user.lastName || 'User',
+        email: customerData.email || user.email,
+        phone: customerData.phone || user.phone || '+21600000000',
+      }
+    );
 
     console.log('✅ [Orchestrator] Stripe checkout session created:', stripeResult.sessionId);
 
-    // 3. Invalidate relevant caches
+    // Invalidate relevant caches
     await cacheClient.invalidate(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD(user.uid));
 
     return stripeResult;

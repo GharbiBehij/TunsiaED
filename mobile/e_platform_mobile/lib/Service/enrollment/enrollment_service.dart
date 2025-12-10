@@ -3,18 +3,33 @@ import '../../core/api/api_endpoints.dart';
 
 /// Enrollment Service
 /// Handles all enrollment-related API calls
+/// Follows exact web architecture
 class EnrollmentService {
   final ApiClient _apiClient = ApiClient();
 
-  /// Get all enrollments for current user
-  Future<List<Map<String, dynamic>>> getEnrollments() async {
+  /// Enrolls a user in a course
+  /// @param enrollmentData - Enrollment data (courseId, etc.)
+  /// @returns Enrollment confirmation
+  Future<Map<String, dynamic>> enroll(Map<String, dynamic> enrollmentData) async {
+    final response = await _apiClient.post(
+      '${ApiEndpoints.enrollments}/enroll',
+      data: enrollmentData,
+    );
+    return response.data;
+  }
+
+  /// Fetches enrollments for the authenticated user
+  /// @returns List of user's enrollments
+  Future<List<Map<String, dynamic>>> getUserEnrollments() async {
     final response = await _apiClient.get(
       ApiEndpoints.myEnrollments,
     );
     return List<Map<String, dynamic>>.from(response.data);
   }
 
-  /// Get enrollment by ID
+  /// Fetches a specific enrollment by ID
+  /// @param enrollmentId - The ID of the enrollment
+  /// @returns Enrollment data
   Future<Map<String, dynamic>> getEnrollmentById(String enrollmentId) async {
     final response = await _apiClient.get(
       ApiEndpoints.enrollmentById(enrollmentId),
@@ -22,7 +37,9 @@ class EnrollmentService {
     return response.data;
   }
 
-  /// Get enrollment progress
+  /// Fetches enrollment with detailed progress information
+  /// @param enrollmentId - The ID of the enrollment
+  /// @returns Enrollment with progress data
   Future<Map<String, dynamic>> getEnrollmentProgress(
     String enrollmentId,
   ) async {
@@ -32,49 +49,9 @@ class EnrollmentService {
     return response.data;
   }
 
-  /// Create enrollment
-  Future<Map<String, dynamic>> createEnrollment(
-    Map<String, dynamic> data,
-  ) async {
-    final response = await _apiClient.post(
-      '${ApiEndpoints.enrollments}/enroll',
-      data: data,
-    );
-    return response.data;
-  }
-
-  /// Cancel enrollment
-  Future<void> cancelEnrollment(String enrollmentId) async {
-    await _apiClient.delete(
-      ApiEndpoints.enrollmentById(enrollmentId),
-    );
-  }
-
-  /// Get enrollments by course (instructor/admin only)
-  Future<List<Map<String, dynamic>>> getEnrollmentsByCourse(
-    String courseId,
-  ) async {
-    final response = await _apiClient.get(
-      '${ApiEndpoints.enrollments}/course/$courseId/students',
-    );
-    return List<Map<String, dynamic>>.from(response.data);
-  }
-
-  /// Enroll in course (standardized method name)
-  Future<Map<String, dynamic>> enroll(Map<String, dynamic> data) async {
-    final response = await _apiClient.post(
-      '${ApiEndpoints.enrollments}/enroll',
-      data: data,
-    );
-    return response.data;
-  }
-
-  /// Get user enrollments (alias for consistency)
-  Future<List<Map<String, dynamic>>> getUserEnrollments() async {
-    return getEnrollments();
-  }
-
-  /// Get course enrollments with progress (instructor)
+  /// Fetches course enrollments with progress (for instructors)
+  /// @param courseId - The course ID
+  /// @returns Enrollments with progress data
   Future<Map<String, dynamic>> getCourseEnrollmentsWithProgress(
     String courseId,
   ) async {

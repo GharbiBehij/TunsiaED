@@ -155,6 +155,65 @@ export class PaymentService {
   }
 
   /**
+   * Initiate Stripe payment for an existing payment record
+   * Updates existing payment with Stripe checkout session instead of creating new payment
+   * @param {string} userId - User ID (for authorization)
+   * @param {string} paymentId - Existing payment ID
+   * @param {Object} stripeData - Stripe-specific customer data
+   * @returns {Object} Stripe session data
+   */
+  async initiateStripePaymentForExistingPayment(userId, paymentId, stripeData) {
+    // Step 1: Load existing payment and validate ownership
+    const payment = await this.getPaymentById(paymentId);
+    if (!payment) {
+      throw new Error('Payment not found');
+    }
+    if (payment.userId !== userId) {
+      throw new Error('Unauthorized: Payment does not belong to this user');
+    }
+    if (payment.status === 'completed') {
+      throw new Error('Payment already completed');
+    }
+
+    try {
+      // Step 2: Initiate Stripe checkout session
+      const stripeResult = await stripeService.initiatePayment({
+        amount: payment.amount,
+        note: stripeData.note || `Payment: ${payment.courseTitle || 'Course Purchase'}`,
+        firstName: stripeData.firstName || 'Customer',
+        lastName: stripeData.lastName || 'User',
+        email: stripeData.email,
+        phone: stripeData.phone || '+21600000000',
+        orderId: payment.paymentId, // Link to our internal payment ID
+      });
+
+      // Step 3: Update existing payment with Stripe session data
+      await this.updatePaymentInternal(payment.paymentId, {
+        stripeSessionId: stripeResult.token,
+        checkoutUrl: stripeResult.paymentUrl,
+        paymentMethod: 'stripe', // Ensure payment method is set to stripe
+        status: 'pending', // Ensure status is pending
+      });
+
+      return {
+        success: true,
+        paymentId: payment.paymentId,
+        sessionId: stripeResult.token,
+        checkoutUrl: stripeResult.paymentUrl,
+        amount: payment.amount,
+        currency: payment.currency || 'usd',
+      };
+    } catch (stripeError) {
+      // Mark payment as failed if Stripe initiation fails
+      await this.updatePaymentInternal(payment.paymentId, {
+        status: 'failed',
+        failureReason: stripeError.message,
+      });
+      throw stripeError;
+    }
+  }
+
+  /**
    * Verify Stripe webhook signature
    * Validates webhook authenticity using Stripe signature
    * @param {string} payload - Raw request body
