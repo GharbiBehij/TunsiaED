@@ -360,7 +360,7 @@ export class CoursePurchaseOrchestrator {
     });
 
     // 1. Get user and course info
-    const user = await userService.findByUid(payment.userId);
+    const user = await userService.getUserByUidInternal(payment.userId);
     const course = await courseService.getCourseByIdInternal(payment.courseId);
     const courseTitle = course?.title || payment.courseTitle || 'Course Purchase';
 

@@ -47,6 +47,8 @@ function App() {
 
           {/* Payment Route - Protected, requires authentication */}
           <Route path="/payment/:paymentId" element={<ProtectedRoute roles={['student', 'instructor', 'admin']}><PaymentPage /></ProtectedRoute>} />
+          <Route path="/payment/success" element={<PaymentResultPage status="success" />} />
+          <Route path="/payment/cancel" element={<PaymentResultPage status="cancel" />} />
 
           {/* Course Content Routes - Protected by enrollment OR subscription */}
           <Route path="/courses/:courseId/learn" element={<CourseAccessRoute><CoursePlayer /></CourseAccessRoute>} />

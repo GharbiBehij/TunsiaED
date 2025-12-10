@@ -124,10 +124,9 @@ app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
 app.use('/api/v1/shopping-cart', registerShoppingCartRoutes); // Promo code routes
 app.use('/api/v1/payment', paymentRouter);
-app.post('/stripe/webhook',paymentController.handleStripeWebhook);
   // Promo code routes
 
-// 6️ Global error handler
+// 6️ Global error handlerk
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({
