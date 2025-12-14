@@ -5,7 +5,7 @@ import { UserRoleService } from './UserRoleService.js';
 import { UserMapper } from '../mapper/User.mapper.js';
 import { cacheClient } from '../../../core/cache/cacheClient.js';
 
-export class userService {
+export class UserService {
   // Helper: Map raw data to model
   _toModel(raw) {
     return raw ? UserMapper.toModel(raw) : null;
@@ -165,4 +165,5 @@ export class userService {
   }
 }
 
-export const userService = new userService();
+export const userService = new UserService();
+
