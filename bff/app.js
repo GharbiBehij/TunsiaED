@@ -68,7 +68,6 @@ app.use(cors({
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
 }));
-
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
@@ -83,12 +82,11 @@ app.options('*', cors({
 }));
 
 // 3 Raw body for Stripe webhook (MUST be before express.json())
-app.use('/api/v1/payment/stripe/webhook', 
-  express.raw({ type: 'application/json' })
-);
+
 
 // 3 Parse JSON
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // 3.5 Request logging
 app.use(morgan('combined'));
