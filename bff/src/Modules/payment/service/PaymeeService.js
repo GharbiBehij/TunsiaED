@@ -5,8 +5,8 @@
 import crypto from 'crypto';
 
 const PAYMEE_CONFIG = {
-  SANDBOX_URL: 'https://sandbox.paymee.tn/api/v2/payment/create',
-  LIVE_URL: 'https://app.paymee.tn/api/v2/payment/create',
+  SANDBOX_URL: 'https://sandbox.paymee.tn/api/v2/payments/create',
+  LIVE_URL: 'https://app.paymee.tn/api/v2/payments/create',
   SANDBOX_GATEWAY: 'https://sandbox.paymee.tn/gateway',
   LIVE_GATEWAY: 'https://app.paymee.tn/gateway',
 };
@@ -14,8 +14,8 @@ const PAYMEE_CONFIG = {
 class PaymeeService {
   constructor() {
     this.apiToken = process.env.PAYMEE_API_KEY; // single token provided
-    // Force sandbox mode for testing
-    this.isProduction = false; // process.env.NODE_ENV === 'production';
+    // Check if we should use production Paymee (separate from NODE_ENV)
+    this.isProduction = process.env.PAYMEE_USE_PRODUCTION === 'true';
 
     // Base URLs
     this.baseUrl = this.isProduction ? PAYMEE_CONFIG.LIVE_URL : PAYMEE_CONFIG.SANDBOX_URL;

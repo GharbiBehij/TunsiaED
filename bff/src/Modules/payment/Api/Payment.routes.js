@@ -31,7 +31,6 @@ router.get('/purchase/:paymentId/status', authenticate, paymentController.getPur
 // Check Stripe payment status by session ID
 //router.get('/stripe/status/:token', authenticate, paymentController.getStripePaymentStatus);
 
-// LEGACY PAYMEE ROUTES (backward compatibility - redirect to Stripe)
 router.post('/paymee/initiate', authenticate, paymentController.initiatePayment);
 router.post('/paymee/webhook', paymentController.processWebhook);
 router.get('/paymee/status/:token', authenticate, paymentController.getPaymentStatus);
