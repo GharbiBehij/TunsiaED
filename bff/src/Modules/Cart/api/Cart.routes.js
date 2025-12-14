@@ -1,12 +1,12 @@
 // bff/src/Modules/Cart/api/Cart.routes.js
 import express from 'express';
 import { cartController } from './Cart.controller.js';
-import { authMiddleware } from '../../../middlewares/auth.middleware.js';
+import { authenticate } from '../../../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
 // All cart routes require authentication
-router.use(authMiddleware);
+router.use(authenticate);
 
 // Get user's cart
 router.get('/', (req, res) => cartController.getCart(req, res));
@@ -32,4 +32,5 @@ router.delete('/courses/:courseId', (req, res) => cartController.removeFromCartB
 // Clear all items from cart
 router.delete('/', (req, res) => cartController.clearCart(req, res));
 
-export default CartRouter = router;
+const CartRouter = router;
+export default CartRouter;
