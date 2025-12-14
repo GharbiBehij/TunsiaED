@@ -24,7 +24,7 @@ export class TransactionDao {
     return this._snapshotToRaw(snapshot);
   }
 
-  async create(data) {
+  async createTransaction(data) {
     const docData = {
       payment_id: data.paymentId,
       user_id: data.userId,
@@ -47,7 +47,7 @@ export class TransactionDao {
     return this._docToRaw(doc);
   }
 
-  async update(transactionId, updateData) {
+  async updateTransaction(transactionId, updateData) {
     const docData = { ...updateData, updated_at: new Date() };
     await this.collection.doc(transactionId).update(docData);
     return this.getById(transactionId);
@@ -69,7 +69,7 @@ export class TransactionDao {
     return this._queryByField('status', status);
   }
 
-  async delete(transactionId) {
+  async deleteTransaction(transactionId) {
     await this.collection.doc(transactionId).delete();
     return { success: true };
   }

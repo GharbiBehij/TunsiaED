@@ -29,6 +29,9 @@ export class TransactionRepository {
   async findTransactionsByStatus(status) {
     return await transactionDao.getTransactionsByStatus(status);
   }
+  async deleteTransaction(transactionId) {
+    return await transactionDao.deleteTransaction(transactionId);
+  }
 }
 
 export const transactionRepository = new TransactionRepository();
