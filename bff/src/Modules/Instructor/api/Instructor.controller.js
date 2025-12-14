@@ -239,6 +239,7 @@ export const instructorController = {
   getRevenueTrends,
   getRecentActivity,
   getStudentProgressForCourse,
+  getInstructorStatus,
   // Orchestrated endpoints (cross-module)
   getDashboard,
   getRevenueOverview,
