@@ -15,7 +15,8 @@ import { router as adminRouter } from './src/Modules/Admin/api/Admin.routes.js';
 import { router as instructorRouter } from './src/Modules/Instructor/api/Instructor.routes.js';
 import { router as studentRouter } from './src/Modules/Student/api/Student.routes.js';
 import { router as progressRouter } from './src/Modules/Progress/api/Progress.routes.js';
-import { registerShoppingCartRoutes } from './src/Modules/ShoppinCart/index.js';
+import { registerPromoCodeRoutes } from './src/Modules/PromoCode/index.js';
+import CartRouter from './src/Modules/Cart/api/Cart.routes.js';
 import { initializeFirebaseNotifications } from './src/events/index.js';
 import { seedSystemData } from './src/systemCourses/seedSystemCourses.js';
 import { createRateLimiters } from './src/middlewares/rateLimiter.js';
@@ -122,10 +123,10 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/instructor', instructorRouter);
 app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
-app.use('/api/v1/shopping-cart', registerShoppingCartRoutes); // Promo code routes
+app.use('/api/v1/shopping-cart', registerPromoCodeRoutes); // Promo code routes
 app.use('/api/v1/payment', paymentRouter);
 app.use('/api/v1/cart',CartRouter)
-  // Promo code routes
+
 
 // 6️ Global error handlerk
 app.use((err, req, res, next) => {
