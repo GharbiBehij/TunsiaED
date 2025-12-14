@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { auth } from "../firebase";
 import { loginWithEmail, signupWithEmail, loginWithGoogle as loginWithGoogleLib } from "../lib/auth.js";
-import { onAuthStateChanged, signOut, getRedirectResult } from "firebase/auth";
+import { onAuthStateChanged, signOut, getRedirectResult, onIdTokenChanged } from "firebase/auth";
 import { useNavigate, useLocation } from 'react-router-dom';
 import { z } from 'zod'; 
 
@@ -182,6 +182,22 @@ export const AuthProvider = ({ children }) => {
 
     handleRedirectResult();
   }, [navigate]);
+
+  // Token refresh listener
+  useEffect(() => {
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (user) {
+        const newToken = await user.getIdToken();
+        setToken(newToken);
+        localStorage.setItem("token", newToken);
+        console.log('🔄 Token refreshed');
+      } else {
+        setToken(null);
+        localStorage.removeItem("token");
+      }
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {

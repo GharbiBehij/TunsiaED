@@ -1,3 +1,4 @@
+import { auth } from '../firebase'; // Assuming firebase.js is in src/
 const API_URL = process.env.REACT_APP_BFF_API_URL || 'https://tunsiaed.onrender.com';
 
 class PaymentService {
@@ -13,11 +14,18 @@ class PaymentService {
    * @returns {Promise<Object>} Payment initiation data { paymentId, amount, currency, courseId, courseTitle, status }
    */
   static async initiatePurchase(purchaseData, token) {
+    // Refresh token to ensure validity
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+    const freshToken = await user.getIdToken(true);
+
     const res = await fetch(`${API_URL}/api/v1/payment/purchase/initiate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${freshToken}`,
       },
       body: JSON.stringify(purchaseData),
     });

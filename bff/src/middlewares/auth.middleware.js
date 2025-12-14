@@ -1,3 +1,7 @@
+// bff/src/middlewares/auth.middleware.js
+import { auth } from '../config/firebase.js';
+import { userService } from '../Modules/User/service/User.service.js';
+
 export const authenticate = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
