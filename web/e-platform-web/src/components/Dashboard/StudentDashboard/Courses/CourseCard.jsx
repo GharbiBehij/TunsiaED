@@ -83,7 +83,7 @@ export default function CourseCard({ course }) {
 
         <div className="mt-4 flex items-center justify-between">
           <Link
-            to={`/courses/${course.courseId || course.id}`}
+            to={`/courses/${course.courseId || course.id}/learn`}
             className={`w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-all transform hover:scale-105 active:scale-95 ${
               isCompleted
                 ? 'bg-gradient-to-r from-green-50 to-green-100 text-green-700 border border-green-300 hover:shadow-md'

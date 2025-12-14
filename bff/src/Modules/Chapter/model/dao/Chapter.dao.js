@@ -50,13 +50,23 @@ export class ChapterDao {
     await this.collection.doc(chapterId).delete();
   }
 
-  async getChaptersByCourse(courseId) {
+async getChaptersByCourse(courseId) {
+  console.log('🔍 getChaptersByCourse called with:', JSON.stringify(courseId));
+  try {
     const snapshot = await this.collection
       .where('courseId', '==', courseId)
       .orderBy('order', 'asc')
       .get();
+    console.log('🔍 Firestore query snapshot.size =', snapshot.size);
+    snapshot.docs.forEach(doc => {
+      console.log('🔍 doc courseId:', doc.data().courseId);
+    });
     return this._snapshotToRaw(snapshot);
+  } catch (err) {
+    console.error('❌ getChaptersByCourse error:', err.code, err.message);
+    throw err;
   }
+}
 
   async getAllChapters() {
     const snapshot = await this.collection.get();
