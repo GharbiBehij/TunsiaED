@@ -160,7 +160,7 @@ export { useDashboardGuard } from './useDashboardGuard';
 // DIRECT: useMyPayments, usePaymentById, useCoursePayments, usePaymentsByStatus,
 //         useCreatePayment, useUpdatePayment
 // ORCHESTRATED: usePurchaseStatus, useInitiatePurchase, useCompletePurchase,
-//               useInitiateStripePayment, useStripePaymentStatus, useSimulatePayment
+//               useInitiatePaymeePayment, usePaymeePaymentStatus, useSimulatePayment
 export {
   // Direct hooks
   useMyPayments,
@@ -173,8 +173,8 @@ export {
   usePurchaseStatus,
   useInitiatePurchase,
   useCompletePurchase,
-  useInitiateStripePayment,
-  useStripePaymentStatus,
+  useInitiatePaymeePayment,
+  usePaymeePaymentStatus,
   useSimulatePayment,
 } from './Payment/usePayment';
 

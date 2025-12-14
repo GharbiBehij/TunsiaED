@@ -184,7 +184,7 @@ export class PaymentController {
       }
 
       console.log(`👤 [${requestId}] User ID:`, userId);
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       console.log(`✅ [${requestId}] User found:`, user.email);
       const { paymentId, note, firstName, lastName, email, phone } = req.body;
 

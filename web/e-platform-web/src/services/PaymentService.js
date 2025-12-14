@@ -206,8 +206,8 @@ class PaymentService {
 
   /**
    * Initiate a paymee payment
-   * Returns Stripe Checkout URL for payment
-   * @param {Object} paymentData - { courseId, amount, note, firstName, lastName, email, phone }
+   * Returns Paymee Checkout URL for payment
+   * @param {Object} paymentData - { paymentId, note, firstName, lastName, email, phone }
    * @param {string} token - Authentication token
    * @returns {Promise<Object>} { paymentId, sessionId, checkoutUrl, amount }
    */
@@ -232,7 +232,7 @@ class PaymentService {
         throw error;
       }
       
-      throw new Error(responseData.error || 'Failed to initiate Stripe payment');
+      throw new Error(responseData.error || 'Failed to initiate Paymee payment');
     }
     
     // Normalize: ensure paymentId field exists

@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   useInitiatePurchase, 
   useCompletePurchase, 
-  useInitiateStripePayment,   // now mapped to Paymee under the hood
-  useStripePaymentStatus,     // optional status polling
+  useInitiatePaymeePayment,   // Paymee payment initiation
+  usePaymeePaymentStatus,     // Paymee status polling
   useSimulatePayment 
 } from '../../../../hooks';
 
@@ -73,7 +73,7 @@ export default function SecureCheckout({
   // Hooks
   const initiatePurchase = useInitiatePurchase();
   const completePurchase = useCompletePurchase();
-  const initiatePaymee = useInitiateStripePayment();    // same hook name, Paymee under the hood
+  const initiatePaymee = useInitiatePaymeePayment();    // Paymee hook
   const simulatePayment = useSimulatePayment();
 
   // Reset on new payment
@@ -90,7 +90,7 @@ export default function SecureCheckout({
   }, [data.paymentId, data.courseId]);
 
   // Optional status polling (can be left as-is)
-  const { data: gatewayStatus } = useStripePaymentStatus(
+  const { data: gatewayStatus } = usePaymeePaymentStatus(
     gatewaySessionId, 
     { 
       enabled: !!gatewaySessionId && step === 'processing',
@@ -197,7 +197,7 @@ export default function SecureCheckout({
 
     if (!isFormValid()) return;
 
-    // Paymee flow (previously Stripe)
+    // Paymee flow
     if (paymentMethod === 'paymee') {
       try {
         setStep('processing');
@@ -205,8 +205,6 @@ export default function SecureCheckout({
         
         const paymeeData = {
           paymentId,
-          courseId: courseId || items[0]?.courseId,
-          amount: total,
           note: items.length > 0 ? `Course: ${items[0]?.title}` : 'Course Purchase',
           firstName: firstName || 'Customer',
           lastName: lastName || 'User',
