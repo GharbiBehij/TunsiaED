@@ -2,7 +2,7 @@
 // All operations are single-module (Admin module only)
 // No orchestrators needed - direct service calls
 import { adminService } from '../service/Admin.service.js';
-import { userService } from '../../User/Service/User.Servicejs';
+import { userService } from '../../User/service/User.service.js';
 
 /**
  * Get admin dashboard statistics

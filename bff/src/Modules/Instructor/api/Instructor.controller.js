@@ -3,7 +3,7 @@
 import { instructorService } from '../service/Instructor.service.js';
 import { userRepository } from '../../User/repository/User.repository.js';
 import { instructorDashboardOrchestrator } from '../../../orchestrators/InstructorDashboard.orchestrator.js';
-import { userService } from '../../User/Service/User.Servicejs';
+import { userService } from '../../User/service/User.service.js';
 
 /**
  * Get instructor's courses
