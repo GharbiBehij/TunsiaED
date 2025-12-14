@@ -2,6 +2,7 @@
 // Uses orchestrators for cross-module operations
 import { certificateService } from '../service/Certificate.service.js';
 import { userRepository } from '../../User/repository/User.repository.js';
+import { userService } from '../../User/service/User.service.js';
 import { certificateGrantingOrchestrator } from '../../../orchestrators/CertificateGranting.orchestrator.js';
 
 /**
@@ -72,7 +73,7 @@ export const updateCertificate = async (req, res) => {
   try {
     const { certificateId } = req.params;
     const userId = req.user.uid;
-    const user = await userRepository.findByUid(userId);
+    const user = await userService.getUserByUidInternal(userId);
     const updated = await certificateService.updateCertificate(certificateId, user, req.body);
     if (!updated) {
       return res.status(404).json({ error: 'Update failed' });
@@ -90,7 +91,7 @@ export const revokeCertificate = async (req, res) => {
   try {
     const { certificateId } = req.params;
     const userId = req.user.uid;
-    const user = await userRepository.findByUid(userId);
+    const user = await userService.getUserByUidInternal(userId);
     await certificateService.revokeCertificate(certificateId, user);
     res.json({ message: 'Certificate revoked successfully' });
   } catch (err) {
@@ -110,7 +111,7 @@ export const revokeCertificate = async (req, res) => {
 export const grantCertificate = async (req, res) => {
   try {
     const userId = req.user.uid;
-    const user = await userRepository.findByUid(userId);
+    const user = await userService.getUserByUidInternal(userId);
     const { courseId, enrollmentId, grade } = req.body;
 
     if (!courseId || !enrollmentId) {
@@ -145,7 +146,7 @@ export const grantCertificate = async (req, res) => {
 export const checkEligibility = async (req, res) => {
   try {
     const userId = req.user.uid;
-    const user = await userRepository.findByUid(userId);
+    const user = await userService.getUserByUidInternal(userId);
     const { courseId } = req.params;
 
     // Use orchestrator to check eligibility

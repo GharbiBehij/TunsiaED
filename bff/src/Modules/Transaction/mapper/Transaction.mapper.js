@@ -48,6 +48,12 @@ export class TransactionMapper {
       completedAt: toDate(entity.completed_at),
     });
   }
+  static validateCreate(model) {
+  if (!model.paymentId) throw new Error('paymentId is required');
+  if (!model.userId) throw new Error('userId is required');
+  if (model.amount == null) throw new Error('amount is required');
+  if (!model.currency) throw new Error('currency is required');
+}
 
   /**
    * Convert Model (API/Frontend) -> Entity (Firestore)

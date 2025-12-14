@@ -2,6 +2,7 @@
 import { courseService } from "../service/Course.service.js";
 import { OnboardSchema, UpdateCourseSchema } from "../Validators/Course.schema.js";
 import { userRepository } from "../../User/repository/User.repository.js";
+import { userService } from "../../User/service/User.service.js";
 
 // CREATE COURSE (Instructor/Admin)
 export const onboardCourse = async (req, res) => {
@@ -18,7 +19,7 @@ export const onboardCourse = async (req, res) => {
     const instructorId = req.user.uid;
   
     // Get user from database to check role and get name
-    const user = await userRepository.findByUid(instructorId);
+    const user = await userService.getUserByUidInternal(instructorId);
     
     if (!user) {
       return res.status(404).json({ error: "User not found" });
@@ -113,7 +114,7 @@ export const updateMyCourse = async (req, res) => {
     const courseId = req.params.courseId;
     const userId = req.user.uid;
     
-    const user = await userRepository.findByUid(userId);
+    const user = await userService.getUserByUidInternal(userId);
 
     const updated = await courseService.updateCourse(
       courseId,
@@ -140,7 +141,7 @@ export const deleteMycourse = async (req, res) => {
     const courseId = req.params.courseId;
     const userId = req.user.uid;
     
-    const user = await userRepository.findByUid(userId);
+    const user = await userService.getUserByUidInternal(userId);
 
     await courseService.deleteCourse(courseId, user);
     

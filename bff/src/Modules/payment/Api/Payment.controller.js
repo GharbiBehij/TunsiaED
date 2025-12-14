@@ -3,6 +3,7 @@
 import { paymentService } from '../service/Payment.service.js';
 import { coursePurchaseOrchestrator } from '../../../orchestrators/CoursePurchase.orchestrator.js';
 import { userService } from '../../User/service/User.service.js';
+import { userRepository } from '../../User/repository/User.repository.js';
 import { courseService } from '../../Course/service/Course.service.js';
 import emailService from '../../../utils/EmailService.js';
 
@@ -152,7 +153,7 @@ export class PaymentController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { paymentId } = req.params;
 
       const statusData = await coursePurchaseOrchestrator.getPurchaseStatus(user, paymentId);
@@ -336,7 +337,7 @@ export class PaymentController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       console.log('✅ [PaymentSim] User found:', user.email); 
       const { courseId, simulateSuccess = true } = req.body;
       console.log('🎯 [PaymentSim] Course ID:', courseId, 'Simulate Success:', simulateSuccess);

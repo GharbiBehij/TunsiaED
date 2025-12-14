@@ -80,10 +80,6 @@ app.options('*', cors({
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
 }));
-
-// 3 Raw body for Stripe webhook (MUST be before express.json())
-
-
 // 3 Parse JSON
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -120,13 +116,13 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/instructor', instructorRouter);
 app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
-app.use('/api/v1/shopping-cart', registerPromoCodeRoutes); // Promo code routes
+app.use('/api/v1/promocode', registerPromoCodeRoutes); // Promo code routes
 app.use('/api/v1/payment', paymentRouter);
 app.use('/api/v1/cart',CartRouter)
 
 
 // 6️ Global error handlerk
-app.use((err, req, res, next) => {
+app.use((err,res) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
@@ -146,7 +142,7 @@ const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 // TEMP: Add a simple test route
-app.get('/test', (req, res) => {
+app.get('/test', (res) => {
   res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
 });
 

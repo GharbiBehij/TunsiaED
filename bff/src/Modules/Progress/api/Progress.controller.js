@@ -1,6 +1,7 @@
 // Progress Controller
 import { progressService } from '../service/Progress.service.js';
 import { userRepository } from '../../User/repository/User.repository.js';
+import { userService } from '../../User/service/User.service.js';
 
 export class ProgressController {
   /**
@@ -13,7 +14,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const progress = await progressService.getOrCreateProgress(user, req.body);
       
       res.status(200).json(progress.toJSON());
@@ -35,7 +36,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { progressId } = req.params;
       
       const progress = await progressService.getProgressById(user, progressId);
@@ -61,7 +62,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { enrollmentId } = req.params;
       
       const progressList = await progressService.getProgressByEnrollment(user, enrollmentId);
@@ -84,7 +85,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const progressList = await progressService.getProgressByUser(user);
       
       res.status(200).json({ progress: progressList.map(p => p.toJSON()) });
@@ -106,7 +107,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { moduleType, moduleId } = req.params;
       
       const progressList = await progressService.getProgressByModule(user, moduleType, moduleId);
@@ -129,7 +130,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { progressId } = req.params;
       
       const updated = await progressService.updateProgress(user, progressId, req.body);
@@ -155,7 +156,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { progressId } = req.params;
       const { itemId } = req.body;
       
@@ -186,7 +187,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { courseId } = req.params;
       
       const progress = await progressService.getUserCourseProgressSummary(user, courseId);
@@ -214,7 +215,7 @@ export class ProgressController {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
       const { progressId } = req.params;
       
       const result = await progressService.deleteProgress(user, progressId);

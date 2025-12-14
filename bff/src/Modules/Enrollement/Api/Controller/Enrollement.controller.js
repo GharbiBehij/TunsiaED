@@ -3,6 +3,7 @@
 // ORCHESTRATED operations use enrollmentOrchestrator (cross-module)
 import { enrollmentService } from '../../service/Enrollement.service.js';
 import { userRepository } from '../../../User/repository/User.repository.js';
+import { userService } from '../../../User/service/User.service.js';
 import { enrollmentOrchestrator } from '../../../../orchestrators/Enrollment.orchestrator.js';
 
 export class EnrollmentController {
@@ -78,7 +79,7 @@ export class EnrollmentController {
     try {
       const { courseId } = req.params;
       const userId = req.user.uid;
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
   
       const students = await enrollmentOrchestrator.getStudentsForCourse(courseId, user);
       res.json(students);
@@ -95,7 +96,7 @@ export class EnrollmentController {
     try {
       const { courseId } = req.params;
       const userId = req.user.uid;
-      const user = await userRepository.findByUid(userId);
+      const user = await userService.getUserByUidInternal(userId);
 
       const enrollments = await enrollmentOrchestrator.getCourseEnrollmentsWithProgress(courseId, user);
       res.status(200).json({ enrollments });
