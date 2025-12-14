@@ -10,7 +10,7 @@ const PAYMEE_CONFIG = {
   SANDBOX_GATEWAY: 'https://sandbox.paymee.tn/gateway',
   LIVE_GATEWAY: 'https://app.paymee.tn/gateway',
 };
-
+const FRONTEND_BASE_URL = process.env.FRONTEND_BASE_URL || 'https://tunisiaed-811f6.web.app';
 class PaymeeService {
   constructor() {
     this.apiToken = process.env.PAYMEE_API_KEY; // single token provided
@@ -74,8 +74,8 @@ class PaymeeService {
        email,
        phone: formattedPhone,
        currency: this.currency,
-       return_url: this.successUrl,
-       cancel_url: this.cancelUrl,
+       return_url: `${FRONTEND_BASE_URL}/payment/${orderId}?status=success`,
+       cancel_url: `${FRONTEND_BASE_URL}/payment/${orderId}?status=cancel`,
        webhook_url: this.webhookUrl,
        order_id: orderId || `ORD_${Date.now()}`,
        is_test: this.isProduction ? 0 : 1,
@@ -150,20 +150,35 @@ class PaymeeService {
     }
   }
 
-  verifyChecksum(webhookData) {
-    const { token, payment_status, check_sum } = webhookData;
-    if (!token || payment_status === undefined || !check_sum) {
-      return false;
-    }
+verifyChecksum(webhookData) {
+  const { token, payment_status, check_sum } = webhookData;
 
-    const statusValue = payment_status ? '1' : '0';
-    const expectedChecksum = crypto
-      .createHash('md5')
-      .update(`${token}${statusValue}${this.apiToken}`)
-      .digest('hex');
+  console.log('[Paymee webhook] raw data:', webhookData);
 
-    return expectedChecksum === check_sum;
+  if (!token || payment_status === undefined || !check_sum) {
+    console.log('[Paymee webhook] Missing fields for checksum');
+    return false;
   }
+
+  const statusValue = (payment_status === true || payment_status === 'True' || payment_status === 1 || payment_status === '1') ? '1' : '0';
+
+  const expectedChecksum = crypto
+    .createHash('md5')
+    .update(`${token}${statusValue}${this.apiToken}`)
+    .digest('hex');
+
+  console.log('[Paymee webhook] checksum debug:', {
+    token,
+    payment_status,
+    statusValue,
+    apiTokenLast4: this.apiToken?.slice(-4),
+    check_sum,
+    expectedChecksum,
+    match: expectedChecksum === check_sum,
+  });
+
+  return expectedChecksum === check_sum;
+}
 
   processWebhook(webhookData) {
     if (!this.verifyChecksum(webhookData)) {
