@@ -55,9 +55,11 @@ export class LessonDao {
 
   async getLessonsByChapter(chapterId) {
     const snapshot = await this.collection
+    console.log('🔍 getLessonsByChapter called with:', JSON.stringify(chapterId))
       .where('chapterId', '==', chapterId)
       .orderBy('order', 'asc')
       .get();
+    console.log('🔍 Firestore query snapshot.size =', snapshot.size);
     return this._snapshotToRaw(snapshot);
   }
 
