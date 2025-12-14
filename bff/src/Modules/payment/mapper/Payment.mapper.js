@@ -59,7 +59,9 @@ export const PaymentMapper = {
       status: entity.status,
       transactionId: entity.transactionId,
       stripeSessionId: entity.stripeSessionId || null,
+      paymeeToken: entity.paymeeToken || null,
       checkoutUrl: entity.checkoutUrl || null,
+      failureReason: entity.failureReason || null,
       createdAt: entity.createdAt?.toDate?.() 
         ? entity.createdAt.toDate().toISOString() 
         : entity.createdAt,

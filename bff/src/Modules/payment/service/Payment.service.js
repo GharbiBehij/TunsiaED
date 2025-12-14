@@ -103,16 +103,30 @@ export class PaymentService {
       throw new Error('Payment already completed');
     }
 
+    const paymeePayload = {
+      amount: payment.amount,
+      note: gatewayData.note || `Payment: ${payment.courseTitle || 'Course Purchase'}`,
+      firstName: gatewayData.firstName || 'Customer',
+      lastName: gatewayData.lastName || 'User',
+      email: gatewayData.email,
+      phone: gatewayData.phone || '+21600000000',
+      orderId: payment.paymentId,
+    };
+
+    console.log('💳 [PaymentService] Sending to Paymee API:', {
+      amount: paymeePayload.amount,
+      note: paymeePayload.note,
+      firstName: paymeePayload.firstName,
+      lastName: paymeePayload.lastName,
+      email: paymeePayload.email,
+      phone: paymeePayload.phone,
+      orderId: paymeePayload.orderId,
+      hasEmail: !!paymeePayload.email,
+      hasPhone: !!paymeePayload.phone,
+    });
+
     try {
-      const paymeeResult = await paymeeService.initiatePayment({
-        amount: payment.amount,
-        note: gatewayData.note || `Payment: ${payment.courseTitle || 'Course Purchase'}`,
-        firstName: gatewayData.firstName || 'Customer',
-        lastName: gatewayData.lastName || 'User',
-        email: gatewayData.email,
-        phone: gatewayData.phone || '+21600000000',
-        orderId: payment.paymentId,
-      });
+      const paymeeResult = await paymeeService.initiatePayment(paymeePayload);
 
       await this.updatePaymentInternal(payment.paymentId, {
         paymeeToken: paymeeResult.token,
@@ -136,6 +150,11 @@ export class PaymentService {
       });
       throw err;
     }
+  }
+
+  async getPaymentByPaymeeToken(token) {
+    const raw = await paymentRepository.findByPaymeeToken(token);
+    return this._toModel(raw);
   }
 
   /**

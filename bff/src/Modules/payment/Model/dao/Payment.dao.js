@@ -30,6 +30,10 @@ export class PaymentDao {
       paymentMethod: data.paymentMethod || null,
       status: 'pending',
       transactionId: null,
+      stripeSessionId: null,
+      paymeeToken: null,
+      checkoutUrl: null,
+      failureReason: null,
       createdAt: new Date(),
       updatedAt: new Date(),
     };
@@ -81,6 +85,19 @@ export class PaymentDao {
       return null;
     }
     
+    return this._docToRaw(snapshot.docs[0]);
+  }
+
+  async findByPaymeeToken(token) {
+    const snapshot = await this.collection
+      .where('paymeeToken', '==', token)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
     return this._docToRaw(snapshot.docs[0]);
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { auth } from '../../../../firebase';
 import { 
   useInitiatePurchase, 
   useCompletePurchase, 
@@ -203,14 +204,34 @@ export default function SecureCheckout({
         setStep('processing');
         setErrorMessage('');
         
+        // Get email from Firebase auth if not provided in data
+        const userEmail = email || auth.currentUser?.email || '';
+        
+        if (!userEmail) {
+          setStep('error');
+          setErrorMessage('Email is required for payment. Please ensure you are logged in.');
+          return;
+        }
+        
         const paymeeData = {
           paymentId,
           note: items.length > 0 ? `Course: ${items[0]?.title}` : 'Course Purchase',
           firstName: firstName || 'Customer',
           lastName: lastName || 'User',
-          email: email || '',
+          email: userEmail,
           phone,
         };
+
+        console.log('🚀 [SecureCheckout] Sending Paymee data:', {
+          paymentId: paymeeData.paymentId,
+          note: paymeeData.note,
+          firstName: paymeeData.firstName,
+          lastName: paymeeData.lastName,
+          email: paymeeData.email,
+          phone: paymeeData.phone,
+          hasEmail: !!paymeeData.email,
+          hasPhone: !!paymeeData.phone,
+        });
 
         const result = await initiatePaymee.mutateAsync(paymeeData);
         

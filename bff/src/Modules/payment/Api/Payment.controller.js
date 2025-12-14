@@ -188,6 +188,19 @@ export class PaymentController {
       console.log(`✅ [${requestId}] User found:`, user.email);
       const { paymentId, note, firstName, lastName, email, phone } = req.body;
 
+      console.log(`📥 [${requestId}] Received payment data:`, {
+        paymentId,
+        note,
+        firstName,
+        lastName,
+        email,
+        phone,
+        hasEmail: !!email,
+        hasPhone: !!phone,
+        userEmail: user.email,
+        userPhone: user.phone,
+      });
+
       if (!paymentId) {
         return res.status(400).json({ error: 'paymentId is required' });
       }

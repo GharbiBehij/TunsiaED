@@ -33,8 +33,34 @@ class PaymeeService {
   async initiatePayment(paymentData) {
     const { amount, note, firstName, lastName, email, phone, orderId } = paymentData;
 
+    console.log('📋 [PaymeeService] Validating payment data:', {
+      amount,
+      note,
+      firstName,
+      lastName,
+      email,
+      phone,
+      orderId,
+      hasAmount: !!amount,
+      hasNote: !!note,
+      hasFirstName: !!firstName,
+      hasLastName: !!lastName,
+      hasEmail: !!email,
+      hasPhone: !!phone,
+    });
+
     if (!amount || !note || !firstName || !lastName || !email || !phone) {
-      throw new Error('Missing required payment fields');
+      const missing = [];
+      if (!amount) missing.push('amount');
+      if (!note) missing.push('note');
+      if (!firstName) missing.push('firstName');
+      if (!lastName) missing.push('lastName');
+      if (!email) missing.push('email');
+      if (!phone) missing.push('phone');
+      
+      const error = `Missing required payment fields: ${missing.join(', ')}`;
+      console.error('❌ [PaymeeService] Validation failed:', error);
+      throw new Error(error);
     }
 
     const formattedPhone = this.formatPhoneNumber(phone);

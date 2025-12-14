@@ -3,7 +3,7 @@
 /**
  * PaymentModel - Business/API format
  * This is what the frontend sends and receives
- * 
+ *
  * @typedef {Object} PaymentModel
  * @property {string} paymentId - Payment ID (Firestore document ID)
  * @property {string} userId - User ID who made the payment
@@ -19,6 +19,10 @@
  * @property {string|null} paymentMethod - Payment method used
  * @property {string} status - Payment status (pending, completed, failed, refunded)
  * @property {string|null} transactionId - External transaction ID
+ * @property {string|null} stripeSessionId - Stripe session ID (legacy)
+ * @property {string|null} paymeeToken - Paymee payment token
+ * @property {string|null} checkoutUrl - Paymee checkout URL
+ * @property {string|null} failureReason - Reason for payment failure
  * @property {string} createdAt - ISO date string
  * @property {string} updatedAt - ISO date string
  */

@@ -212,6 +212,17 @@ class PaymentService {
    * @returns {Promise<Object>} { paymentId, sessionId, checkoutUrl, amount }
    */
   static async initiatePaymeePayment(paymentData, token) {
+    console.log('📤 [PaymentService] initiatePaymeePayment called with:', {
+      paymentId: paymentData.paymentId,
+      note: paymentData.note,
+      firstName: paymentData.firstName,
+      lastName: paymentData.lastName,
+      email: paymentData.email,
+      phone: paymentData.phone,
+      hasEmail: !!paymentData.email,
+      hasPhone: !!paymentData.phone,
+    });
+
     const res = await fetch(`${API_URL}/api/v1/payment/paymee/initiate`, {
       method: 'POST',
       headers: {
@@ -221,10 +232,19 @@ class PaymentService {
       body: JSON.stringify(paymentData),
     });
     
-    const responseData = await res.json().catch(() => ({}));
+    const responseData = await res.text(); // Get raw response as text
     
     if (!res.ok) {
       // Check for payment gateway downtime (503 Service Unavailable)
+      let errorMessage = 'Failed to initiate Paymee payment';
+      try {
+        const json = JSON.parse(responseData);
+        errorMessage = json.error || errorMessage;
+      } catch {
+        // If not JSON, it's likely an HTML error page
+        errorMessage = `Server error (${res.status}): ${res.statusText}. Response is not JSON.`;
+      }
+      
       if (res.status === 503) {
         const error = new Error(responseData.message || 'Payment gateway temporarily unavailable');
         error.code = 'GATEWAY_DOWN';
@@ -232,15 +252,23 @@ class PaymentService {
         throw error;
       }
       
-      throw new Error(responseData.error || 'Failed to initiate Paymee payment');
+      throw new Error(errorMessage);
+    }
+    
+    // Success case
+    let jsonData;
+    try {
+      jsonData = JSON.parse(responseData);
+    } catch (parseError) {
+      throw new Error('Invalid JSON response from server');
     }
     
     // Normalize: ensure paymentId field exists
     const normalized = {
-      ...responseData,
-      paymentId: responseData.paymentId || responseData.id || responseData._id,
+      ...jsonData,
+      paymentId: jsonData.paymentId || jsonData.id || jsonData._id,
     };
-    console.log('💳 [PaymentService] initiateStripePayment response normalized:', normalized);
+    console.log('💳 [PaymentService] initiatePaymeePayment response normalized:', normalized);
     return normalized;
   }
   /**
