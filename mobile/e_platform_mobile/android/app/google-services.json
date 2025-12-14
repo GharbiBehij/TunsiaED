@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1034467644370",
+    "project_id": "tunisiaed-811f6",
+    "storage_bucket": "tunisiaed-811f6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1034467644370:android:f6ed3a86371ee6d799ee0b",
+        "android_client_info": {
+          "package_name": "com.tunisiaed.eplatform"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1034467644370-6shhtt6o54d7cgq3v88lmr6611qnpfjm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbVE3IVlhG5vsKJdHTXw3yEGQwp05VlBs"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1034467644370-6shhtt6o54d7cgq3v88lmr6611qnpfjm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

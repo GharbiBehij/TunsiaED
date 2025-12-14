@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==================== FONTS ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
+
+/* ==================== MATERIAL ICONS FIX ==================== */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* ==================== BASE ==================== */
+@layer base {
+  body {
+    @apply bg-background-light dark:bg-background-dark 
+           text-text-light dark:text-text-dark 
+           font-display antialiased min-h-screen;
+  }
+}
+
+/* ==================== EXACT CLASSES FROM YOUR HTML ==================== */
+@layer components {
+  /* Layout */
+  .container { @apply mx-auto max-w-7xl px-4 lg:px-10; }
+  
+  .input {
+    @apply w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition;
+  }
+  .btn-primary {
+    @apply bg-primary text-white py-3 rounded-lg hover:bg-primary/90 transition font-medium disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .label {
+    @apply block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300;
+  }
+  /* Header */
+  .header {
+    @apply sticky top-0 z-50 bg-background-light dark:bg-background-dark/80 
+           backdrop-blur-sm border-b border-neutral-light/10 dark:border-neutral-dark/10;
+  }
+
+  /* Hero */
+  .hero-section {
+    @apply relative py-20 lg:py-32;
+  }
+  .hero-overlay {
+    @apply flex min-h-[480px] flex-col gap-6 bg-cover bg-center bg-no-repeat 
+           rounded-xl items-center justify-center p-4 text-center
+           bg-[linear-gradient(rgba(13,71,161,0.7),rgba(13,71,161,0.9)),url('https://lh3.googleusercontent.com/aida-public/AB6AXuDP4O39S4ySAky1hZNAgfkvsvIBCt4B090qeuSbBz3vkzkNQzaoX2V7TOubSQB1wti1QXrprVHtctuy3jjhSBA1IE4mTZqXnnenIpO1RZEhsSWJJCpS9lcoes2yU6CY0-f4igHEqh4p4OYuldYVkNdMpE9ih3SVpMweo5nJoNYjqAXZM3xCq59Lvqbfmgh9rMpyjbWg5VEZcbKL8VvvKllBhQ-RYj7K64f20mH5ml9DW-wTE1t8XHTjVYnEugQ5UPY5IQ9YOSEYRQ')];
+  }
+  .hero-title {
+    @apply text-white text-4xl font-black leading-tight tracking-[-0.033em] 
+           sm:text-5xl md:text-6xl;
+  }
+  .hero-subtitle {
+    @apply text-white/90 text-base font-normal leading-normal 
+           sm:text-lg max-w-2xl mx-auto;
+  }
+
+  /* Buttons used in hero & header */
+  .btn-primary-cta {
+    @apply flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center 
+           overflow-hidden rounded-lg h-12 px-6 bg-accent text-primary 
+           text-base font-bold leading-normal tracking-[0.015em] 
+           hover:bg-accent/90 transition-colors shadow-lg;
+  }
+  .btn-signup {
+    @apply hidden sm:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center 
+           overflow-hidden rounded-lg h-10 px-4 bg-accent text-primary 
+           text-sm font-bold leading-normal tracking-[0.015em] hover:bg-accent/90 transition-colors;
+  }
+  .btn-login {
+    @apply hidden sm:flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center 
+           overflow-hidden rounded-lg h-10 px-4 bg-neutral-light/80 dark:bg-neutral-dark/80 
+           text-text-light dark:text-text-dark text-sm font-bold leading-normal 
+           tracking-[0.015em] hover:bg-neutral-light dark:hover:bg-neutral-dark transition-colors;
+  }
+
+  /* Feature cards (Why TunisiaED) */
+  .feature-card {
+    @apply flex flex-col gap-4 rounded-xl border border-neutral-light/20 dark:border-neutral-dark/20 
+           bg-white dark:bg-background-dark p-6 text-center items-center;
+  }
+
+  /* Category cards */
+  .category-card {
+    @apply flex flex-col gap-4;
+  }
+  .category-image {
+    @apply w-full bg-center bg-no-repeat aspect-video bg-cover rounded-xl overflow-hidden;
+  }
+
+  /* Course cards */
+  .course-card {
+    @apply flex flex-col bg-white dark:bg-background-dark rounded-xl overflow-hidden 
+           border border-neutral-light/20 dark:border-neutral-dark/20;
+  }
+  .course-image {
+    @apply w-full h-48 bg-cover bg-center;
+  }
+  .course-cta {
+    @apply mt-4 w-full flex items-center justify-center rounded-lg h-10 px-4 
+           bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition-colors;
+  }
+
+  /* Testimonial cards */
+  .testimonial-card {
+    @apply bg-background-light dark:bg-neutral-dark/40 p-8 rounded-xl;
+  }
+
+  /* Pricing cards */
+  .pricing-card {
+    @apply border border-neutral-light/20 dark:border-neutral-dark/20 rounded-xl p-8 
+           bg-white dark:bg-background-dark relative;
+  }
+  .pricing-card-popular {
+    @apply border-2 border-primary shadow-2xl scale-105;
+  }
+  .badge-popular {
+    @apply absolute -top-4 left-1/2 -translate-x-1/2 bg-secondary text-white 
+           text-xs font-bold px-3 py-1 rounded-full;
+  }
+
+  /* Footer */
+  .footer {
+    @apply bg-white dark:bg-background-dark border-t border-neutral-light/10 dark:border-neutral-dark/10;
+  }
+}
