@@ -14,7 +14,8 @@ const PAYMEE_CONFIG = {
 class PaymeeService {
   constructor() {
     this.apiToken = process.env.PAYMEE_API_KEY; // single token provided
-    this.isProduction = process.env.NODE_ENV === 'production';
+    // Force sandbox mode for testing
+    this.isProduction = false; // process.env.NODE_ENV === 'production';
 
     // Base URLs
     this.baseUrl = this.isProduction ? PAYMEE_CONFIG.LIVE_URL : PAYMEE_CONFIG.SANDBOX_URL;
