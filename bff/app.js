@@ -147,4 +147,9 @@ app.use('*', (req, res) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
+// TEMP: Add a simple test route
+app.get('/test', (req, res) => {
+  res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
+});
+
 export default app;

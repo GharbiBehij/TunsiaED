@@ -81,6 +81,10 @@ class PaymeeService {
 };
 
     try {
+      console.log('📡 [PaymeeService] Making request to:', this.baseUrl);
+      console.log('🔑 [PaymeeService] Using token:', this.apiToken ? '***' + this.apiToken.slice(-4) : 'NOT SET');
+      console.log('📦 [PaymeeService] Request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await fetch(this.baseUrl, {
         method: 'POST',
         headers: {
@@ -90,20 +94,40 @@ class PaymeeService {
         body: JSON.stringify(requestBody),
       });
 
+      console.log('📡 [PaymeeService] Response status:', response.status);
+      console.log('📡 [PaymeeService] Response headers:', Object.fromEntries(response.headers.entries()));
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error(`Paymee server error (${response.status}):`, errorText);
+        console.error(`❌ [PaymeeService] Server error (${response.status}):`, errorText);
         throw new Error(`PAYMEE_SERVER_ERROR: Server returned ${response.status}`);
       }
 
-      const data = await response.json();
+      const responseText = await response.text();
+      console.log('📡 [PaymeeService] Raw response:', responseText);
+
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('❌ [PaymeeService] Failed to parse JSON response:', parseError.message);
+        console.error('❌ [PaymeeService] Response was:', responseText);
+        throw new Error(`PAYMEE_PARSE_ERROR: Invalid JSON response from Paymee API`);
+      }
 
       if (!data.status || data.code !== 50) {
+        console.error('❌ [PaymeeService] Paymee API returned error:', data);
         throw new Error(data.message || 'Failed to initiate Paymee payment');
       }
 
+      console.log('✅ [PaymeeService] Paymee payment initiated successfully:', {
+        token: data.data?.token,
+        orderId: data.data?.order_id,
+        paymentUrl: data.data?.payment_url
+      });
+
       return {
-        success: payment_status == 1 ,
+        success: data.status === true || data.code === 50,
         token: data.data.token,
         orderId: data.data.order_id,
         paymentUrl: data.data.payment_url,
