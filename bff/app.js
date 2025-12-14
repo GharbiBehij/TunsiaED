@@ -20,7 +20,6 @@ import CartRouter from './src/Modules/Cart/api/Cart.routes.js';
 import { initializeFirebaseNotifications } from './src/events/index.js';
 import { seedSystemData } from './src/systemCourses/seedSystemCourses.js';
 import { createRateLimiters } from './src/middlewares/rateLimiter.js';
-import { paymentController } from './src/Modules/payment/Api/Payment.controller.js';
 
 const app = express();
 

@@ -16,7 +16,7 @@ router.get('/activity', authenticate, requireRole('admin', 'instructor'), instru
 
 // Student progress tracking (instructor view)
 router.get('/courses/:courseId/students/progress', authenticate, requireRole('admin', 'instructor'), instructorController.getStudentProgressForCourse);
-router.get('/instructor/status',authenticate,requireRole('admin','instructor'),instructorController.getInstructorStatus);
+router.get('/status', authenticate, instructorController.getInstructorStatus);
 // ORCHESTRATED ROUTES - Cross-module aggregation endpoints
 // Dashboard orchestrator - aggregates data from multiple sources
 router.get('/dashboard', authenticate, requireRole('admin', 'instructor'), instructorController.getDashboard);
