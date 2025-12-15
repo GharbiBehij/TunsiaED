@@ -7,7 +7,8 @@ import { courseService } from '../Modules/Course/service/Course.service.js';
 import { userService } from '../Modules/User/service/User.service.js';
 import { eventBus } from '../events/eventBus.js';
 import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
-import {adminService} from '../Modules/Admin/service/Admin.service.js';
+import { adminService } from '../Modules/Admin/service/Admin.service.js';
+import { cartService } from '../Modules/Cart/service/Cart.service.js';
 
 export class CoursePurchaseOrchestrator {
   /**
@@ -21,12 +22,15 @@ export class CoursePurchaseOrchestrator {
       userId: user.uid,
       courseId: purchaseData.courseId,
       planId: purchaseData.planId,
-      paymentType: purchaseData.paymentType
+      paymentType: purchaseData.paymentType,
     });
-    
-    let itemTitle, itemPrice, itemCurrency, itemId;
 
-    // Handle subscription purchase
+    let itemTitle;
+    let itemPrice;
+    let itemCurrency;
+    let itemId;
+
+    // Subscription purchase
     if (purchaseData.planId) {
       console.log('📋 [Orchestrator] Processing subscription purchase...');
       const plan = await adminService.getSubscriptionPlanByIdPublic(purchaseData.planId);
@@ -38,7 +42,7 @@ export class CoursePurchaseOrchestrator {
       itemCurrency = 'TND';
       itemId = purchaseData.planId;
     }
-    // Handle course purchase
+    // Single course purchase
     else if (purchaseData.courseId) {
       console.log('📚 [Orchestrator] Processing course purchase:', purchaseData.courseId);
       const course = await courseService.getCourseByIdInternal(purchaseData.courseId);
@@ -51,7 +55,7 @@ export class CoursePurchaseOrchestrator {
       // Check if already enrolled
       console.log('🔍 [Orchestrator] Checking enrollment status...');
       const enrollments = await enrollmentService.getUserEnrollments(user.uid);
-      const alreadyEnrolled = enrollments.some(e => e.courseId === purchaseData.courseId);
+      const alreadyEnrolled = enrollments.some((e) => e.courseId === purchaseData.courseId);
       if (alreadyEnrolled) {
         console.error('⛔ [Orchestrator] User already enrolled in course');
         throw new Error('Already enrolled in this course');
@@ -66,12 +70,12 @@ export class CoursePurchaseOrchestrator {
       throw new Error('Either courseId or planId is required');
     }
 
-    // Create payment using payment service (internal)
     console.log('💾 [Orchestrator] Creating payment record:', {
       amount: itemPrice,
       currency: itemCurrency,
-      courseTitle: itemTitle
+      courseTitle: itemTitle,
     });
+
     const payment = await paymentService.createPaymentInternal({
       userId: user.uid,
       courseId: purchaseData.courseId || null,
@@ -79,11 +83,13 @@ export class CoursePurchaseOrchestrator {
       courseTitle: itemTitle,
       amount: itemPrice,
       currency: itemCurrency,
-      paymentType: purchaseData.paymentType || (purchaseData.planId ? 'subscription' : 'course_purchase'),
+      paymentType:
+        purchaseData.paymentType || (purchaseData.planId ? 'subscription' : 'course_purchase'),
       subscriptionType: purchaseData.subscriptionType || null,
       paymentMethod: purchaseData.paymentMethod || null,
       status: 'pending',
     });
+
     console.log('✅ [Orchestrator] Payment record created:', payment.paymentId);
 
     const responseDto = {
@@ -100,18 +106,13 @@ export class CoursePurchaseOrchestrator {
   }
 
   /**
-   * Initiate Paymee Checkout
-   * Orchestrates Paymee checkout session creation for an existing payment
-   * @param {Object} user - Authenticated user
-   * @param {string} paymentId - Internal payment ID
-   * @param {Object} customerData - { firstName, lastName, email, phone, note }
-   * @returns {Promise<Object>} Paymee checkout data
+   * Initiate Paymee Checkout for existing payment
    */
   async initiatePaymeeCheckout(user, paymentId, customerData) {
     console.log('🔄 [Orchestrator] initiatePaymeeCheckout called:', {
       userId: user.uid,
       paymentId,
-      email: customerData.email
+      email: customerData.email,
     });
 
     console.log('💳 [Orchestrator] Initiating Paymee checkout session for existing payment...');
@@ -128,23 +129,21 @@ export class CoursePurchaseOrchestrator {
     );
 
     console.log('✅ [Orchestrator] Paymee checkout session created:', paymeeResult.sessionId);
-
     await cacheClient.invalidate(REDIS_KEY_REGISTRY.STUDENT_DASHBOARD(user.uid));
-
     return paymeeResult;
   }
 
   /**
-   * Complete purchase (creates transaction + enrollment)
+   * Complete purchase (creates transaction + enrollment(s))
    * Called after payment confirmation (webhook or frontend)
    */
   async completePurchase(user, confirmationData) {
     console.log('🔄 [Orchestrator] completePurchase called:', {
       userId: user.uid,
       paymentId: confirmationData.paymentId,
-      gatewayTransactionId: confirmationData.gatewayTransactionId
+      gatewayTransactionId: confirmationData.gatewayTransactionId,
     });
-    
+
     console.log('🔍 [Orchestrator] Fetching payment details...');
     const payment = await paymentService.getPaymentById(confirmationData.paymentId);
     if (!payment) {
@@ -154,7 +153,7 @@ export class CoursePurchaseOrchestrator {
     console.log('✅ [Orchestrator] Payment found:', {
       paymentId: payment.paymentId,
       status: payment.status,
-      amount: payment.amount
+      amount: payment.amount,
     });
 
     if (payment.userId !== user.uid) {
@@ -163,34 +162,43 @@ export class CoursePurchaseOrchestrator {
 
     // Idempotency
     if (payment.status === 'completed') {
-      console.log('⚠️  [Orchestrator] Idempotency check: Payment already completed:', {
+      console.log('⚠️ [Orchestrator] Idempotency check: Payment already completed:', {
         paymentId: payment.paymentId,
-        status: payment.status
+        status: payment.status,
       });
-      
+
       let transaction = null;
       if (payment.transactionId) {
         transaction = await transactionService.getTransactionById(payment.transactionId);
       }
-      
-      let enrollment = null;
-      if (payment.courseId && payment.paymentType !== 'subscription') {
-        const enrollments = await enrollmentService.getUserEnrollments(user.uid);
-        enrollment = enrollments.find(e => e.courseId === payment.courseId);
+
+      let enrollments = [];
+      if (payment.paymentType === 'bundle_purchase' && payment.cartItems?.length) {
+        const userEnrollments = await enrollmentService.getUserEnrollments(user.uid);
+        enrollments = userEnrollments.filter((e) =>
+          payment.cartItems.some((ci) => ci.courseId === e.courseId)
+        );
+      } else if (payment.courseId && payment.paymentType !== 'subscription') {
+        const userEnrollments = await enrollmentService.getUserEnrollments(user.uid);
+        const single = userEnrollments.find((e) => e.courseId === payment.courseId);
+        if (single) enrollments = [single];
       }
-      
+
       return {
         success: true,
-        transaction: transaction ? {
-          transactionId: transaction.transactionId,
-          amount: transaction.amount,
-          status: transaction.status,
-        } : null,
-        enrollment: enrollment ? {
-          enrollmentId: enrollment.enrollmentId,
-          courseId: enrollment.courseId,
-          courseTitle: enrollment.courseTitle,
-        } : null,
+        transaction: transaction
+          ? {
+              transactionId: transaction.transactionId,
+              amount: transaction.amount,
+              status: transaction.status,
+            }
+          : null,
+        enrollments: enrollments.map((e) => ({
+          enrollmentId: e.enrollmentId,
+          courseId: e.courseId,
+          courseTitle: e.courseTitle,
+          enrolledAt: e.enrolledAt,
+        })),
         message: 'Payment already completed (idempotent)',
       };
     }
@@ -199,8 +207,9 @@ export class CoursePurchaseOrchestrator {
     const transaction = await transactionService.createTransactionInternal({
       paymentId: payment.paymentId,
       userId: user.uid,
-      courseId: payment.courseId,
-      transactionType: 'course_purchase',
+      courseId: payment.courseId || null,
+      transactionType:
+        payment.paymentType === 'bundle_purchase' ? 'bundle_purchase' : 'course_purchase',
       amount: payment.amount,
       currency: payment.currency,
       status: 'completed',
@@ -217,17 +226,30 @@ export class CoursePurchaseOrchestrator {
     });
     console.log('✅ [Orchestrator] Payment status updated to completed');
 
-    let enrollment = null;
-    if (payment.courseId && payment.paymentType !== 'subscription') {
-      console.log('📝 [Orchestrator] Creating enrollment for course:', payment.courseId);
-      enrollment = await enrollmentService.createEnrollmentInternal(user.uid, {
+    let enrollments = [];
+
+    if (payment.paymentType === 'bundle_purchase' && payment.cartItems?.length) {
+      console.log('📝 [Orchestrator] Creating enrollments for bundle items...');
+      for (const item of payment.cartItems) {
+        const enrollment = await enrollmentService.createEnrollmentInternal(user.uid, {
+          courseId: item.courseId,
+          courseTitle: item.courseTitle,
+          paymentId: payment.paymentId,
+        });
+        enrollments.push(enrollment);
+
+        await cartService.removeFromCartByCourseId(user.uid, item.courseId);
+      }
+    } else if (payment.courseId && payment.paymentType !== 'subscription') {
+      console.log('📝 [Orchestrator] Creating enrollment for single course:', payment.courseId);
+      const enrollment = await enrollmentService.createEnrollmentInternal(user.uid, {
         courseId: payment.courseId,
         courseTitle: payment.courseTitle,
         paymentId: payment.paymentId,
       });
-      console.log('✅ [Orchestrator] Enrollment created:', enrollment.enrollmentId);
+      enrollments.push(enrollment);
     } else {
-      console.log('⏭️  [Orchestrator] Skipping enrollment (subscription or no courseId)');
+      console.log('⏭️ [Orchestrator] Skipping enrollment (subscription or no courseId)');
     }
 
     console.log('📡 [Orchestrator] Emitting events for push notifications...');
@@ -239,14 +261,16 @@ export class CoursePurchaseOrchestrator {
       paymentType: payment.paymentType,
     });
 
-    if (enrollment) {
-      console.log('📡 [Orchestrator] Emitting enrollment.created event');
-      eventBus.emit('enrollment.created', {
-        studentId: user.uid,
-        instructorId: payment.instructorId || null,
-        courseTitle: payment.courseTitle,
-        courseThumbnail: payment.courseThumbnail || null,
-      });
+    if (enrollments.length > 0) {
+      console.log('📡 [Orchestrator] Emitting enrollment.created events');
+      for (const e of enrollments) {
+        eventBus.emit('enrollment.created', {
+          studentId: user.uid,
+          instructorId: payment.instructorId || null,
+          courseTitle: e.courseTitle,
+          courseThumbnail: payment.courseThumbnail || null,
+        });
+      }
     }
 
     if (payment.paymentType === 'subscription' && payment.planId) {
@@ -278,28 +302,27 @@ export class CoursePurchaseOrchestrator {
         amount: transaction.amount,
         status: transaction.status,
       },
-      enrollment: enrollment ? {
-        enrollmentId: enrollment.enrollmentId,
-        courseId: enrollment.courseId,
-        courseTitle: enrollment.courseTitle,
-        enrolledAt: enrollment.enrolledAt,
-      } : null,
-      hasActiveSubscription: payment.paymentType === 'subscription' && payment.planId ? true : undefined,
+      enrollments: enrollments.map((e) => ({
+        enrollmentId: e.enrollmentId,
+        courseId: e.courseId,
+        courseTitle: e.courseTitle,
+        enrolledAt: e.enrolledAt,
+      })),
+      hasActiveSubscription:
+        payment.paymentType === 'subscription' && payment.planId ? true : undefined,
     };
   }
 
   /**
-   * Process Paymee Webhook (no signature at this level; PaymeeService does checksum)
-   * @param {Object} webhookData - raw webhook JSON from Paymee
+   * Process Paymee Webhook
    */
   async processPaymeeWebhook(webhookData) {
     console.log('🔔 [Orchestrator] processPaymeeWebhook called');
-    // PaymentService + PaymeeService will validate checksum + normalize
     const webhookResult = await paymentService.processPaymeeWebhook(webhookData);
     console.log('✅ [Orchestrator] Webhook processed:', {
       success: webhookResult.success,
       orderId: webhookResult.orderId,
-      transactionId: webhookResult.transactionId
+      transactionId: webhookResult.transactionId,
     });
     return {
       verified: true,
@@ -310,18 +333,17 @@ export class CoursePurchaseOrchestrator {
 
   /**
    * Handle Webhook Completion (Paymee version)
-   * @param {Object} webhookResult - { success, orderId, transactionId, amount, customer, ... }
-   * @param {Object} payment - Payment record
    */
   async handleWebhookCompletion(webhookResult, payment) {
     console.log('🔄 [Orchestrator] handleWebhookCompletion called:', {
       orderId: webhookResult.orderId,
-      success: webhookResult.success
+      success: webhookResult.success,
     });
 
-    // 1. Get user and course info
     const user = await userService.getUserByUidInternal(payment.userId);
-    const course = payment.courseId ? await courseService.getCourseByIdInternal(payment.courseId) : null;
+    const course = payment.courseId
+      ? await courseService.getCourseByIdInternal(payment.courseId)
+      : null;
     const courseTitle = course?.title || payment.courseTitle || 'Course Purchase';
 
     if (webhookResult.success) {
@@ -336,7 +358,7 @@ export class CoursePurchaseOrchestrator {
       const orchestratorResult = await this.completePurchase(user, confirmationData);
       console.log('✅ [Orchestrator] Purchase completed:', {
         transactionId: orchestratorResult.transaction?.transactionId,
-        enrollmentId: orchestratorResult.enrollment?.enrollmentId
+        enrollmentsCount: orchestratorResult.enrollments?.length ?? 0,
       });
 
       const emailService = (await import('../utils/EmailService.js')).default;
@@ -350,14 +372,16 @@ export class CoursePurchaseOrchestrator {
         transactionId: String(webhookResult.transactionId),
         paymentMethod: 'Paymee',
       });
-      console.log(`${emailResult?.success !== false ? '✅' : '❌'} [Orchestrator] Email sent:`, 
-        emailResult?.success !== false ? 'success' : emailResult?.error);
+      console.log(
+        `${emailResult?.success !== false ? '✅' : '❌'} [Orchestrator] Email sent:`,
+        emailResult?.success !== false ? 'success' : emailResult?.error
+      );
 
       return {
         success: true,
         message: 'Payment completed successfully',
         transaction: orchestratorResult.transaction,
-        enrollment: orchestratorResult.enrollment,
+        enrollments: orchestratorResult.enrollments,
       };
     } else {
       console.log('❌ [Orchestrator] Payment failed - updating status...');
@@ -386,6 +410,9 @@ export class CoursePurchaseOrchestrator {
     }
   }
 
+  /**
+   * Get purchase status (single or bundle)
+   */
   async getPurchaseStatus(user, paymentId) {
     const payment = await paymentService.getPaymentById(paymentId);
     if (!payment) {
@@ -401,10 +428,19 @@ export class CoursePurchaseOrchestrator {
       transaction = await transactionService.getTransactionById(payment.transactionId);
     }
 
-    let enrollment = null;
+    let enrollments = [];
+
     if (payment.status === 'completed') {
-      const enrollments = await enrollmentService.getUserEnrollments(user.uid);
-      enrollment = enrollments.find(e => e.courseId === payment.courseId);
+      const userEnrollments = await enrollmentService.getUserEnrollments(user.uid);
+
+      if (payment.paymentType === 'bundle_purchase' && payment.cartItems?.length) {
+        enrollments = userEnrollments.filter((e) =>
+          payment.cartItems.some((ci) => ci.courseId === e.courseId)
+        );
+      } else if (payment.courseId) {
+        const single = userEnrollments.find((e) => e.courseId === payment.courseId);
+        if (single) enrollments = [single];
+      }
     }
 
     return {
@@ -414,15 +450,19 @@ export class CoursePurchaseOrchestrator {
         amount: payment.amount,
         courseTitle: payment.courseTitle,
       },
-      transaction: transaction ? {
-        transactionId: transaction.transactionId,
-        status: transaction.status,
-        gatewayTransactionId: transaction.gatewayTransactionId,
-      } : null,
-      enrollment: enrollment ? {
-        enrollmentId: enrollment.enrollmentId,
-        enrolledAt: enrollment.enrolledAt,
-      } : null,
+      transaction: transaction
+        ? {
+            transactionId: transaction.transactionId,
+            status: transaction.status,
+            gatewayTransactionId: transaction.gatewayTransactionId,
+          }
+        : null,
+      enrollments: enrollments.map((e) => ({
+        enrollmentId: e.enrollmentId,
+        enrolledAt: e.enrolledAt,
+        courseId: e.courseId,
+        courseTitle: e.courseTitle,
+      })),
     };
   }
 }

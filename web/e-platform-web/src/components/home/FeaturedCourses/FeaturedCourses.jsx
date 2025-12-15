@@ -8,7 +8,6 @@ export default function FeaturedCourses() {
   const { hasActiveSubscription } = useAuth();
   const { data: courses = [], isLoading, error } = useSystemCourses();
 
-  // Show first 6 system courses
   const featuredCourses = courses.slice(0, 6);
 
   if (isLoading) {
@@ -19,7 +18,9 @@ export default function FeaturedCourses() {
             Featured Courses
           </h2>
           <div className="flex justify-center items-center h-64">
-            <div className="text-text-light/70 dark:text-text-dark/70">Loading courses...</div>
+            <div className="text-text-light/70 dark:text-text-dark/70">
+              Loading courses...
+            </div>
           </div>
         </div>
       </section>
@@ -34,7 +35,9 @@ export default function FeaturedCourses() {
             Featured Courses
           </h2>
           <div className="flex justify-center items-center h-64">
-            <div className="text-red-500">Failed to load courses. Please try again later.</div>
+            <div className="text-red-500">
+              Failed to load courses. Please try again later.
+            </div>
           </div>
         </div>
       </section>
@@ -49,7 +52,9 @@ export default function FeaturedCourses() {
             Featured Courses
           </h2>
           <div className="flex justify-center items-center h-64">
-            <div className="text-text-light/70 dark:text-text-dark/70">No courses available yet.</div>
+            <div className="text-text-light/70 dark:text-text-dark/70">
+              No courses available yet.
+            </div>
           </div>
         </div>
       </section>
@@ -72,10 +77,10 @@ export default function FeaturedCourses() {
             >
               <div
                 className="w-full h-48 bg-cover bg-center transition-transform group-hover:scale-105"
-                style={{ 
-                  backgroundImage: course.thumbnail 
-                    ? `url(${course.thumbnail})` 
-                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                style={{
+                  backgroundImage: course.thumbnail
+                    ? `url(${course.thumbnail})`
+                    : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 }}
                 aria-hidden="true"
               />
@@ -99,25 +104,30 @@ export default function FeaturedCourses() {
                 <div className="mt-4 flex items-center gap-4 text-xs text-text-light/60 dark:text-text-dark/60">
                   {course.duration && (
                     <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-base">schedule</span>
+                      <span className="material-symbols-outlined text-base">
+                        schedule
+                      </span>
                       {course.duration}h
                     </span>
                   )}
                   {course.level && (
                     <span className="flex items-center gap-1">
-                      <span className="material-symbols-outlined text-base">signal_cellular_alt</span>
+                      <span className="material-symbols-outlined text-base">
+                        signal_cellular_alt
+                      </span>
                       {course.level}
                     </span>
                   )}
                 </div>
-                <button 
+                <button
                   className="mt-4 w-full flex items-center justify-center rounded-lg h-10 px-4 bg-primary/10 text-primary text-sm font-bold hover:bg-primary/20 transition-colors"
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent card click
+                    e.stopPropagation();
+                    const id = course.courseId;
                     if (course.isSystemCourse && hasActiveSubscription) {
-                      navigate(`/courses/${course.id}/learn`);
+                      navigate(`/courses/${id}/learn`);
                     } else {
-                      navigate(`/courses/${course.id}`);
+                      navigate(`/courses/${id}`);
                     }
                   }}
                 >

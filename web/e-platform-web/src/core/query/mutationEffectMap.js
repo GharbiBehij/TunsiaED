@@ -15,6 +15,7 @@ import {
   ENROLLMENT_KEYS,
   USER_KEYS,
   SUBSCRIPTION_KEYS,
+  CART_KEYS,
 } from './queryKeys';
 
 /**
@@ -509,6 +510,51 @@ export const MUTATION_EFFECTS = {
       ADMIN_KEYS.stats(),
       ADMIN_KEYS.activity(),
       ADMIN_KEYS.revenue(),
+    ],
+    redis: [],
+  },
+
+  // ====================================================================
+  // CART MUTATIONS
+  // ====================================================================
+  addToCart: {
+    reactQuery: [
+      CART_KEYS.current(),
+      CART_KEYS.summary(),
+    ],
+    redis: [],
+  },
+
+  removeFromCart: {
+    reactQuery: [
+      CART_KEYS.current(),
+      CART_KEYS.summary(),
+    ],
+    redis: [],
+  },
+
+  applyPromo: {
+    reactQuery: [
+      CART_KEYS.current(),
+      CART_KEYS.summary(),
+    ],
+    redis: [],
+  },
+
+  removePromo: {
+    reactQuery: [
+      CART_KEYS.current(),
+      CART_KEYS.summary(),
+    ],
+    redis: [],
+  },
+
+  checkoutCart: {
+    reactQuery: [
+      CART_KEYS.current(),
+      CART_KEYS.summary(),
+      PAYMENT_KEYS.all(),
+      PAYMENT_KEYS.user(),
     ],
     redis: [],
   },

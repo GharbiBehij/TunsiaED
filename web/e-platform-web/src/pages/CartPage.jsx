@@ -3,11 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCartContext } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useInitiatePurchase } from '../hooks';
 import { useApplyPromo, useRemovePromo } from '../hooks';
+import { useCartCheckout } from '../hooks/Cart/useCart';
 import Header from '../components/home/Header/Header';
 
-const TAX_RATE = 0.08; // 8% tax
+const TAX_RATE = 0.08;
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -19,9 +19,9 @@ export default function CartPage() {
     isLoading: cartLoading,
     subtotal: cartSubtotal,
   } = useCartContext();
-  const initiatePurchase = useInitiatePurchase();
   const applyPromo = useApplyPromo();
   const removePromo = useRemovePromo();
+  const { checkout, isLoading: isCheckoutLoading } = useCartCheckout();
 
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
@@ -29,11 +29,9 @@ export default function CartPage() {
   const [promoError, setPromoError] = useState('');
   const [isValidatingPromo, setIsValidatingPromo] = useState(false);
 
-  // Check if we should clear cart (after successful payment)
   useEffect(() => {
     const shouldClear = sessionStorage.getItem('cartCleared');
     if (shouldClear === 'true') {
-      // Cart clearing is handled by the backend after successful payment
       sessionStorage.removeItem('cartCleared');
     }
   }, []);
@@ -47,7 +45,6 @@ export default function CartPage() {
 
   const handleApplyPromo = async () => {
     if (!promoCode.trim()) return;
-
     setIsValidatingPromo(true);
     setPromoError('');
 
@@ -55,7 +52,6 @@ export default function CartPage() {
       await applyPromo.mutateAsync({ code: promoCode.trim() });
       setPromoApplied(true);
       setPromoError('');
-      // Discount amount still comes from backend; local promoDiscount remains 0 for now
     } catch (error) {
       setPromoError(error?.message || 'Invalid promo code');
       setPromoApplied(false);
@@ -81,36 +77,15 @@ export default function CartPage() {
       navigate('/login?redirect=/cart');
       return;
     }
-
     if (cartItems.length === 0) return;
 
     try {
-      // For now, process first course (you can extend this for multiple courses)
-      const firstCourse = cartItems[0];
-
-      const purchaseData = {
-        courseId: firstCourse.courseId,
-        paymentType: 'course_purchase',
-        paymentMethod: 'stripe',
-      };
-
-      // Add promo code data if applied
-      if (promoApplied && promoCode) {
-        purchaseData.originalAmount = subtotal;
-        purchaseData.promoCode = promoCode;
-        purchaseData.amount = discountedSubtotal; // Amount after discount, before tax
-      }
-
-      const result = await initiatePurchase.mutateAsync(purchaseData);
-
-      // Store cart clearing callback in sessionStorage for payment success page
+      const checkoutUrl = await checkout();
       sessionStorage.setItem('clearCartOnSuccess', 'true');
-
-      // Navigate to payment page
-      navigate(`/payment/${result.paymentId}`);
+      window.location.href = checkoutUrl;
     } catch (error) {
-      console.error('Failed to initiate purchase:', error);
-      alert('Failed to process checkout. Please try again.');
+      console.error('Failed to process checkout:', error);
+      alert(error.message || 'Failed to process checkout. Please try again.');
     }
   };
 
@@ -179,7 +154,6 @@ export default function CartPage() {
 
       <div className="container mx-auto px-4 py-12">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
               Shopping Cart
@@ -190,14 +164,12 @@ export default function CartPage() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item) => (
                 <div
                   key={item.itemId}
                   className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 flex gap-6"
                 >
-                  {/* Thumbnail */}
                   <div
                     className="w-32 h-20 flex-shrink-0 bg-cover bg-center rounded-lg"
                     style={{
@@ -207,7 +179,6 @@ export default function CartPage() {
                     }}
                   />
 
-                  {/* Course Info */}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-1 truncate">
                       {item.courseTitle}
@@ -217,12 +188,10 @@ export default function CartPage() {
                     </p>
 
                     <div className="flex items-center justify-between">
-                      {/* Price */}
                       <div className="text-xl font-bold text-primary">
                         {formatCurrency(item.price)}
                       </div>
 
-                      {/* Remove Button */}
                       <button
                         onClick={() => removeFromCart(item.itemId)}
                         disabled={removeFromCartMutation.isPending}
@@ -237,14 +206,12 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* Order Summary */}
             <div className="lg:col-span-1">
               <div className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 sticky top-24">
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">
                   Order Summary
                 </h2>
 
-                {/* Promo Code */}
                 <div className="mb-6">
                   <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     Promo Code
@@ -287,7 +254,6 @@ export default function CartPage() {
                   )}
                 </div>
 
-                {/* Price Breakdown */}
                 <div className="space-y-3 mb-6 pb-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between text-gray-700 dark:text-gray-300">
                     <span>Subtotal</span>
@@ -307,19 +273,17 @@ export default function CartPage() {
                   </div>
                 </div>
 
-                {/* Total */}
-                <div className="flex justify-between text-xl font-bold text-gray-900 dark:text-white mb-6">
+                <div className="flex justify-between text-xl font-bold text-gray-900 dark:text:white mb-6">
                   <span>Total</span>
                   <span>{formatCurrency(total)}</span>
                 </div>
 
-                {/* Checkout Button */}
                 <button
                   onClick={handleCheckout}
-                  disabled={initiatePurchase.isPending}
+                  disabled={isCheckoutLoading}
                   className="w-full py-3 bg-primary text-white rounded-lg font-bold hover:bg-primary/90 transition disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {initiatePurchase.isPending ? (
+                  {isCheckoutLoading ? (
                     <>
                       <span className="material-symbols-outlined animate-spin">
                         progress_activity
@@ -335,7 +299,7 @@ export default function CartPage() {
                 </button>
 
                 <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-4">
-                  Secure payment powered by Stripe
+                  Secure payment powered by Paymee
                 </p>
               </div>
             </div>

@@ -21,7 +21,17 @@ export class CartService {
     if (!res.ok) throw new Error('Failed to add item');
     return res.json();
   }
-
+  static async checkout(token) {
+  const res = await fetch(`${API_URL}/api/v1/cart/checkout`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error('Failed to checkout cart');
+  return res.json(); // { paymentId, amount }
+}
   static async removeItem(token, itemId) {
     const res = await fetch(`${API_URL}/api/v1/cart/items/${itemId}`, {
       method: 'DELETE',

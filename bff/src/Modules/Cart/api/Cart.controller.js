@@ -192,6 +192,33 @@ export class CartController {
       res.status(error.status || 500).json({ error: error.message });
     }
   }
+async checkout(req, res) {
+  const userId = req.user?.uid;
+  if (!userId) return res.status(401).json({ error: 'Authentication required' });
+
+  const cart = await cartService.getCart(userId);
+  if (!cart.items.length) {
+    return res.status(400).json({ error: 'Cart is empty' });
+  }
+
+  const payment = await paymentService.createPaymentInternal({
+    userId,
+    cartItems: cart.items.map(i => ({
+      courseId: i.courseId,
+      courseTitle: i.courseTitle,
+      price: i.price,
+    })),
+    courseId: null,
+    courseTitle: `${cart.items.length} courses bundle`,
+    amount: cart.subtotal,
+    currency: 'TND',
+    paymentType: 'bundle_purchase',
+    paymentMethod: 'paymee',
+    status: 'pending',
+  });
+
+  res.status(201).json({ paymentId: payment.paymentId, amount: payment.amount });
+}
 }
 
 export const cartController = new CartController();

@@ -28,6 +28,8 @@ router.delete('/items/:itemId', (req, res) => cartController.removeFromCart(req,
 
 // Remove item from cart by courseId
 router.delete('/courses/:courseId', (req, res) => cartController.removeFromCartByCourseId(req, res));
+// Checkout cart
+router.post('/checkout', (req, res) => cartController.checkout(req, res));
 
 // Clear all items from cart
 router.delete('/', (req, res) => cartController.clearCart(req, res));

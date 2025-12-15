@@ -24,6 +24,7 @@ export const PaymentMapper = {
       subscriptionType: model.subscriptionType || null,
       paymentMethod: model.paymentMethod || null,
       status: 'pending',
+      cartItems: model.cartItems || null, 
       transactionId: null,
       createdAt: now,
       updatedAt: now,
@@ -57,6 +58,7 @@ export const PaymentMapper = {
       subscriptionType: entity.subscriptionType,
       paymentMethod: entity.paymentMethod,
       status: entity.status,
+      cartItems: entity.cartItems || null, 
       transactionId: entity.transactionId,
       stripeSessionId: entity.stripeSessionId || null,
       paymeeToken: entity.paymeeToken || null,
@@ -75,8 +77,7 @@ export const PaymentMapper = {
     return entities.map(entity => this.toModel(entity.paymentId || entity.id, entity)).filter(Boolean);
   },
 
- validateCreate(data) {
-  // Always required
+validateCreate(data) {
   if (!data.userId) {
     const error = new Error('userId is required');
     error.status = 400;
@@ -93,20 +94,27 @@ export const PaymentMapper = {
     throw error;
   }
 
-  const paymentType = data.paymentType || (data.planId ? 'subscription' : 'course_purchase');
+  const paymentType = data.paymentType
+    || (data.planId ? 'subscription' : 'course_purchase');
 
-  // Course purchase: require courseId
   if (paymentType === 'course_purchase' && !data.courseId) {
     const error = new Error('courseId is required for course purchases');
     error.status = 400;
     throw error;
   }
 
-  // Subscription: require planId
   if (paymentType === 'subscription' && !data.planId) {
     const error = new Error('planId is required for subscriptions');
     error.status = 400;
     throw error;
+  }
+
+  if (paymentType === 'bundle_purchase') {
+    if (!Array.isArray(data.cartItems) || data.cartItems.length === 0) {
+      const error = new Error('cartItems are required for bundle purchases');
+      error.status = 400;
+      throw error;
+    }
   }
 },
 };

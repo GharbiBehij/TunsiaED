@@ -7,9 +7,9 @@ const router = Router();
 
 // Public read endpoints
 router.get('/', lessonController.getAllLessons);
-router.get('/:lessonId', lessonController.getLessonById);
 router.get('/chapter/:chapterId/list', lessonController.getLessonsByChapter);
 router.get('/course/:courseId/list', lessonController.getLessonsByCourse);
+router.get('/:lessonId', lessonController.getLessonById);
 
 // Authenticated write endpoints (instructor/admin only)
 router.post('/', authenticate, requireRole('admin', 'instructor'), lessonController.createLesson);
