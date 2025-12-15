@@ -3,7 +3,7 @@ import { userService } from '../../service/User.service.js';
 import { OnboardUserSchema, UpdateUserSchema } from '../../Validators/User.schema.js';
 import { userRepository } from '../../repository/User.repository.js';
 import { FirebaseAuthAdapter } from '../../../../adapters/firebaseAdapter.js';
-import { mapFirebaseUserToSafeUser } from '../../../utils/FirebaseUserMapper.js';
+import { mapFirebaseUserToSafeUser } from '../../../../utils/FirebaseUserMapper.js';
 
 // Create new user profile during registration
 export const onboardUser = async (req, res) => {
