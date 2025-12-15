@@ -21,15 +21,20 @@ export const SMTPAdapter = {
     }
 
     switch (provider) {
-      case 'gmail':
-        this.transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: {
-            user: process.env.GMAIL_USER,
-            pass: process.env.GMAIL_APP_PASSWORD,
-          },
-        });
-        break;
+     case 'gmail':
+     this.transporter = nodemailer.createTransport({
+     host: 'smtp.gmail.com',
+     port: 587,
+     secure: false,          // use TLS, but not SSL
+     requireTLS: true,
+     auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+    connectionTimeout: 10000, // 10s
+    socketTimeout: 10000,     // 10s
+  });
+     break;
 
       case 'sendgrid':
         this.transporter = nodemailer.createTransport({

@@ -233,61 +233,66 @@ export class PaymentController {
       timestamp: new Date().toISOString()
     });
 
-    try {
-      const webhookData = req.body;
+    const webhookData = req.body;
 
-      console.log(`🔄 [${webhookId}] Processing webhook through orchestrator...`);
-      const { verified, webhookResult } = await coursePurchaseOrchestrator.processPaymeeWebhook(webhookData);
+    // 1) Immediately acknowledge to Paymee
+    res.status(200).json({ received: true });
 
-      console.log(`✅ [${webhookId}] Orchestrator webhook processing complete:`, {
-        verified,
-        success: webhookResult.success,
-        orderId: webhookResult.orderId,
-        transactionId: webhookResult.transactionId
-      });
+    // 2) Continue processing in the background
+    (async () => {
+      try {
+        console.log(`🔄 [${webhookId}] Processing webhook through orchestrator...`);
+        const { verified, webhookResult } =
+          await coursePurchaseOrchestrator.processPaymeeWebhook(webhookData);
 
-      console.log(`🔍 [${webhookId}] Looking up payment:`, webhookResult.orderId);
-      const payment = await paymentService.getPaymentById(webhookResult.orderId);
-      
-      if (!payment) {
-        console.error(`❌ [${webhookId}] Payment not found:`, webhookResult.orderId);
-        return res.status(404).json({ error: 'Payment not found' });
-      }
-      console.log(`✅ [${webhookId}] Payment found:`, {
-        paymentId: payment.paymentId,
-        status: payment.status,
-        userId: payment.userId,
-        courseId: payment.courseId
-      });
-
-      if (payment.status === 'completed') {
-        console.log(`⚠️  [${webhookId}] Idempotency check: Payment already completed:`, {
-          paymentId: webhookResult.orderId,
-          status: payment.status,
-          message: 'Duplicate webhook ignored'
+        console.log(`✅ [${webhookId}] Orchestrator webhook processing complete:`, {
+          verified,
+          success: webhookResult.success,
+          orderId: webhookResult.orderId,
+          transactionId: webhookResult.transactionId
         });
-        return res.status(200).json({ received: true, message: 'Already processed' });
-      }
 
-      console.log(`🔄 [${webhookId}] Delegating to orchestrator for completion...`);
-      const completionResult = await coursePurchaseOrchestrator.handleWebhookCompletion(webhookResult, payment);
-      
-      if (completionResult.success) {
-        console.log(`🎉 [${webhookId}] Paymee payment completed successfully:`, webhookResult.orderId);
-      } else {
-        console.log(`❌ [${webhookId}] Paymee payment failed:`, webhookResult.orderId);
-      }
+        console.log(`🔍 [${webhookId}] Looking up payment:`, webhookResult.orderId);
+        const payment = await paymentService.getPaymentById(webhookResult.orderId);
 
-      console.log(`✅ [${webhookId}] Webhook processing complete - responding to Paymee`);
-      res.status(200).json({ received: true });
-    } catch (error) {
-      console.error(`💥 [${webhookId}] Paymee webhook error:`, {
-        error: error.message,
-        stack: error.stack
-      });
-      // Always respond 200 so Paymee doesn't hammer retries; you can refine this if their docs recommend otherwise
-      res.status(200).json({ received: true, error: error.message });
-    }
+        if (!payment) {
+          console.error(`❌ [${webhookId}] Payment not found:`, webhookResult.orderId);
+          return;
+        }
+
+        console.log(`✅ [${webhookId}] Payment found:`, {
+          paymentId: payment.paymentId,
+          status: payment.status,
+          userId: payment.userId,
+          courseId: payment.courseId
+        });
+
+        if (payment.status === 'completed') {
+          console.log(`⚠️  [${webhookId}] Idempotency: already completed`, {
+            paymentId: webhookResult.orderId,
+            status: payment.status
+          });
+          return;
+        }
+
+        console.log(`🔄 [${webhookId}] Delegating to orchestrator for completion...`);
+        const completionResult =
+          await coursePurchaseOrchestrator.handleWebhookCompletion(webhookResult, payment);
+
+        if (completionResult.success) {
+          console.log(`🎉 [${webhookId}] Paymee payment completed successfully:`, webhookResult.orderId);
+        } else {
+          console.log(`❌ [${webhookId}] Paymee payment failed:`, webhookResult.orderId);
+        }
+
+        console.log(`✅ [${webhookId}] Background webhook processing finished`);
+      } catch (error) {
+        console.error(`💥 [${webhookId}] Paymee webhook background error:`, {
+          error: error.message,
+          stack: error.stack
+        });
+      }
+    })();
   }
 
   /**
