@@ -5,7 +5,6 @@ import { transactionService } from '../Modules/Transaction/service/Transaction.s
 import { enrollmentService } from '../Modules/Enrollement/service/Enrollement.service.js';
 import { courseService } from '../Modules/Course/service/Course.service.js';
 import { userService } from '../Modules/User/service/User.service.js';
-import { eventBus } from '../events/eventBus.js';
 import { cacheClient, REDIS_KEY_REGISTRY } from '../core/cache/cacheClient.js';
 import { adminService } from '../Modules/Admin/service/Admin.service.js';
 import { cartService } from '../Modules/Cart/service/Cart.service.js';
@@ -252,47 +251,34 @@ export class CoursePurchaseOrchestrator {
       console.log('⏭️ [Orchestrator] Skipping enrollment (subscription or no courseId)');
     }
 
-    console.log('📡 [Orchestrator] Emitting events for push notifications...');
-    eventBus.emit('payment.completed', {
-      userId: user.uid,
-      courseTitle: payment.courseTitle,
-      amount: payment.amount,
-      transactionId: transaction.transactionId,
-      paymentType: payment.paymentType,
-    });
-
-    if (enrollments.length > 0) {
-      console.log('📡 [Orchestrator] Emitting enrollment.created events');
-      for (const e of enrollments) {
-        eventBus.emit('enrollment.created', {
-          studentId: user.uid,
-          instructorId: payment.instructorId || null,
-          courseTitle: e.courseTitle,
-          courseThumbnail: payment.courseThumbnail || null,
-        });
-      }
-    }
-
-    if (payment.paymentType === 'subscription' && payment.planId) {
-      console.log('📡 [Orchestrator] Emitting subscription.activated event');
-      eventBus.emit('subscription.activated', {
-        userId: user.uid,
-        planId: payment.planId,
-        transactionId: transaction.transactionId,
-      });
-
-      console.log('💾 [Orchestrator] Updating user subscription status...');
-      await userService.updateSubscriptionStatusInternal(user.uid, {
-        hasActiveSubscription: true,
-        activePlanId: payment.planId,
-        subscriptionExpiresAt: null,
-      });
-    }
+    // Event emissions removed - FCM push notifications no longer used
 
     console.log('🗑️ [Orchestrator] Invalidating cache keys for enrollment creation...');
     await cacheClient.delPattern(REDIS_KEY_REGISTRY.PATTERNS.STUDENT_DASHBOARD);
     await cacheClient.delPattern(REDIS_KEY_REGISTRY.PATTERNS.INSTRUCTOR_DASHBOARD);
     await cacheClient.delPattern(REDIS_KEY_REGISTRY.PATTERNS.ENROLLMENTS);
+
+    // Send email notification for successful purchase
+    try {
+      const emailService = (await import('../utils/EmailService.js')).default;
+      console.log('📧 [Orchestrator] Sending purchase success email to:', user.email);
+      const emailResult = await emailService.sendPaymentSuccessEmail({
+        email: user.email,
+        firstName: user.firstName || 'Student',
+        lastName: user.lastName || '',
+        courseTitle: payment.courseTitle,
+        amount: payment.amount,
+        transactionId: transaction.transactionId,
+        paymentMethod: payment.paymentMethod || 'Manual',
+      });
+      console.log(
+        `${emailResult?.success !== false ? '✅' : '❌'} [Orchestrator] Email sent:`,
+        emailResult?.success !== false ? 'success' : emailResult?.error
+      );
+    } catch (emailError) {
+      console.error('❌ [Orchestrator] Failed to send success email:', emailError.message);
+      // Don't fail the purchase if email fails
+    }
 
     console.log('✅ [Orchestrator] completePurchase finished successfully');
     return {

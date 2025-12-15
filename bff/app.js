@@ -17,26 +17,23 @@ import { router as studentRouter } from './src/Modules/Student/api/Student.route
 import { router as progressRouter } from './src/Modules/Progress/api/Progress.routes.js';
 import { registerPromoCodeRoutes } from './src/Modules/PromoCode/index.js';
 import CartRouter from './src/Modules/Cart/api/Cart.routes.js';
-import { initializeFirebaseNotifications } from './src/events/index.js';
 import { seedSystemData } from './src/systemCourses/seedSystemCourses.js';
 import { createRateLimiters } from './src/middlewares/rateLimiter.js';
 
 const app = express();
 
-// Initialize event system (Firebase notifications)
-initializeFirebaseNotifications();
-console.log('✅ Event system initialized');
+// Seed system courses
+seedSystemData().catch(err =>
+  console.warn('⚠️  System data seeding failed:', err.message)
+);
 
-// Seed system courses (only inserts if not already present)
-seedSystemData().catch(err => console.warn('⚠️  System data seeding failed:', err.message));
-
-// Security: Helmet for security headers
+// Security: Helmet
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP for now (can enable later)
-  crossOriginEmbedderPolicy: false // Allow embedding
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
 }));
 
-// Security: HTTPS redirect in production
+// HTTPS redirect in production
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
     if (req.header('x-forwarded-proto') !== 'https') {
@@ -55,11 +52,11 @@ const allowedOrigins = [
   'http://localhost:3001'
 ];
 
-// 1️ Global CORS middleware
+// CORS
 app.use(cors({
-  origin: function(origin, callback){
-    if(!origin) return callback(null, true); // allow non-browser requests
-    if(allowedOrigins.indexOf(origin) === -1){
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) === -1) {
       return callback(new Error('CORS not allowed'), false);
     }
     return callback(null, true);
@@ -68,41 +65,44 @@ app.use(cors({
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
 }));
+
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
   next();
 });
-// 2 Handle preflight OPTIONS requests for all routes
+
+// Preflight
 app.options('*', cors({
   origin: allowedOrigins,
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization']
 }));
-// 3 Parse JSON
+
+// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 3.5 Request logging
+// Logging
 app.use(morgan('combined'));
 
-// 3.6 Rate limiting (must be after body parsing)
+// Rate limiting
 const rateLimiters = createRateLimiters();
 app.use('/api/v1/payment', rateLimiters.payment);
 app.use('/api/v1/enrollment', rateLimiters.enrollment);
 app.use('/api/v1', rateLimiters.general);
 
-// 4️ Health check
+// Health check
 app.get('/', (req, res) => {
-  res.json({ 
-    status: 'alive', 
+  res.json({
+    status: 'alive',
     message: 'TunisiaED BFF is running',
-    timestamp: new Date().toISOString() 
+    timestamp: new Date().toISOString()
   });
 });
 
-// 5️ API Routes
+// Routes
 app.use('/api/v1/user', userRoutes);
 app.use('/api/v1/course', courseRouter);
 app.use('/api/v1/payment', paymentRouter);
@@ -116,13 +116,11 @@ app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/instructor', instructorRouter);
 app.use('/api/v1/student', studentRouter);
 app.use('/api/v1/progress', progressRouter);
-app.use('/api/v1/promocode', registerPromoCodeRoutes); // Promo code routes
-app.use('/api/v1/payment', paymentRouter);
-app.use('/api/v1/cart',CartRouter)
+app.use('/api/v1/promocode', registerPromoCodeRoutes);
+app.use('/api/v1/cart', CartRouter);
 
-
-// 6️ Global error handlerk
-app.use((err,res) => {
+// Global error handler
+app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({
     error: err.message || 'Internal server error',
@@ -130,19 +128,19 @@ app.use((err,res) => {
   });
 });
 
-// 7️ 404 handler
+// 404 handler
 app.use('*', (req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: 'Route not found',
-    path: req.originalUrl 
+    path: req.originalUrl
   });
 });
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
-// TEMP: Add a simple test route
-app.get('/test', (res) => {
+// TEMP test route (optional, can remove later)
+app.get('/test', (req, res) => {
   res.json({ message: 'Server is running!', timestamp: new Date().toISOString() });
 });
 
